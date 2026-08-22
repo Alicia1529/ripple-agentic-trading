@@ -49,6 +49,19 @@ thread/session prompt
 
 Stable project knowledge belongs in these shared sources, not in vendor-specific instructions or agent-role files. Assign temporary roles through prompts; do not create files such as `AGENT_BUILDER.md`, `AGENT_REVIEWER.md`, or `AGENT_ARCHITECT.md`.
 
+## Commit identity
+
+Every agent-authored commit subject starts with the temporary role assigned to that task:
+
+```text
+Builder: add Robinhood MCP auth probe
+Architect: record broker authentication boundary
+Reviewer: add an approved review-only regression test
+Coordinator: document review routing
+```
+
+Use `Builder`, `Architect`, `Reviewer`, or `Coordinator`, followed by a concise imperative summary. A Reviewer normally creates no commit during the initial read-only review. Existing commits are historical evidence and are not renamed to adopt this convention retroactively.
+
 ## Starter prompts
 
 ### Builder
@@ -56,7 +69,7 @@ Stable project knowledge belongs in these shared sources, not in vendor-specific
 ```text
 Act as the Builder for one scoped Ripple change: <task>.
 
-Read AGENTS.md or CLAUDE.md first, then read every document it requires, including docs/AGENT_WORKFLOW.md. Identify the affected invariants. Implement the scoped change and add or update relevant tests. Run those tests and report the results. Preserve current architecture; if the task requires an architectural change, stop and make that change explicit rather than silently introducing it. Leave the branch in a reviewable state with a focused diff and clear commit(s).
+Read AGENTS.md or CLAUDE.md first, then read every document it requires, including docs/AGENT_WORKFLOW.md. Identify the affected invariants. Implement the scoped change and add or update relevant tests. Run those tests and report the results. Preserve current architecture; if the task requires an architectural change, stop and make that change explicit rather than silently introducing it. Leave the branch in a reviewable state with a focused diff and a commit whose subject starts with `Builder:`.
 ```
 
 ### Reviewer
@@ -94,12 +107,36 @@ Alicia inspects the result before the next slice begins
 ```
 
 1. **Architect:** Select the first or next smallest useful slice. Explain why it comes next, what is in and out of scope, affected interfaces and invariants, acceptance criteria, and the tests that will prove completion. Finish with a concrete Builder-ready task. Architecture work is also required when a slice exposes a durable design choice; routine implementation details do not need a separate architecture pass.
-2. **Builder:** Before editing, state the intended files, behavior, and verification. Implement only the approved slice, run the relevant tests, and create one focused commit. Stop after reporting the commit and test results so Alicia can inspect the diff.
+2. **Builder:** Before editing, state the intended files, behavior, and verification. Implement only the approved slice, run the relevant tests, and create one focused `Builder:` commit. Stop after reporting the commit and test results so Alicia can inspect the diff.
 3. **Alicia checkpoint:** Inspect the exact commit and ask questions until the behavior and implementation are clear. The next slice waits for this checkpoint.
 4. **Reviewer:** Review the exact commit or diff read-only. Report correctness defects separately from optional improvements, with concrete file and line references. Do not modify the implementation during the initial review.
 5. **Fix and close:** The Builder implements only the approved review findings in a new focused commit and reruns the relevant tests. Alicia inspects that follow-up diff before accepting the slice or returning to the Architect for the next one.
 
 Run these roles sequentially when they share one working directory. Parallel modifying agents require separate branches and worktrees as described below.
+
+## Coordination and review routing
+
+The Coordinator may be Alicia or a dedicated coordination thread. It owns the development stage and evidence, not the implementation. For each slice it tracks the Architect's scope, the exact Builder commit, test results, Alicia's checkpoint, Reviewer status, approved findings, and the follow-up commit. Git and the shared documents remain authoritative when a thread summary disagrees with repository state.
+
+Reviewer feedback reaches the Builder through a self-contained handoff:
+
+1. The Reviewer names the exact reviewed commit or diff range and reports findings by severity, with file and line references, optional improvements, and residual testing risk.
+2. The Coordinator reads the completed review and presents it to Alicia. Alicia decides which optional improvements are approved; correctness findings remain release blockers until resolved or explicitly rejected with a recorded reason.
+3. The Coordinator sends the Builder the exact reviewed reference plus the full approved findings. The message contains everything needed to work; the Builder never depends on the Reviewer's conversation history.
+4. The Builder fixes only those findings, reruns the relevant tests, and creates a new focused `Builder:` commit.
+5. The Coordinator asks the Reviewer to inspect the exact follow-up diff, then records the slice as accepted only after the review is clear and Alicia completes the checkpoint.
+
+Use this handoff shape:
+
+```text
+Address the approved findings from review of <commit>:
+
+<full findings with severity and file/line references>
+
+Preserve the original slice scope. Run the relevant tests and create one
+focused commit whose subject starts with `Builder:`. Stop after reporting
+the new commit and test results.
+```
 
 ## Branches and worktrees
 
