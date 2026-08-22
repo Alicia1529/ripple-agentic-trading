@@ -22,3 +22,4 @@ Remaining, roughly in dependency order:
 
 - Design phase: `PROPOSAL.md`, `docs/ARCHITECTURE.md`, `docs/DECISIONS.md` written and internally consistent.
 - Repo reorganized: `docs/archive/` holds the two original independent draft proposals (Claude's and Codex's) plus the comparison research that synthesized them — superseded, kept for history only.
+- Agent collaboration entry points consolidated: `AGENTS.md` and `CLAUDE.md` are thin indexes into shared docs; `docs/INVARIANTS.md` is the common correctness checklist.

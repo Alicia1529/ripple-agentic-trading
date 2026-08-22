@@ -40,4 +40,4 @@ Not yet implemented — this section will describe how to replay a specific day'
 
 ## Recovery
 
-Not yet implemented — this section will describe what to do after a crashed or partially-completed Execution Run (see the idempotency requirement in `docs/DECISIONS.md` D6 and the reconciliation check above), and how to confirm the system has recovered before letting the next scheduled cycle run.
+Not yet implemented — this section will describe what to do after a crashed or partially-completed Execution Run (including broker reconciliation before any retry), and how to confirm the system has recovered before letting the next scheduled cycle run. The concrete idempotency design remains Phase 0 work and must be recorded in `docs/DECISIONS.md` when chosen.

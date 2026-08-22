@@ -26,6 +26,7 @@ The person running this expects near-zero ongoing maintenance time going forward
 ## Where to go next
 
 - Building or reviewing code: read `docs/ARCHITECTURE.md` (current system design) and `docs/DECISIONS.md` (why it's built this way) before touching anything.
+- Safety and correctness constraints: read `docs/INVARIANTS.md`.
 - Current implementation status: `docs/TODO.md`.
 - Operational procedures (kill switch, what to do when notified, deploy/debug/recovery): `docs/RUNBOOK.md`.
 - Historical drafts that led here (two independent proposals plus the research that reconciled them, all superseded): `docs/archive/`.

@@ -11,6 +11,7 @@ Not financial advice. Read [`PROPOSAL.md`](PROPOSAL.md) for what this is and why
 | [`PROPOSAL.md`](PROPOSAL.md) | What this is, why it exists, scope at a glance |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Current system design — read this before writing code |
 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | Append-only log of why each design choice was made |
+| [`docs/INVARIANTS.md`](docs/INVARIANTS.md) | Non-negotiable system constraints and review checklist |
 | [`docs/TODO.md`](docs/TODO.md) | Current implementation status |
 | [`docs/RUNBOOK.md`](docs/RUNBOOK.md) | Kill switch, what to do when notified, deploy/debug/recovery |
 | [`docs/archive/`](docs/archive/) | Superseded early drafts, kept for history only |
