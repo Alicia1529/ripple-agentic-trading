@@ -50,6 +50,12 @@ Append-only decision log (ADR-style). Each entry records what was decided and wh
 
 **Why:** Earnings and other market-moving news are often released after the close — sometimes hours after, not right at 4:00. A 15-minute buffer risks running the day's analysis on an incomplete picture; 9pm gives that information time to actually land first. This doesn't change anything else about D3 (still no same-evening order submission, still a separate next-morning Execution Run) — only how long the system waits before deciding.
 
+## D3c — Idempotency design
+
+**Decision:** The window-polling scheduler (D10a) can in principle trigger a Decision or Execution Run more than once inside the same target window (crash-and-restart, overlapping poll, scheduler retry) — "at most once" is not automatic just because the design intends it, so it's made explicit: order `order_id`s are generated once at Decision Run time and never regenerated; a Decision Run no-ops if that account already has today's plan; an Execution Run checks its own persisted per-order state before submitting anything and persists "submitted" immediately after each individual order (not batched at the end); `order_id` is passed to the broker as a client order id / idempotency key if supported; a single-flight guard prevents two overlapping triggers from both acting.
+
+**Why:** Without this, a duplicate trigger could submit the same live order twice — a real financial risk, not a hypothetical one — or (for Decision Run) generate two different plans for the same day and leave it ambiguous which one is authoritative. This closes a gap `docs/RUNBOOK.md`'s Recovery section had flagged as open Phase 0 work without a concrete answer.
+
 ## D4 — Agent composition per account
 
 **Decision:** Within each account: 3 independent analysts scoring candidates + a PM agent aggregating their output (stronger model).
@@ -83,6 +89,12 @@ Append-only decision log (ADR-style). Each entry records what was decided and wh
 **Decision:** Risk rules live only in code, never in a prompt. Each live account runs its own independent risk-layer instance (parameters are identical, but state — today's order count, current drawdown — is per-account). Every intercepted/clipped instruction is logged as `{original instruction, rule triggered, actual action, account_id}`.
 
 **Why:** Non-negotiable design principle for the whole project — an LLM's output is a proposal, never an instruction the risk layer has to honor. This is also why the Decision-stage LLM session must never hold a tool capable of placing a live order (see `docs/ARCHITECTURE.md` "Execution must not be an LLM session"): if the model that reasons about the trade also holds the tool that executes it, the "code enforces it, not the prompt" guarantee degrades into "the prompt tells the model to behave," regardless of how deterministic the risk math itself is.
+
+## D6a — Daily loss circuit breaker widened to 5% (revises an earlier −1%)
+
+**Decision:** The daily loss circuit breaker is 5% of the account's own equity (unrealized + realized), not 1%.
+
+**Why:** The trading universe is narrow (~15–18 symbols) and at most 3 new positions open per day, so realistic concentration — and day-to-day account variance — is higher than a broadly diversified portfolio. A single ordinary bad day in one 20%-weighted position could push a −1% breaker past its threshold on pure noise, and since there's only one trading cycle per day (D3b), tripping it effectively cancels that day's only opportunity to open new positions — eroding the sample size the model-comparison analysis (see `docs/ARCHITECTURE.md` "Baseline & benchmark") depends on. The daily breaker's actual job is catching an acute malfunction, not absorbing ordinary volatility — the 10%/15% cumulative-drawdown tiers already exist to catch sustained bad performance. This lands back on the original draft's 5% figure, but under a materially different context than that draft assumed: no manual confirmation gate in front of it (D7). Worth watching in practice — a single bad day can now use half the headroom before the 10% tier blocks new positions, so if 5% turns out to trip often once the system is live, that's a signal to revisit, not just live with.
 
 ## D7 — Capital deployment pace
 

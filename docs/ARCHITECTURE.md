@@ -108,6 +108,18 @@ The Execution Agent's job before placing an order is checking "does last night's
 
 **Existing-position stop-loss/take-profit recheck, independent of the day's OrderPlan:** every Execution Run also re-evaluates stop-loss/take-profit conditions on *all currently held positions* in that account, regardless of whether there's a new decision today or how compelling a new thesis sounds. Any triggered stop-loss/take-profit fires immediately per the risk layer rules. (See `docs/DECISIONS.md` D13 — this closes a gap found while reviewing FriesTrader.)
 
+### Idempotency
+
+The window-polling scheduler (see Timezone handling, above) means a Decision or Execution Run could in principle be triggered more than once inside the same target window — a crash-and-restart, an overlapping poll, or a scheduler retry. Nothing about "poll every 5–10 minutes and no-op outside the window" by itself prevents *two* in-window triggers from both doing real work, so idempotency has to be handled explicitly, not assumed:
+
+- Every order's `order_id` (see OrderPlan data model, above) is generated exactly once, at Decision Run time, and persisted with the plan — it is never regenerated on a later attempt.
+- Before running the full analyst/PM pipeline, a Decision Run checks whether that account already has a plan for today's decision date; if so, it no-ops rather than generating a second, possibly different plan.
+- Before submitting any order, an Execution Run checks its own persisted execution state for that specific `order_id` and skips it if already marked submitted/filled. State is persisted immediately after each individual order is submitted — not batched at the end of the plan — so a mid-plan crash resumes from the right order instead of resubmitting ones that already went through.
+- `order_id` is passed to the broker as the client order id / idempotency key if the order-placing tool accepts one (unconfirmed for Robinhood Agentic specifically — see Open Questions, below), as a second line of defense on top of the local state check.
+- A simple single-flight guard (an "already running" marker checked at the start of each invocation) prevents two overlapping triggers within the same polling window from both acting at once.
+
+This is what makes "at most once" actually true rather than just intended — see `docs/DECISIONS.md` D3c.
+
 ### Look-ahead bias: backtest/live timing must match
 
 **Rule:** if a signal was generated using Day T's closing price or other end-of-day data, neither a historical backtest nor a paper/live performance calculation may assume the fill happened at Day T's close. It must be modeled as filling near Day T+1's open.
@@ -159,7 +171,7 @@ Both live accounts apply every rule below independently, computed against that a
 |---|---|---|
 | Max position per symbol | 20% of the account's own equity | Clip the order to the cap |
 | Max new positions per day | 3 per account | Excess orders are dropped and logged |
-| Daily loss circuit breaker | −1% (unrealized + realized, against the account's own equity) | No new positions for the rest of the day; closing positions still allowed |
+| Daily loss circuit breaker | −5% (unrealized + realized, against the account's own equity) | No new positions for the rest of the day; closing positions still allowed |
 | Drawdown tier 1 | −10% from the account's high-water mark | Block new positions, generate a notification (the one case worth glancing at) |
 | Drawdown tier 2 | −15% from the account's high-water mark | That account shuts down entirely, requires manual restart; the other account is unaffected and keeps running independently |
 | Prohibited (v1) | Shorting, leverage, options | Rejected at the adapter layer, both accounts |
@@ -221,6 +233,7 @@ Real trading costs (commission, spread, slippage, regulatory fees) are logged au
 | Can two Robinhood Agentic accounts each bind an independent agent/API credential? | Robinhood allows up to 10 self-directed investing accounts, Agentic accounts included, but the account-to-agent relationship isn't documented | Needed for D2 (two accounts) to work as designed |
 | Are Claude Pro's / ChatGPT Plus's usage caps enough for daily 3-analyst+PM traffic (4 calls/account/day)? | Only third-party pricing aggregators checked so far, not verified line-by-line against openai.com/anthropic.com | Needed for the "~$0 marginal cost" assumption; metered API is the documented fallback |
 | Do Claude Code's / Codex's cloud scheduling features natively support IANA timezones, or only UTC/browser-local time? | No official documentation found either way | Doesn't block the design — the poll-and-self-check pattern (D10a) is correct regardless of the answer, this only affects how the scheduler itself gets configured |
+| Does Robinhood Agentic's order-placing tool accept a client-supplied order id / idempotency key? | Not confirmed from official documentation | Affects how strong the idempotency guarantee is (D3c) — local execution-state tracking works regardless, but a broker-side idempotency key would be a second line of defense against duplicate live orders |
 
 Resolve these with a small/paper-environment test before funding a live account.
 

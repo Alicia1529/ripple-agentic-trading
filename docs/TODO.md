@@ -13,6 +13,7 @@ Remaining, roughly in dependency order:
 - [ ] Adversarial test cases proving an LLM-authored instruction cannot bypass the risk engine (D6 in `docs/DECISIONS.md`)
 - [ ] Decision Run: Account A (Claude Code cloud routine) and Account B (Codex cloud Automation) against Alpaca paper first, single account for initial wiring
 - [ ] Execution Run: plain code, no LLM in the loop, per the "Execution must not be an LLM session" constraint
+- [ ] Idempotency (D3c): per-order persisted state checked before submission, `order_id` generated once and reused, single-flight guard against overlapping triggers
 - [ ] Timezone-safe scheduling (D10a): poll-and-self-check against `America/New_York`, not a fixed UTC cron
 - [ ] Mean-reversion baseline + SPY/QQQ bookkeeping, both marked at T+1 open (not signal-day close) per the look-ahead rule
 - [ ] Shadow pool scaffolding: register/list candidates, virtual fill simulator
