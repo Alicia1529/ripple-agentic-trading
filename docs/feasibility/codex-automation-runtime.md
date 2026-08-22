@@ -17,6 +17,7 @@ It prohibited edits, environment or secret access, network activity, broker tool
 | 2026-08-22 16:22:00 −07:00 | 2026-08-22T23:22:42Z | +42 s | exit 1; `ModuleNotFoundError: zoneinfo` before probe output | Not determined |
 | 2026-08-22 16:24:00 −07:00 | 2026-08-22T23:24:42Z | +42 s | exit 1; `ModuleNotFoundError: zoneinfo` before probe output | Not determined |
 | 2026-08-22 16:44:00 −07:00 | 2026-08-22T23:44:13Z | +13 s | exit 2; uv could not write `/Users/Alicia/.cache/uv` before Python startup | Not determined |
+| 2026-08-22 16:50:00 −07:00 | 2026-08-22T23:50:13Z | +13 s | exit 0; `uv run --no-cache` ran the probe with Python 3.12.13, EDT / -0400, and `broker_calls_attempted: 0` | `238b98b28b01e5499b87ee84f29f152b0d263460` |
 
 The second trigger occurred because the schedule was moved to a later minute while the first run had not yet appeared in the task list. It was paused as soon as those results were observed; the later third controlled rerun is recorded below.
 
@@ -36,7 +37,7 @@ The next controlled command is:
 uv run --no-cache python spikes/codex_scheduler_runtime_probe.py
 ```
 
-[`uv --no-cache`](https://docs.astral.sh/uv/concepts/cache/) uses a temporary cache for a single invocation. Locally, `/opt/homebrew/bin/uv run --no-cache python --version` selected Python 3.12.13 successfully. This leaves the host's system Python unchanged. That local command check and the earlier failed Automation runs do not prove a successful Automation run; the paused Automation has not yet run the no-cache command.
+[`uv --no-cache`](https://docs.astral.sh/uv/concepts/cache/) uses a temporary cache for a single invocation. The fourth controlled local Automation run used that exact command at the configured 16:50 PDT trigger. It started at 2026-08-22T23:50:13Z (+13 seconds), exited 0, ran Python 3.12.13, observed EDT / `-0400`, reported `broker_calls_attempted: 0`, and observed Git HEAD `238b98b28b01e5499b87ee84f29f152b0d263460`. The Automation was immediately paused after the result.
 
 ## What this demonstrates
 
@@ -44,10 +45,10 @@ uv run --no-cache python spikes/codex_scheduler_runtime_probe.py
 - No human interaction was required for either trigger.
 - The observed local unqualified `python3` runtime lacks the standard-library `zoneinfo` module, so the first two runs did not establish a usable scheduling runtime for the timezone probe.
 - The third Automation run demonstrated that its default uv cache is not writable; it did not start Python or the probe.
+- The fourth controlled local run proves that this local Automation can execute the read-only probe through `uv run --no-cache` without human interaction.
 
 ## What remains unproven
 
-- This is not evidence about cloud Automation, cloud checkout selection, secrets, usage, or any cloud runtime.
-- The probe has not reached its JSON output or Git lookup in an Automation run, so the observed commit and a successful read-only Automation runtime report remain unverified.
-- Three failed starts do not establish scheduler reliability, timing precision, or daylight-saving behavior.
+- This is not evidence about cloud Automation, cloud checkout selection, secrets, usage limits, or any cloud runtime.
+- One successful controlled run does not establish repeated-run reliability, timing precision, or daylight-saving behavior.
 - No broker operation, network operation, credential access, or production scheduling behavior was tested.
