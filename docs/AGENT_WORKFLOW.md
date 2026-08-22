@@ -1,0 +1,137 @@
+# Multi-Agent Development Workflow
+
+Ripple supports development by independent Codex threads, Claude Code sessions, and future coding agents. The collaboration substrate is Git plus the shared project documentation—not a particular tool's conversation history.
+
+```text
+Thread/session = temporary engineer
+Repo           = shared organizational memory
+Branch         = version isolation
+Worktree       = filesystem/work-in-progress isolation
+```
+
+Give each thread or session one coherent task. Prefer several focused agents over one long-running conversation when the work separates cleanly. For example:
+
+```text
+Thread A — implement OrderPlan persistence
+Thread B — review execution idempotency
+Thread C — reason about architecture
+```
+
+These are independent agent instances governed by the same repository instructions and shared documents.
+
+## Sources of truth
+
+```text
+PROPOSAL.md
+    project goals, scope, and major design
+
+docs/ARCHITECTURE.md
+    current system architecture
+
+docs/INVARIANTS.md
+    correctness and safety rules that must never be violated
+
+docs/DECISIONS.md
+    durable architectural decisions and rejected alternatives
+
+docs/TODO.md
+    genuinely unfinished work and current implementation status
+
+AGENTS.md / CLAUDE.md
+    thin vendor-specific entrypoints into the shared docs
+
+thread/session prompt
+    current task and temporary role
+```
+
+Stable project knowledge belongs in these shared sources, not in vendor-specific instructions or agent-role files. Assign temporary roles through prompts; do not create files such as `AGENT_BUILDER.md`, `AGENT_REVIEWER.md`, or `AGENT_ARCHITECT.md`.
+
+## Starter prompts
+
+### Builder
+
+```text
+Act as the Builder for one scoped Ripple change: <task>.
+
+Read AGENTS.md or CLAUDE.md and every shared document it requires before editing. Identify the affected invariants. Implement the scoped change and add or update relevant tests. Run those tests and report the results. Preserve current architecture; if the task requires an architectural change, stop and make that change explicit rather than silently introducing it. Leave the branch in a reviewable state with a focused diff and clear commit(s).
+```
+
+### Reviewer
+
+```text
+Act as an independent Reviewer for Ripple branch/commit/diff: <reference>.
+
+Read AGENTS.md or CLAUDE.md and every shared document it requires. Initially review without modifying code. Separate correctness defects from optional improvements, and cite concrete files and lines. Inspect failure modes, missing tests, concurrency, idempotency, and violations of docs/INVARIANTS.md in particular. Report findings by severity; if there are no material findings, say so and name any residual testing risk.
+```
+
+### Architect
+
+```text
+Act as the Architect for this Ripple question: <question>.
+
+Read AGENTS.md or CLAUDE.md and every shared document it requires. Reason before implementation. Identify affected invariants, interfaces, trade-offs, and failure modes; compare viable alternatives and state a recommendation. If a durable architectural decision is approved, append it to docs/DECISIONS.md and update the current design in docs/ARCHITECTURE.md. Do not claim implementation work is complete unless the repository proves it.
+```
+
+## Branches and worktrees
+
+Separate worktrees are not required merely because multiple threads exist. Sequential review or architecture work can use ordinary branches, and read-only agents can inspect an existing branch without their own worktree.
+
+When multiple agents modify files concurrently, give each one its own branch and worktree so their working directories and uncommitted changes cannot collide:
+
+```bash
+git worktree add ../ripple-order-plan -b feature/order-plan
+git worktree add ../ripple-review -b review/order-plan
+```
+
+The result is:
+
+```text
+ripple/                 main
+ripple-order-plan/      feature/order-plan
+ripple-review/          review/order-plan
+```
+
+Choose branch names that describe ownership. Before merging, review each diff, run the relevant tests, and resolve integration conflicts against the current sources of truth.
+
+## Handoff through durable artifacts
+
+Agents must not depend on another agent's conversation history. Completed work is communicated through:
+
+1. Code and tests.
+2. Commits and diffs.
+3. `docs/DECISIONS.md` for durable architectural decisions.
+4. `docs/TODO.md` only for genuinely unfinished work.
+
+Do not maintain append-only conversational `HANDOFF.md` logs. If work is complete, the code, tests, docs, and Git history are the handoff. If work is incomplete, record only the minimum current state needed for another agent to continue in `docs/TODO.md`.
+
+```text
+Agent
+  ↓
+code / tests / docs
+  ↓
+Git
+  ↓
+next independent Agent
+```
+
+This makes the engineering organization reproducible across tools:
+
+```text
+Role       → thread/session prompt
+Knowledge  → repo
+Ownership  → branch/worktree
+Handoff    → Git + shared docs
+Review     → independent thread/session
+```
+
+## Match process to risk
+
+Use multiple agents when independence improves the result, not as process overhead.
+
+| Risk | Examples | Recommended flow |
+|---|---|---|
+| Low | Reporting, formatting, simple utilities | One agent implements directly |
+| Medium | Schemas, experiment harness, data pipeline | One agent implements; another independently reviews |
+| High | Risk engine, broker execution, idempotency, scheduling, backtest timing semantics | Architecture pass → implementation → adversarial independent review → regression tests |
+
+Regardless of risk level, one agent owns one coherent task, respects `docs/INVARIANTS.md`, and leaves a verifiable repository state for the next independent agent.

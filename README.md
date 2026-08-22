@@ -14,7 +14,12 @@ Not financial advice. Read [`PROPOSAL.md`](PROPOSAL.md) for what this is and why
 | [`docs/INVARIANTS.md`](docs/INVARIANTS.md) | Non-negotiable system constraints and review checklist |
 | [`docs/TODO.md`](docs/TODO.md) | Current implementation status |
 | [`docs/RUNBOOK.md`](docs/RUNBOOK.md) | Kill switch, what to do when notified, deploy/debug/recovery |
+| [`docs/AGENT_WORKFLOW.md`](docs/AGENT_WORKFLOW.md) | Multi-agent development workflow and starter role prompts |
 | [`docs/archive/`](docs/archive/) | Superseded early drafts, kept for history only |
+
+## Developing with AI agents
+
+Ripple is designed for independent Codex threads, Claude Code sessions, or other coding agents. Git and the shared project docs carry knowledge and handoffs across temporary sessions; roles belong in task prompts, while concurrent code-writing agents use separate branches and worktrees. See [`docs/AGENT_WORKFLOW.md`](docs/AGENT_WORKFLOW.md).
 
 ## Status
 
