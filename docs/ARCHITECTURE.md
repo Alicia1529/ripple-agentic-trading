@@ -25,8 +25,10 @@ Account A, Account B, and the shadow pool share the same market-data snapshot mo
 
 ```
 4:00 PM ET   Market close
-4:00–4:15    Wait for the day's market data to settle (avoid still-being-revised data)
-4:15–4:30    Decision Run (three parallel schedules, all reading the same market snapshot):
+4:00–9:00    Wait — earnings and other market-moving news often come out after the close
+             (sometimes hours after), so the gap gives that information time to land before
+             the day's decision is made, rather than analyzing a still-incomplete picture
+9:00 PM ET   Decision Run (three parallel schedules, all reading the same market snapshot):
              - Account A: Claude Code cloud scheduled routine
              - Account B: Codex cloud Automation
              - Shadow pool: GitHub Actions
@@ -60,10 +62,10 @@ The output of the decision stage is a persisted, **immutable once written** `Ord
 
 ```yaml
 order_plan_id: uuid
-decision_time: 2026-08-21T16:25:00-04:00     # ET
+decision_time: 2026-08-21T21:05:00-04:00     # ET
 account_id: account_A                          # account_B / shadow:mean_reversion / shadow:spy_qqq / shadow:candidate_C ...
 model_config_version: config_A_v3              # for reproducibility
-market_snapshot_as_of: 2026-08-21T16:00:00-04:00
+market_snapshot_as_of: 2026-08-21T21:00:00-04:00   # close-price data as of 4pm, snapshotted at 9pm to give post-close news/earnings time to land
 status: pending                                 # pending -> executed | aborted | partially_executed
 
 target_portfolio:

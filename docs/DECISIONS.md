@@ -44,6 +44,12 @@ Append-only decision log (ADR-style). Each entry records what was decided and wh
 
 **Why:** There's real overnight gap risk between decision time and next-day execution; a limit order bounds the worst acceptable fill price. Phase 0 optimizes for deterministic, debuggable behavior over execution sophistication.
 
+## D3b — Decision Run moved from ~4:15pm to 9:00pm ET (supersedes the original post-close timing in D3)
+
+**Decision:** The Decision Run happens at 9:00pm ET, not 15 minutes after close. The wait between close and decision widens from ~15 minutes to ~5 hours.
+
+**Why:** Earnings and other market-moving news are often released after the close — sometimes hours after, not right at 4:00. A 15-minute buffer risks running the day's analysis on an incomplete picture; 9pm gives that information time to actually land first. This doesn't change anything else about D3 (still no same-evening order submission, still a separate next-morning Execution Run) — only how long the system waits before deciding.
+
 ## D4 — Agent composition per account
 
 **Decision:** Within each account: 3 independent analysts scoring candidates + a PM agent aggregating their output (stronger model).
@@ -61,6 +67,16 @@ Append-only decision log (ADR-style). Each entry records what was decided and wh
 **Decision:** A candidate graduates only if it (1) has run in the shadow pool for at least 8 weeks continuously, (2) has simultaneously beaten *both* the mean-reversion baseline and SPY/QQQ over that same window, and (3) has no material execution bugs and a clean risk-layer record. Meeting the gate only produces a notification — the system never opens an account or deposits capital on its own; that decision is Alicia's alone.
 
 **Why:** The 8-week window matches the Phase 1 paper gate so there's one consistent bar, not two. Requiring it to beat *both* benchmarks (not just one) guards against a candidate that only looks good relative to a weak comparison. Opening a new funded account is a real financial decision and deliberately stays a rare, human-approved event rather than something automated — consistent with "Alicia carries zero routine operational load," since this is an occasional decision, not routine toil.
+
+## D5b — TradingAgents added as a shadow-pool candidate
+
+**Decision:** [TauricResearch/TradingAgents](https://github.com/TauricResearch/TradingAgents) is added to the shadow pool (D5) as a candidate — not adopted as Account A/B's core architecture, and not a replacement for the 3-analyst + PM design (D4).
+
+**Why:** Its actual pipeline (5 analysts + bull/bear researcher debate + trader + a 3-way risk debate + portfolio manager) is exactly the "debate-style multi-agent architecture" already deferred to a future ablation rather than v1 (see `docs/ARCHITECTURE.md` "Explicitly out of scope for v1"). Adopting it wholesale into the live accounts would silently reopen that decision and would also add enough LLM call volume to put real pressure on the Claude Pro / ChatGPT Plus usage caps the ~$0-marginal-cost assumption in D2a depends on. The shadow pool is exactly where "does a heavier architecture actually do better" belongs — it costs nothing to the live accounts either way, and this is precisely the debate-style-architecture question the pool exists to eventually answer.
+
+**Compatibility check:** its repo (Apache 2.0 licensed) has no broker/execution code anywhere — the `Trader` role's output is a structured `TraderProposal` (action/reasoning/optional entry price, stop-loss, sizing), and its own system prompt explicitly withholds external tools. This is consistent with D6 without needing to strip anything out. It's invoked per-symbol (`propagate(ticker, date)`), which fits inside our Decision Run's per-symbol loop rather than competing with our own scheduling.
+
+**Remaining work before this candidate actually runs:** an adapter from `TraderProposal`'s shape (categorical action, no calibrated confidence score) to our analyst/OrderPlan schema (`score∈[-1,1]`, `confidence∈[0,1]`); its LLM cost is metered API like other shadow candidates, not covered by either live account's subscription.
 
 ## D6 — Risk layer authority
 
@@ -110,5 +126,6 @@ Append-only decision log (ADR-style). Each entry records what was decided and wh
 
 ## Open-source references consulted
 
-- [TauricResearch/TradingAgents](https://github.com/TauricResearch/TradingAgents) and [virattt/ai-hedge-fund](https://github.com/virattt/ai-hedge-fund) — multi-agent analyst/PM architecture references.
+- [TauricResearch/TradingAgents](https://github.com/TauricResearch/TradingAgents) — started as an architecture reference, later added as an actual shadow-pool candidate (see D5b).
+- [virattt/ai-hedge-fund](https://github.com/virattt/ai-hedge-fund) — multi-agent analyst/PM architecture reference.
 - [YizhiSong/FriesTrader](https://github.com/YizhiSong/FriesTrader) — a real, deployed Robinhood Agentic trading agent with a similar decision/execution split and mechanical risk-rule scripts. Read, not forked. Its per-cycle stop-loss/take-profit recheck and cross-account wash-sale guard directly informed the two entries above. One meaningful difference worth being deliberate about: its "mechanical rules the model cannot override" claim covers the risk *arithmetic* (deterministic scripts), but the actual gate on whether an order gets placed is enforced by prompt instructions to the same LLM session that holds the order-placing tool — not a code-level barrier the LLM has no path around. This project's D6 is intentionally stricter: the Decision-stage LLM is never given an order-placing tool at all.

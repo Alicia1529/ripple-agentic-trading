@@ -22,4 +22,4 @@ Design complete, implementation not started. See `docs/TODO.md`.
 
 ## License
 
-No license has been chosen yet. Until one is added, standard copyright applies — the code is not licensed for reuse.
+[MIT](LICENSE) — same spirit as the other reference projects this borrows ideas from (see `docs/DECISIONS.md`): read it, adapt it, don't blindly run it against real money.
