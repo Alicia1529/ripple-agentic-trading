@@ -1,49 +1,72 @@
 import io
+import importlib.util
 import json
+import sys
 import unittest
 from contextlib import asynccontextmanager, redirect_stderr, redirect_stdout
+from pathlib import Path
 
-from spikes import robinhood_mcp_auth_probe as probe
-
-
-VALID_ENV = {
-    probe.URL_ENV: "https://agent.robinhood.com/mcp/trading",
-    probe.TOKEN_ENV: "test-secret-that-must-not-leak",
-}
+import httpx2
 
 
-class FakeSession:
-    def __init__(self, *, initialize_result=None, tools_result=None, error=None):
-        self.operations = []
-        self.initialize_result = initialize_result or {"protocolVersion": "2025-06-18"}
-        self.tools_result = tools_result or {"tools": [{"name": "get_accounts"}]}
-        self.error = error
-
-    async def initialize(self):
-        self.operations.append("initialize")
-        if self.error:
-            raise self.error
-        return self.initialize_result
-
-    async def list_tools(self):
-        self.operations.append("tools/list")
-        return self.tools_result
-
-    def __getattr__(self, name):
-        self.operations.append(name)
-        raise AssertionError("unexpected broker operation")
+PROBE_PATH = Path(__file__).resolve().parents[2] / "spikes" / "robinhood_mcp_auth_probe.py"
+PROBE_SPEC = importlib.util.spec_from_file_location("ripple_robinhood_mcp_auth_probe", PROBE_PATH)
+probe = importlib.util.module_from_spec(PROBE_SPEC)
+sys.modules[PROBE_SPEC.name] = probe
+PROBE_SPEC.loader.exec_module(probe)
 
 
-class FakeHttpFailure(Exception):
-    def __init__(self, status_code, message):
-        super().__init__(message)
-        self.response = type("Response", (), {"status_code": status_code})()
+VALID_ENV = {probe.URL_ENV: probe.EXPECTED_URL}
 
 
-def factory_for(session):
+class FakeMcpTransport:
+    def __init__(self, failure_status=None, malformed=False, exception=None):
+        self.calls = []
+        self.failure_status = failure_status
+        self.malformed = malformed
+        self.exception = exception
+
+    async def handle(self, request):
+        self.calls.append(request)
+        if self.exception:
+            raise self.exception
+        if self.failure_status:
+            headers = {"content-type": "application/json"}
+            if 300 <= self.failure_status < 400:
+                headers["location"] = "https://interaction.example/authorize"
+            return httpx2.Response(self.failure_status, headers=headers)
+
+        message = json.loads(request.content.decode())
+        method = message["method"]
+        if method == "initialize":
+            result = {
+                "protocolVersion": "2025-11-25",
+                "capabilities": {},
+                "serverInfo": {"name": "fake", "version": "1.0"},
+            }
+        elif method == "notifications/initialized":
+            return httpx2.Response(202)
+        elif method == "tools/list":
+            result = "malformed" if self.malformed else {
+                "tools": [{"name": "get_accounts", "inputSchema": {"type": "object"}}]
+            }
+        else:
+            raise AssertionError("unexpected MCP method: " + method)
+        return httpx2.Response(
+            200,
+            headers={"content-type": "application/json"},
+            json={"jsonrpc": "2.0", "id": message.get("id"), "result": result},
+        )
+
+    def transport(self):
+        return httpx2.MockTransport(self.handle)
+
+
+def session_factory(transport):
     @asynccontextmanager
-    async def factory(_config):
-        yield session
+    async def factory(config):
+        async with probe.mcp_session(config, http_transport=transport.transport()) as session:
+            yield session
 
     return factory
 
@@ -57,108 +80,92 @@ def invoke_main(environ, factory, argv=()):
 
 
 class RobinhoodMcpAuthProbeTests(unittest.TestCase):
-    def test_success_emits_sanitized_json_and_only_discovers_tools(self):
-        session = FakeSession(
-            tools_result={
-                "tools": [
-                    {"name": "get_accounts"},
-                    {"name": "place_equity_order"},
-                ]
-            }
-        )
+    def test_transport_only_initializes_and_lists_tools_without_delete_or_tool_call(self):
+        transport = FakeMcpTransport()
 
-        status, stdout, stderr = invoke_main(VALID_ENV, factory_for(session))
+        status, stdout, stderr = invoke_main(VALID_ENV, session_factory(transport))
 
-        self.assertEqual(status, 0)
+        self.assertEqual(status, 1)
         self.assertEqual(
             json.loads(stdout),
             {
-                "ok": True,
-                "operation": "initialize+tools/list",
-                "protocol_version": "2025-06-18",
+                "authentication": "not_demonstrated",
+                "headless_authentication_proven": False,
+                "outcome": "protocol_reachable_tool_discovery",
+                "protocol_version": "2025-11-25",
                 "server": "robinhood_trading",
-                "tool_count": 2,
+                "tool_count": 1,
             },
         )
         self.assertEqual(stderr, "")
-        self.assertEqual(session.operations, ["initialize", "tools/list"])
+        self.assertEqual([request.method for request in transport.calls], ["POST", "POST", "POST"])
+        self.assertEqual(
+            [json.loads(request.content.decode())["method"] for request in transport.calls],
+            ["initialize", "notifications/initialized", "tools/list"],
+        )
+        self.assertNotIn("authorization", transport.calls[0].headers)
+        self.assertNotIn("DELETE", [request.method for request in transport.calls])
+        self.assertNotIn(
+            "tools/call",
+            [json.loads(request.content.decode())["method"] for request in transport.calls],
+        )
 
-    def test_missing_config_fails_closed_without_opening_a_session(self):
-        opened = False
-
-        @asynccontextmanager
-        async def factory(_config):
-            nonlocal opened
-            opened = True
-            yield FakeSession()
-
-        status, stdout, stderr = invoke_main({}, factory)
-
-        self.assertEqual(status, 1)
-        self.assertEqual(json.loads(stdout)["error"], "missing_or_invalid_config")
-        self.assertEqual(stderr, "")
-        self.assertFalse(opened)
-
-    def test_plaintext_command_line_arguments_are_rejected_and_redacted(self):
-        secret = VALID_ENV[probe.TOKEN_ENV]
-        session = FakeSession()
-
-        status, stdout, stderr = invoke_main(VALID_ENV, factory_for(session), argv=(secret,))
-
-        self.assertEqual(status, 1)
-        self.assertEqual(json.loads(stdout)["error"], "arguments_not_allowed")
-        self.assertNotIn(secret, stdout)
-        self.assertNotIn(secret, stderr)
-        self.assertEqual(session.operations, [])
-
-    def test_auth_failure_redacts_secret_from_stdout_and_stderr(self):
-        secret = VALID_ENV[probe.TOKEN_ENV]
-        session = FakeSession(error=RuntimeError("authentication failed for " + secret))
-
-        status, stdout, stderr = invoke_main(VALID_ENV, factory_for(session))
-
-        self.assertEqual(status, 1)
-        self.assertNotIn(secret, stdout)
-        self.assertNotIn(secret, stderr)
-        self.assertEqual(json.loads(stdout)["error"], "connection_or_authentication_failure")
-        self.assertEqual(session.operations, ["initialize"])
-
-    def test_http_auth_and_interaction_failures_are_distinguished_and_redacted(self):
-        secret = VALID_ENV[probe.TOKEN_ENV]
-        for status_code, expected_error in (
-            (302, "interaction_required"),
-            (401, "authentication_failure"),
+    def test_authentication_and_interaction_requirements_fail_closed_without_redirects(self):
+        for status_code, outcome in (
+            (401, "authentication_required"),
+            (302, "interactive_authentication_required"),
         ):
             with self.subTest(status_code=status_code):
-                session = FakeSession(error=FakeHttpFailure(status_code, secret))
+                transport = FakeMcpTransport(failure_status=status_code)
 
-                status, stdout, stderr = invoke_main(VALID_ENV, factory_for(session))
+                status, stdout, stderr = invoke_main(VALID_ENV, session_factory(transport))
 
                 self.assertEqual(status, 1)
-                self.assertEqual(json.loads(stdout)["error"], expected_error)
-                self.assertNotIn(secret, stdout)
-                self.assertNotIn(secret, stderr)
-                self.assertEqual(session.operations, ["initialize"])
+                self.assertEqual(json.loads(stdout)["outcome"], outcome)
+                self.assertEqual(stderr, "")
+                self.assertEqual(len(transport.calls), 1)
+                self.assertEqual(transport.calls[0].url.host, "agent.robinhood.com")
+                self.assertEqual(transport.calls[0].method, "POST")
 
-    def test_malformed_tools_response_fails_closed(self):
-        session = FakeSession(tools_result={"tools": "not-a-list"})
+    def test_malformed_response_fails_closed(self):
+        transport = FakeMcpTransport(malformed=True)
 
-        status, stdout, _stderr = invoke_main(VALID_ENV, factory_for(session))
-
-        self.assertEqual(status, 1)
-        self.assertEqual(json.loads(stdout)["error"], "malformed_protocol_response")
-        self.assertEqual(session.operations, ["initialize", "tools/list"])
-
-    def test_unexpected_endpoint_fails_closed(self):
-        invalid_env = dict(VALID_ENV)
-        invalid_env[probe.URL_ENV] = "https://example.com/mcp"
-        session = FakeSession()
-
-        status, stdout, _stderr = invoke_main(invalid_env, factory_for(session))
+        status, stdout, _stderr = invoke_main(VALID_ENV, session_factory(transport))
 
         self.assertEqual(status, 1)
-        self.assertEqual(json.loads(stdout)["error"], "missing_or_invalid_config")
-        self.assertEqual(session.operations, [])
+        self.assertEqual(json.loads(stdout)["outcome"], "malformed_or_invalid_protocol_response")
+
+    def test_exception_messages_cannot_reach_stdout_or_stderr(self):
+        secret = "secret-that-must-not-leak"
+        transport = FakeMcpTransport(exception=RuntimeError("failure " + secret))
+
+        status, stdout, stderr = invoke_main(VALID_ENV, session_factory(transport))
+
+        self.assertEqual(status, 1)
+        self.assertNotIn(secret, stdout)
+        self.assertNotIn(secret, stderr)
+        self.assertEqual(json.loads(stdout)["outcome"], "connection_or_protocol_failure")
+
+    def test_connection_failure_fails_closed(self):
+        transport = FakeMcpTransport(exception=OSError("network unavailable"))
+
+        status, stdout, _stderr = invoke_main(VALID_ENV, session_factory(transport))
+
+        self.assertEqual(status, 1)
+        self.assertEqual(json.loads(stdout)["outcome"], "connection_failure")
+
+    def test_invalid_config_and_command_line_arguments_fail_closed(self):
+        transport = FakeMcpTransport()
+
+        status, stdout, _stderr = invoke_main({}, session_factory(transport))
+        self.assertEqual(status, 1)
+        self.assertEqual(json.loads(stdout)["outcome"], "missing_or_invalid_config")
+        self.assertEqual(transport.calls, [])
+
+        status, stdout, _stderr = invoke_main(VALID_ENV, session_factory(transport), argv=("secret",))
+        self.assertEqual(status, 1)
+        self.assertEqual(json.loads(stdout)["outcome"], "arguments_not_allowed")
+        self.assertEqual(transport.calls, [])
 
 
 if __name__ == "__main__":

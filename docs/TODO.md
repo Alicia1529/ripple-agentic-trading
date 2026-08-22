@@ -2,10 +2,11 @@
 
 Living status doc — this reflects the *current* state of in-flight work, not a growing history. When a section is done, either delete it or fold it into a one-line note under "Recently completed"; don't leave finished work cluttering this file. If there's something a future session genuinely needs to pick up mid-task, that unfinished-work state belongs here, in enough detail that the next agent doesn't have to re-derive it from git log or chat history.
 
-Status: **NOT STARTED.** The architecture draft exists, but foundational broker and scheduler assumptions remain unverified. No code exists yet.
+Status: **PHASE −1 IN PROGRESS.** The architecture draft exists, and a safe, read-only Robinhood MCP probe scaffold now exists. Headless authentication, credential refresh, and broker feasibility remain unverified.
 
 ## Phase −1 — feasibility
 
+- In progress: a disposable Robinhood MCP probe checks unauthenticated endpoint/protocol reachability and fails closed on authentication or interaction requirements. It does not hold credentials, invoke broker tools, or prove headless authentication/refresh.
 - [ ] Prove a plain, non-agentic runner can authenticate to Robinhood Trading MCP headlessly and refresh credentials without routine human action
 - [ ] Prove explicit account selection and two independent Agentic-account bindings
 - [ ] Capture the exact review/place/cancel/history schemas, including fractional/dollar-order behavior
