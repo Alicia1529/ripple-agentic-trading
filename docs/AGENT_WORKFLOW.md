@@ -72,6 +72,32 @@ Act as the Architect for this Ripple question: <question>.
 Read AGENTS.md or CLAUDE.md first, then read every document it requires, including docs/AGENT_WORKFLOW.md. Reason before implementation. Identify affected invariants, interfaces, trade-offs, and failure modes; compare viable alternatives and state a recommendation. If a durable architectural decision is approved, append it to docs/DECISIONS.md and update the current design in docs/ARCHITECTURE.md. Do not claim implementation work is complete unless the repository proves it.
 ```
 
+## Learning-first incremental loop
+
+Use this sequential loop when Alicia wants to understand and inspect every code change:
+
+```text
+Architect defines the smallest useful slice
+        ↓
+Builder implements and tests one focused commit
+        ↓
+Alicia inspects the diff and asks questions
+        ↓
+Reviewer reviews that exact commit without editing
+        ↓
+Builder addresses approved findings in another focused commit
+        ↓
+Alicia inspects the result before the next slice begins
+```
+
+1. **Architect:** Select the first or next smallest useful slice. Explain why it comes next, what is in and out of scope, affected interfaces and invariants, acceptance criteria, and the tests that will prove completion. Finish with a concrete Builder-ready task. Architecture work is also required when a slice exposes a durable design choice; routine implementation details do not need a separate architecture pass.
+2. **Builder:** Before editing, state the intended files, behavior, and verification. Implement only the approved slice, run the relevant tests, and create one focused commit. Stop after reporting the commit and test results so Alicia can inspect the diff.
+3. **Alicia checkpoint:** Inspect the exact commit and ask questions until the behavior and implementation are clear. The next slice waits for this checkpoint.
+4. **Reviewer:** Review the exact commit or diff read-only. Report correctness defects separately from optional improvements, with concrete file and line references. Do not modify the implementation during the initial review.
+5. **Fix and close:** The Builder implements only the approved review findings in a new focused commit and reruns the relevant tests. Alicia inspects that follow-up diff before accepting the slice or returning to the Architect for the next one.
+
+Run these roles sequentially when they share one working directory. Parallel modifying agents require separate branches and worktrees as described below.
+
 ## Branches and worktrees
 
 Separate worktrees are not required merely because multiple threads exist. Sequential review or architecture work can use ordinary branches, and read-only agents can inspect an existing branch without their own worktree.
