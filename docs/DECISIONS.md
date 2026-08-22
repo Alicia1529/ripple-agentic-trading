@@ -174,6 +174,12 @@ Append-only decision log (ADR-style). Each entry records what was decided and wh
 
 **Open question, not yet verified:** whether X is worth integrating at all is undecided, pending its API access tier and pricing (X's free tier has historically been write-only / heavily rate-limited for read/search, with paid tiers reportedly ~$100/month and up — not confirmed against x.com's current developer pricing). If a paid tier turns out to be required, that's a separate cost/benefit call, not something assumed now. Added to Phase −1 feasibility verification (see `docs/ARCHITECTURE.md` Open Questions and `docs/TODO.md`).
 
+## D20 — Repository Python runtime is 3.12 via uv
+
+**Decision:** Ripple's default repository Python is the latest available Python 3.12 patch release selected by the root `.python-version` file. Local and scheduled repository commands enter that environment through `uv run`; they do not rely on or replace the host's unqualified `python3`.
+
+**Why:** The first two local Codex Automation probes invoked macOS's Python 3.8.1 and failed before producing evidence because that runtime does not include `zoneinfo`. Pinning the repository's minor version makes timezone behavior and test execution reproducible without mutating an operating-system-managed interpreter. The Automation path still needs a successful rerun before scheduler runtime compatibility is considered proven.
+
 ## Open-source references consulted
 
 - [TauricResearch/TradingAgents](https://github.com/TauricResearch/TradingAgents) — started as an architecture reference, later added as an actual shadow-pool candidate (see D5b).

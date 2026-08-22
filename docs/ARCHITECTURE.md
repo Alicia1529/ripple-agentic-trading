@@ -241,6 +241,8 @@ The original 8-week rule is an **operational-stability gate only**: no missed or
 
 GitHub Actions documents that scheduled jobs can be delayed under high load and can be dropped. This applies to the Execution Run and the shadow pool's Decision Run. Account A/B's Decision Runs sit on Claude Code's / Codex's own cloud scheduling, whose reliability is unverified (see Open Questions) and is treated with the same conservative assumption.
 
+Repository Python commands target Python 3.12, selected by the root `.python-version` file and entered through `uv run`. Scheduled commands must use that project environment rather than assuming the runner's unqualified `python3` is compatible. This is a repository/runtime requirement, not a request to replace the host operating system's Python.
+
 The scheduler is only a trigger. The transactional store decides whether a cycle may run, leases prevent overlap, and price/data-freshness checks decide whether a delayed execution is still valid. A missed-run monitor must use an independent heartbeat path rather than relying only on the same scheduler it monitors.
 
 If the Execution Run itself is delayed, the price-tolerance check (see above) provides natural protection: the longer the delay, the more likely the price has moved outside the tolerance band, so the system leans toward aborting rather than forcing a stale plan through. An abort just waits for the next normal decision run — no catch-up, no backfilled orders.

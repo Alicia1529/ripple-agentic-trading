@@ -7,7 +7,7 @@ Status: **PHASE −1 IN PROGRESS.** The architecture draft exists, and a safe, r
 ## Phase −1 — feasibility
 
 - In progress: a disposable Robinhood MCP probe checks unauthenticated endpoint/protocol reachability and fails closed on authentication or interaction requirements. It does not hold credentials, invoke broker tools, or prove headless authentication/refresh.
-- Partial: a local Codex Automation independently triggered the read-only scheduler probe, but its `python3` runtime lacked `zoneinfo`; successful runtime, cloud Automation, secrets, usage, and DST behavior remain unverified.
+- Partial: a local Codex Automation independently triggered the read-only scheduler probe, but its unqualified `python3` runtime lacked `zoneinfo`. The repository now selects Python 3.12 for `uv run`; a successful Automation rerun plus cloud Automation, secrets, usage, and DST behavior remain unverified.
 - [ ] Prove a plain, non-agentic runner can authenticate to Robinhood Trading MCP headlessly and refresh credentials without routine human action
 - [ ] Prove explicit account selection and two independent Agentic-account bindings
 - [ ] Capture the exact review/place/cancel/history schemas, including fractional/dollar-order behavior
