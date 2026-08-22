@@ -4,16 +4,17 @@
 
 ## What this is
 
-A small, real-money trading system built to learn agent-system design, not to make money. Two live Robinhood Agentic accounts each run an independent 3-analyst + PM pipeline — one powered by Claude, one by OpenAI — as a genuine, live A/B comparison of model capability under identical architecture, risk rules, and trading universe. Alongside them, an open "shadow" pool of paper candidates (starting with a deterministic mean-reversion strategy and SPY/QQQ buy-and-hold) provides the baseline needed to tell whether the multi-agent approach — or the choice of model — is actually adding value, versus market beta or luck.
+A small, real-money trading system built primarily to learn agent-system design and to test whether the system can produce durable, risk-adjusted returns. Two live Robinhood Agentic accounts each run an independent 3-analyst + PM pipeline — one powered by Claude, one by OpenAI — as a genuine, live A/B comparison of model capability under identical architecture, risk rules, and trading universe. Alongside them, an open "shadow" pool of paper candidates (starting with a deterministic mean-reversion strategy and SPY/QQQ buy-and-hold) provides the baseline needed to tell whether the multi-agent approach — or the choice of model — is actually adding value, versus market beta or luck.
 
 ## Why
 
-The capital at stake ($500–1000 per live account) is financially irrelevant. The actual goals:
+The initial $500–1000 per live account is a deliberately small validation allocation, not a fixed lifetime ceiling or play money. The goals are:
 
 1. Hands-on practice building an "untrusted LLM decision layer + deterministic, code-enforced risk layer" system — the same structural problem as production LLM-safety system design.
 2. A genuinely comparable answer to "does any of this beat doing nothing" — which requires running a real baseline alongside the live accounts, not just trusting the agent's own numbers.
+3. If live results eventually demonstrate stable, attributable profitability after costs and within the risk rules, selectively increase account funding by a manually approved amount. The system never increases funding on its own.
 
-The person running this expects near-zero ongoing maintenance time going forward, so the entire design is built around **zero routine operational load**: it runs unattended, and only ever interrupts for rare, high-stakes events (a risk breaker firing, a shadow candidate clearing its graduation gate) — never for daily or weekly manual chores.
+The person running this expects near-zero ongoing maintenance time going forward, so the entire design is built around **zero routine operational load**: it runs unattended, and only ever interrupts for rare, high-stakes events (a risk breaker firing, a shadow candidate clearing its graduation gate, or a live account becoming eligible for a capital review) — never for daily or weekly manual chores.
 
 ## Scope at a glance
 

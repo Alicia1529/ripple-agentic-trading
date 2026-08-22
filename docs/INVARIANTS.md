@@ -11,7 +11,7 @@ These are the non-negotiable constraints already established by `PROPOSAL.md`, `
 7. **Comparisons share controlled inputs.** Live accounts and shadow candidates use the same market-snapshot timing and trading universe while producing independent decisions.
 8. **Live accounts remain isolated.** Each live account has separate risk state, execution calls, and broker reconciliation; one account's failure or breaker does not silently change the other.
 9. **Credentials remain outside artifacts.** Secrets live only in approved secret stores or environment variables and never in the repository, an `OrderPlan`, or logs.
-10. **Funding and promotion remain human decisions.** A shadow candidate may trigger a graduation notification, but the system cannot open an account, deposit funds, or promote itself to live trading.
+10. **Funding, capital increases, and promotion remain human decisions.** A shadow candidate or live performance record may trigger a review, but the system cannot open an account, deposit funds, increase an account allocation, or promote itself to live trading.
 11. **An order is submitted at most once.** Per-order execution state is checked and persisted before and immediately after every broker submission, so an overlapping or retried trigger cannot resubmit an order that already went through.
 
 For implementation or review work, identify the affected invariants and add verification proportional to the risk. If a proposed change invalidates an invariant, record a new decision and update the shared source-of-truth documents instead of weakening an entry file or prompt.

@@ -136,6 +136,12 @@ Append-only decision log (ADR-style). Each entry records what was decided and wh
 
 **Why this changed:** The original Execution Agent design only revalidated the day's new `OrderPlan`; it had no independent check on existing positions. A convincing new thesis should never be able to cancel a stop-loss.
 
+## D14 — Initial funding is a validation allocation, not a permanent cap (supersedes the fixed-cap implication in D1, D2b, and D7)
+
+**Decision:** Each live account still starts with $500–1000, but that range is an initial real-money validation allocation rather than play money or a permanent ceiling. If an account later shows stable, attributable profitability after trading costs and while respecting the risk rules, Alicia may manually approve an appropriate funding increase. The system never deposits funds, increases an allocation, or relaxes risk controls automatically. The evidence threshold and amount of any increase must be reviewed explicitly before that increase rather than being inferred from a short winning streak.
+
+**Why this changed:** The original wording correctly emphasized that learning and valid comparison matter more than short-term returns, but it incorrectly implied that returns would never matter financially and that account size would remain fixed forever. The intended posture is staged capital deployment: validate with a small amount first, then retain the option to scale cautiously if durable live evidence justifies it.
+
 ## Open-source references consulted
 
 - [TauricResearch/TradingAgents](https://github.com/TauricResearch/TradingAgents) — started as an architecture reference, later added as an actual shadow-pool candidate (see D5b).

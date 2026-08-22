@@ -19,6 +19,10 @@ Remaining, roughly in dependency order:
 - [ ] Shadow pool scaffolding: register/list candidates, virtual fill simulator
 - [ ] Verify the three open questions in `docs/ARCHITECTURE.md` (two independent Agentic-account credentials, Pro/Plus usage caps, cloud-scheduler timezone support) before funding a live account
 
+Before any increase beyond the initial $500–1000 per live account:
+
+- [ ] Define and document the evidence window, profitability/risk criteria, and approved increase amount for the one-time human capital review required by D14; no automatic scaling
+
 ## Recently completed
 
 - Design phase: `PROPOSAL.md`, `docs/ARCHITECTURE.md`, `docs/DECISIONS.md` written and internally consistent.
