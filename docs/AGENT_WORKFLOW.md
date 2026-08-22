@@ -53,7 +53,7 @@ Stable project knowledge belongs in these shared sources, not in vendor-specific
 ```text
 Act as the Builder for one scoped Ripple change: <task>.
 
-Read AGENTS.md or CLAUDE.md and every shared document it requires before editing. Identify the affected invariants. Implement the scoped change and add or update relevant tests. Run those tests and report the results. Preserve current architecture; if the task requires an architectural change, stop and make that change explicit rather than silently introducing it. Leave the branch in a reviewable state with a focused diff and clear commit(s).
+Read AGENTS.md or CLAUDE.md first, then read every document it requires, including docs/AGENT_WORKFLOW.md. Identify the affected invariants. Implement the scoped change and add or update relevant tests. Run those tests and report the results. Preserve current architecture; if the task requires an architectural change, stop and make that change explicit rather than silently introducing it. Leave the branch in a reviewable state with a focused diff and clear commit(s).
 ```
 
 ### Reviewer
@@ -61,7 +61,7 @@ Read AGENTS.md or CLAUDE.md and every shared document it requires before editing
 ```text
 Act as an independent Reviewer for Ripple branch/commit/diff: <reference>.
 
-Read AGENTS.md or CLAUDE.md and every shared document it requires. Initially review without modifying code. Separate correctness defects from optional improvements, and cite concrete files and lines. Inspect failure modes, missing tests, concurrency, idempotency, and violations of docs/INVARIANTS.md in particular. Report findings by severity; if there are no material findings, say so and name any residual testing risk.
+Read AGENTS.md or CLAUDE.md first, then read every document it requires, including docs/AGENT_WORKFLOW.md. Initially review without modifying code. Separate correctness defects from optional improvements, and cite concrete files and lines. Inspect failure modes, missing tests, concurrency, idempotency, and violations of docs/INVARIANTS.md in particular. Report findings by severity; if there are no material findings, say so and name any residual testing risk.
 ```
 
 ### Architect
@@ -69,7 +69,7 @@ Read AGENTS.md or CLAUDE.md and every shared document it requires. Initially rev
 ```text
 Act as the Architect for this Ripple question: <question>.
 
-Read AGENTS.md or CLAUDE.md and every shared document it requires. Reason before implementation. Identify affected invariants, interfaces, trade-offs, and failure modes; compare viable alternatives and state a recommendation. If a durable architectural decision is approved, append it to docs/DECISIONS.md and update the current design in docs/ARCHITECTURE.md. Do not claim implementation work is complete unless the repository proves it.
+Read AGENTS.md or CLAUDE.md first, then read every document it requires, including docs/AGENT_WORKFLOW.md. Reason before implementation. Identify affected invariants, interfaces, trade-offs, and failure modes; compare viable alternatives and state a recommendation. If a durable architectural decision is approved, append it to docs/DECISIONS.md and update the current design in docs/ARCHITECTURE.md. Do not claim implementation work is complete unless the repository proves it.
 ```
 
 ## Branches and worktrees
