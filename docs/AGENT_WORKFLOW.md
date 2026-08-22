@@ -37,8 +37,11 @@ docs/DECISIONS.md
 docs/TODO.md
     genuinely unfinished work and current implementation status
 
-AGENTS.md / CLAUDE.md
-    thin vendor-specific entrypoints into the shared docs
+AGENTS.md
+    canonical agent entrypoint into the shared docs
+
+CLAUDE.md
+    thin Claude Code pointer to AGENTS.md
 
 thread/session prompt
     current task and temporary role
