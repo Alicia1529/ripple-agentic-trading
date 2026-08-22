@@ -19,7 +19,7 @@ It prohibited edits, environment or secret access, network activity, broker tool
 | 2026-08-22 16:44:00 −07:00 | 2026-08-22T23:44:13Z | +13 s | exit 2; uv could not write `/Users/Alicia/.cache/uv` before Python startup | Not determined |
 | 2026-08-22 16:50:00 −07:00 | 2026-08-22T23:50:13Z | +13 s | exit 0; `uv run --no-cache` ran the probe with Python 3.12.13, EDT / -0400, and `broker_calls_attempted: 0` | `238b98b28b01e5499b87ee84f29f152b0d263460` |
 
-The second trigger occurred because the schedule was moved to a later minute while the first run had not yet appeared in the task list. It was paused as soon as those results were observed; the later third controlled rerun is recorded below.
+The second trigger occurred because the schedule was moved to a later minute while the first run had not yet appeared in the task list. It was paused as soon as those results were observed; the later third and fourth controlled reruns are recorded below.
 
 ## Environment follow-up
 
@@ -42,7 +42,7 @@ uv run --no-cache python spikes/codex_scheduler_runtime_probe.py
 ## What this demonstrates
 
 - A local Codex cron Automation can autonomously create a standalone task against the actual Ripple checkout and start the constrained, read-only command.
-- No human interaction was required for either trigger.
+- No human interaction was required for any of the four scheduled runs.
 - The observed local unqualified `python3` runtime lacks the standard-library `zoneinfo` module, so the first two runs did not establish a usable scheduling runtime for the timezone probe.
 - The third Automation run demonstrated that its default uv cache is not writable; it did not start Python or the probe.
 - The fourth controlled local run proves that this local Automation can execute the read-only probe through `uv run --no-cache` without human interaction.
