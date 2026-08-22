@@ -176,9 +176,15 @@ Append-only decision log (ADR-style). Each entry records what was decided and wh
 
 ## D20 — Repository Python runtime is 3.12 via uv
 
-**Decision:** Ripple's default repository Python is the latest available Python 3.12 patch release selected by the root `.python-version` file. Local and scheduled repository commands enter that environment through `uv run --no-cache`; they do not rely on or replace the host's unqualified `python3` or its default uv cache.
+**Decision:** Ripple's default repository Python is the latest available Python 3.12 patch release selected by the root `.python-version` file. Local and scheduled repository commands enter that environment through `uv run`; they do not rely on or replace the host's unqualified `python3`.
 
-**Why:** The first two local Codex Automation probes invoked macOS's Python 3.8.1 and failed before producing evidence because that runtime does not include `zoneinfo`. A third probe selected Python 3.12 with `uv run` but failed before Python startup because the Automation sandbox could not write uv's default cache. `--no-cache` uses a temporary cache for an invocation, avoiding that proven sandbox boundary. The Automation path still needs a successful rerun before scheduler runtime compatibility is considered proven.
+**Why:** The first two local Codex Automation probes invoked macOS's Python 3.8.1 and failed before producing evidence because that runtime does not include `zoneinfo`. Pinning the repository's minor version makes timezone behavior and test execution reproducible without mutating an operating-system-managed interpreter. The Automation path still needs a successful rerun before scheduler runtime compatibility is considered proven.
+
+## D21 — Scheduled uv invocations use a temporary cache
+
+**Decision:** Scheduled Ripple Python commands use `uv run --no-cache` rather than bare `uv run`.
+
+**Why:** The third local Codex Automation probe selected Python 3.12 with `uv run` but exited 2 before Python startup because its sandbox could not write uv's default cache at `/Users/Alicia/.cache/uv`. `--no-cache` uses a temporary cache for one invocation, avoiding that proven cache-permission boundary. A successful Automation rerun remains required before scheduler compatibility is considered proven.
 
 ## Open-source references consulted
 

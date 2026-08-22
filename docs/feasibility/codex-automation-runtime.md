@@ -16,8 +16,9 @@ It prohibited edits, environment or secret access, network activity, broker tool
 | --- | --- | --- | --- | --- |
 | 2026-08-22 16:22:00 −07:00 | 2026-08-22T23:22:42Z | +42 s | exit 1; `ModuleNotFoundError: zoneinfo` before probe output | Not determined |
 | 2026-08-22 16:24:00 −07:00 | 2026-08-22T23:24:42Z | +42 s | exit 1; `ModuleNotFoundError: zoneinfo` before probe output | Not determined |
+| 2026-08-22 16:44:00 −07:00 | 2026-08-22T23:44:13Z | +13 s | exit 2; uv could not write `/Users/Alicia/.cache/uv` before Python startup | Not determined |
 
-The second trigger occurred because the schedule was moved to a later minute while the first run had not yet appeared in the task list. It was paused as soon as those results were observed; no further runs are scheduled.
+The second trigger occurred because the schedule was moved to a later minute while the first run had not yet appeared in the task list. It was paused as soon as those results were observed; the later third controlled rerun is recorded below.
 
 ## Environment follow-up
 
@@ -27,7 +28,7 @@ The repository declares Python 3.12 in its root `.python-version` file. A third 
 uv run python spikes/codex_scheduler_runtime_probe.py
 ```
 
-It exited 2 before Python started because uv attempted to initialize `/Users/Alicia/.cache/uv`, which the Automation sandbox cannot write. The Automation was immediately paused. The actual start time and drift for this third run were not captured in the handoff, so they are not inferred here.
+It started at 2026-08-22T23:44:13Z, +13 seconds after the 23:44:00Z configured trigger, then exited 2 before Python started because uv attempted to initialize `/Users/Alicia/.cache/uv`, which the Automation sandbox cannot write. The Automation was immediately paused.
 
 The next controlled command is:
 
