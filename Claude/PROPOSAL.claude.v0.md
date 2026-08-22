@@ -1,6 +1,7 @@
-# Trading Agent System — Design Proposal
+# Trading Agent System — Design Proposal (Claude, v0 draft)
 
-> Status: **Agreed (shared understanding reached)** · Date: 2026-08-21
+> **Status: Superseded — 已被 [/PROPOSAL.md](../PROPOSAL.md) 取代,本文件仅作历史参考,不要按此文件施工。**
+> Status: Agreed (shared understanding reached) · Date: 2026-08-21
 > Owner: Alicia · Role of Claude: design & code, no trade execution, no buy/sell advice
 
 ---

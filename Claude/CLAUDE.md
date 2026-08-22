@@ -1,6 +1,6 @@
 # CLAUDE.md — Trading Agent System
 
-> 完整设计决策见 **PROPOSAL.claude.md**(D1–D15 决策记录、架构、risk layer 规格、phase 计划)。改代码前先读它。
+> 完整设计决策见根目录 **[/PROPOSAL.md](../PROPOSAL.md)**(最终版,取代本文件夹里的 PROPOSAL.claude.v0.md)。改代码前先读它。
 
 ## 项目一句话
 

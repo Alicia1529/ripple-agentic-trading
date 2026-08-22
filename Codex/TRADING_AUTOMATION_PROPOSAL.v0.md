@@ -1,4 +1,6 @@
-# Codex 提案：交易自动化系统
+# Codex 提案：交易自动化系统(v0 draft)
+
+> **Status: Superseded — 已被 [/PROPOSAL.md](../PROPOSAL.md) 取代,本文件仅作历史参考,不要按此文件施工。**
 
 **状态：** 提案阶段  
 **日期：** 2026-08-21  
