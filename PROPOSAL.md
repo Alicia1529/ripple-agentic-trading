@@ -27,7 +27,7 @@
 |---|--------|------|------|
 | D1 | 真实目标 | 学习 agent 系统设计 + 可比较基线验证 | 本金太小,收益本身无意义 |
 | D2 | 账户数量 | **两个 Robinhood Agentic 真钱账户**,同属一个 RH 登录,各自独立跑一整套 3-analyst+PM 流程(Alpaca 只做 paper 验证,不作为长期并行账户) | 需要真实对比两套模型配置的实盘表现;两个账户各自的 broker 对账单就是权威数据,不需要共享账户时那套"谁能持有哪个标的/禁止静默对冲/虚拟账本对账"冲突处理逻辑,比塞进一个账户更简单、更符合"零运维"。同属一个 RH 登录,不新增 OAuth/CSV 这类运维负担,不违反"不想要太多账户"的初衷(那条顾虑针对的是跨多个不同券商) |
-| D2a | **两账户模型差异** | 两个账户跑**同一套** analyst 分工、risk layer、universe、决策频率,**只有模型配置(分析师模型/PM 模型)不同** | 控制变量,确保对比出来的差异是模型能力差异,不是策略设计差异;沿用原提案 D10"模型名全部做成配置项,harness 支持 A/B"的设计意图 |
+| D2a | **两账户模型差异 + 具体落地(本次拍板)** | 两个账户跑**同一套** analyst 分工、risk layer、universe、决策频率,**只有模型配置不同**;具体分工:**账户 A = Claude(Decision Run 跑成 Claude Code 云端 scheduled routine,吃 Alicia 已有的 Claude Pro 订阅额度)、账户 B = OpenAI(Decision Run 跑成 Codex 云端 Automations,吃 Alicia 已有的 ChatGPT Plus 订阅额度)** | 控制变量,确保对比出来的差异是模型能力差异,不是策略设计差异;两边都是 Alicia 已经在付费的订阅,边际 LLM 成本趋近 $0(见 §6);前提是订阅的用量额度够用——**Phase 0 需要实测确认**,额度不够就临时退化成 metered API(不影响架构,只影响账单) |
 | D2b | **两账户资金** | 每个账户各自 $500–1000,**总敞口 $1000–2000**(不是共享 $500–1000) | Alicia 已确认接受;§6 成本预算与风控数值按"每账户独立计算"处理 |
 | D3 | 决策频率 + **Decision/Execution 分离(本次修正)** | 每日收盘后一次生成信号并持久化为 `OrderPlan`(§2.2);**当晚不下单**,次日开盘后约 9:35am ET 才由 Execution Agent 重新校验并执行(§2.1、§2.3) | 决策时机由信息可得性决定,执行时机由市场流动性/执行质量决定,两者是不同问题,不能混为一谈(见 §2);开盘后执行也彻底避开了"RH Agentic 休市下单行为未知"这个问题(§7 对应假设已不再需要验证) |
 | D3a | **默认订单类型** | **限价单/marketable-limit** 为默认,限价设在决策时价格的一个可配置缓冲带内(如 ±0.5%,即 `price_tolerance_pct`);市价单需要策略显式声明理由;Phase 0 不引入 VWAP/TWAP 等复杂执行算法 | 隔夜到次日开盘之间有跳空风险,限价单能限制最差成交价;沿用 Codex 提案"限价单默认、市价单需正当理由"的风控原则;Phase 0 优先确定性和可调试性 |
@@ -38,7 +38,8 @@
 | D7 | 资金投入节奏 | Paper 验证通过后**两个账户同时直接投入各自 $500–1000**,不设起步阶梯、不要求前 20 笔人工逐笔确认 | Alicia 已确认接受这个节奏 |
 | D8 | 交易 universe | 两账户共用同一份固定白名单 ~15 只高流动性大盘股 + 2–3 只 ETF,每月人工 review(这是唯一保留的、频率很低的人工步骤) | 隔离选股与择时能力,同时把"人工"成本压到月级;两账户共用白名单也是控制变量的一部分 |
 | D9 | v1 禁止 | 做空、杠杆、options | adapter 层直接拒绝,两账户一致 |
-| D10 | 部署 | GitHub Actions **两个** daily scheduled workflow:Decision Run(~4:15–4:30pm ET,处理两账户+shadow 池)、Execution Run(~9:35am ET 次日,只处理两个真钱账户) | 免费、自动;两次调度对应 §2.1 的时间线;已知限制见 §7 |
+| D10 | 部署 | Decision Run:账户 A 走 Claude Code 云端 routine,账户 B 走 Codex 云端 Automations(见 D2a);Shadow 孵化池的 Decision Run 用 GitHub Actions(不需要真钱账户订阅,metered API 即可,量很小)。Execution Run(两个真钱账户,~9:35am ET 次日):**统一用 GitHub Actions 跑纯代码脚本**,不经过任何 LLM session,理由见此前讨论(下单权限不能给到做决策推理的 agent) | 免费(GH Actions 部分)/ 订阅额度内(Claude Code、Codex 部分);已知限制见 §7 |
+| D10a | **时区正确性(本次新增)** | 不用"写死一个 UTC 时间点"的 cron。改成:**调度器每隔 5–10 分钟触发一次(在目标时间前后一个宽松窗口内),脚本自己用带时区库(如 Python `zoneinfo`,`America/New_York`)算出当前真实 ET 时间,不在目标窗口内就直接空跑退出**;GitHub Actions cron 只认 UTC 且没有时区参数,Claude Code/Codex 云端调度是否原生支持 IANA 时区目前未经确认(见 §7),这个模式不管调度器怎么实现都正确,不需要每年手动改两次夏令时 | 美股开收盘时间锚定在 ET,夏令时切换(3月/11月)会让任何写死的 UTC 时间偏移一小时;用运行时计算真实 ET 时间 + 窗口内幂等检查,规避对调度器时区能力的依赖,同时保持零运维(不需要人工每年切换 cron 表达式) |
 | D11 | Fidelity/Schwab 监控 pipeline | **v1 不做**(原 Claude 提案 §5"方案3") | 需要 Schwab OAuth 续期或 Fidelity 每周手动 CSV,两者都是运维负担,与"零运维"直接冲突;如果你后续仍想要多账户周报,这是一个独立项目,不在本提案范围内 |
 
 ---
@@ -49,22 +50,29 @@
 
 ### 2.1 每日时间线(以 US Eastern Time 为准)
 
-账户 A、账户 B、shadow 孵化池共用**同一个市场数据快照时刻**(控制变量,保证对比公平),但各自独立产出决策(账户 A/B 因为跑不同模型配置,shadow candidate 因为是不同策略/配置)。
+账户 A、账户 B、shadow 孵化池共用**同一个市场数据快照时刻**(控制变量,保证对比公平),但各自独立产出决策(账户 A 用 Claude、账户 B 用 OpenAI/Codex,见 D2a;shadow candidate 是不同策略/配置)。
+
+**时区处理(D10a)**:下面时间线上的每个触发点,实际调度都不是"精确写死的 UTC 时刻",而是"调度器高频轮询 + 脚本自己用 `America/New_York` 时区库判断是否到点,没到点就空跑退出"。这样无论用 GitHub Actions(只认 UTC)还是 Claude Code/Codex 的云端调度,夏令时切换都不需要人工干预。
 
 ```
 4:00 PM ET   收盘
 4:00–4:15    等待当日行情数据落定(避免用未最终修正的数据)
-4:15–4:30    Decision Run(GitHub Actions 第 1 次 scheduled job):
-             1. Market Data Snapshot(所有账户/candidate 共用同一个 as_of 时间戳)
-             2. Analyst Agent(s) 生成 signal/expected return(每个账户/candidate 各自的模型配置)
+4:15–4:30    Decision Run(三条并行的调度,共用同一个市场快照 as_of):
+             - 账户 A:Claude Code 云端 routine
+             - 账户 B:Codex 云端 Automations
+             - Shadow 孵化池:GitHub Actions
+             各自执行:
+             1. Market Data Snapshot
+             2. Analyst Agent(s) 生成 signal/expected return(各自的模型配置)
              3. Portfolio Manager 生成 target portfolio
              4. Risk Engine 校验约束(§3 风控规则)
              5. Order Planner 把 target portfolio 转成具体订单
-             6. 持久化 OrderPlan(见 §2.2),状态 = pending
+             6. 持久化 OrderPlan(见 §2.2)并 commit/push 回仓库,状态 = pending
 
 Overnight    不下单,不改动已生成的 OrderPlan
 
-次日 ~9:35   Execution Run(GitHub Actions 第 2 次 scheduled job,开盘后约 5 分钟,不卡 9:30:00 整):
+次日 ~9:35   Execution Run(GitHub Actions scheduled job,开盘后约 5 分钟,不卡 9:30:00 整;
+             只处理两个真钱账户,shadow 池走虚拟 Fill Simulator,见 §2.5):
              1. 加载昨天持久化的 OrderPlan
              2. Revalidate 账户状态(见 §2.3)
              3. 检查当前持仓、可用资金
@@ -72,7 +80,7 @@ Overnight    不下单,不改动已生成的 OrderPlan
              5. 执行通过校验的订单
              6. 监控成交(fill)
              7. 对账持仓
-             8. 持久化执行结果/日志
+             8. 持久化执行结果/日志并 commit/push 回仓库
 ```
 
 **为什么改成两次独立 run**:①执行永远发生在开盘之后,不再需要验证"RH Agentic 休市下单会怎样"这个此前标记为未经官方文档确认的假设(§7 对应条目已标记为不再需要验证);②9:35 而不是精确 9:30:00,是为了避开开盘瞬间流动性最薄、价差最大的几分钟,Phase 0 优先要确定性和可调试性,不引入 VWAP/TWAP 之类的复杂执行算法;③decision 和 execution 分离让复盘时能清楚分清"这笔亏损是判断错了,还是执行时价格已经变了",也让 backtest 更容易做到时序一致(见 §2.4)。
@@ -126,6 +134,8 @@ Execution Agent 下单前重新检查的是"昨晚的决策今天是否还站得
 | 数据新鲜度 | 无法取得当前行情/账户状态(API 失败等) | 不下单,记录并通知,等下一周期 |
 
 这套逻辑复用 §3 的 risk layer 代码,只是多了一层"价格/账户状态是否仍然有效"的前置校验,不引入新的决策逻辑。
+
+**已持有仓位的止损/止盈复查(独立于新 OrderPlan,每个 Execution Run 都做)**:每次 Execution Run 除了处理当天的 `OrderPlan`,还要对该账户**所有已持有的仓位**重新算一遍止损/止盈条件——不管今天有没有新的决策、新的 thesis 多有说服力。任何一个持仓触发止损/止盈,立即按 §3 规则平仓/减仓,不受当天 Decision Run 输出影响。这条参考自 FriesTrader 的设计原则("a good story never cancels a stop-loss"),弥补了此前设计里"只校验新订单、没有独立复查存量持仓"的漏洞。
 
 ### 2.4 回测/实盘时序一致性(防 Look-Ahead Bias)
 
@@ -184,8 +194,11 @@ Execution Agent 下单前重新检查的是"昨晚的决策今天是否还站得
 | **累计回撤(10%)** | 该账户高点回撤 −10% | 该账户禁止新开仓 + 生成通知(**唯一需要你看一眼的场景**) | 新增中间档,不是原来一步到 −15% |
 | 累计回撤(15%) | 该账户高点回撤 −15% | 该账户整体停机,需人工重启;**另一账户不受影响,继续独立运行** | 沿用原值,新增"互不拖累"说明 |
 | 禁止项(v1) | 做空、杠杆、options | adapter 层直接拒绝,两账户一致 | 沿用原值 |
+| **Wash-sale 跨账户检测(本次新增)** | IRS wash-sale 规则按人头算,不按账户算;检测窗口 30 天(可配) | **只拦截买入**(新开仓/加仓),从不拦截止损/止盈/平仓卖出——风控不能为了避税让位;命中时该笔买入 abort,记录并标记供年底报税参考 | 两个真钱账户都在 Alicia 名下,账户 A 卖出亏损标的、账户 B 买回同一标的会触发真实 wash sale,不是学术假设;参考 FriesTrader 的 `wash_sale_avoidance` 设计,检测范围覆盖 `linked_accounts`(账户 A + 账户 B,以及 Alicia 名下其他相关账户) |
 
 所有被拦截/裁剪的指令写入日志:`{原始指令, 触发规则, 实际执行, account_id}`。
+
+**Wash-sale 检测的已知局限(如实记录)**:这套检测只能覆盖本系统能看到的账户和交易。如果 Alicia 在系统管不到的其他账户(比如未来手动操作的账户)买回同一标的,系统无法预防——那部分风险只能靠人工自己注意,不属于本系统的责任范围。
 
 **关于"零运维"与风控通知的关系**:上表里除了每月一次的白名单 review,其余全部自动运行。只有某个账户触发 10%/15% 回撤熔断这种**低概率事件**时,系统才会主动通知你——这不是日常运维,是安全阀,性质不同。两个账户各自独立触发,互不拖累;如果系统按设计运行,你大概率整个 Phase 1/2 都不会收到任何需要处理的通知。
 
@@ -215,7 +228,7 @@ Execution Agent 下单前重新检查的是"昨晚的决策今天是否还站得
 
 ## 5. Phase 计划
 
-- **Phase 0 — 搭建**(~1–2 周):项目骨架、`OrderPlan` 数据模型与持久化(§2.2)、Decision Run 与 Execution Run 两个 workflow(§2.1)、risk layer + 执行时 revalidation 单测(含"LLM 越权指令被拦截"的对抗性测例,两账户各一套独立实例)、Alpaca paper 接入(单账户验证即可)、Model Config A/B 两套配置跑通、均值回归 baseline + SPY/QQQ 记账逻辑(按 §2.4 用 T+1 开盘价标记,不用信号当天收盘价)。**另需实测确认 §7 列出的假设**(双 Agentic 账户绑定独立 agent),确认结果不理想则在开真钱账户前调整 D2 的实现方式。
+- **Phase 0 — 搭建**(~1–2 周):项目骨架、`OrderPlan` 数据模型与持久化(§2.2)、账户 A 的 Claude Code routine + 账户 B 的 Codex Automations + shadow 池与 Execution Run 的 GitHub Actions workflow(§2.1、D10)、D10a 的时区自检逻辑、risk layer + 执行时 revalidation 单测(含"LLM 越权指令被拦截"的对抗性测例,两账户各一套独立实例)、Alpaca paper 接入(单账户验证即可)、Model Config A/B 两套配置跑通、均值回归 baseline + SPY/QQQ 记账逻辑(按 §2.4 用 T+1 开盘价标记,不用信号当天收盘价)。**另需实测确认 §7 列出的三项假设**(双 Agentic 账户绑定独立 agent、Pro/Plus 订阅额度是否够用、两个云端调度平台的时区行为),确认结果不理想则调整 D2/D2a/D10a 的实现方式。
 - **Phase 1 — Paper**(8 周):Model Config A + Model Config B 两套 3-analyst+PM 全量运行(仍在 Alpaca paper,不需要开两个 paper 账户,同一 paper 账户内用两个 `account_id` 标签区分即可)+ baseline + benchmark 同步运行,**同样按 §2.1 的 Decision Run / Execution Run 两阶段跑**(paper 环境也不在收盘后立刻下单),保证 paper 阶段验证的就是 Phase 2 实盘要用的那套时序逻辑,不是另一套简化版本,每日自动记录决策链与四条净值曲线。
   - Gate(工程 sanity check,不证明 alpha):连续跑满 8 周;两套配置都无重大执行 bug(无重复下单、无风控穿透、无静默失败);四条曲线数据完整、可复盘。
   - **明确注记**:Alpaca paper 不模拟 market impact、订单信息泄露、延迟滑点、队列位置、价格改善、监管费、股息,paper-only 账户只有 IEX 数据权限。这意味着 paper 阶段的表现**天然比实盘乐观**,gate 通过不代表实盘也会通过,只代表工程没有明显 bug。
@@ -223,7 +236,7 @@ Execution Agent 下单前重新检查的是"昨晚的决策今天是否还站得
 - **Shadow → 真钱转正(常态化流程,不是单独 Phase)**:任意 candidate 满足 D5a 门槛(8 周 + 同时跑赢均值回归和 SPY/QQQ + 无 bug)时,系统生成通知;Alicia 批准后开新 RH 账户、投入 $500–1000,该账户从此按 Phase 2 的所有规则(独立 risk layer、不设人工逐笔确认)运行。这是账户数量增长的唯一途径,增长速度由 Alicia 的批准节奏决定,系统不会自作主张扩张。
 - **Phase 3(可选,需你另外拍板才启动)**:换 broker(如 Schwab)、加盘中频率、辩论式架构 ablation——这些会重新引入运维负担(OAuth 续期、更多监控面等),默认不做。(注:增加模型配置/策略候选**不需要**等 Phase 3,走 shadow 孵化池常态化流程即可。)
 
-**GitHub Actions 已知限制**:官方文档说明高负载时 scheduled job 会被延迟,负载足够高时甚至可能被丢弃。这对两次低频调度(Decision Run、Execution Run)影响可以接受(延迟几分钟到一小时不影响策略逻辑),不需要假设精确卡在 4:15 或 9:35 那一秒触发。系统会加一条自动检查(当天该跑的 job 没跑,发通知),这也是一次性写好的代码,不是手动巡检。**Execution Run 如果被延迟,§2.3 的价格容差校验会自然起到保护作用**——延迟越久,价格越可能超出容差带,系统会倾向于 abort 而不是拿一个更旧、更不可靠的 OrderPlan 硬冲;abort 后等下一次正常 decision run,不追单、不补跑。
+**调度可靠性已知限制**:GitHub Actions 官方文档说明高负载时 scheduled job 会被延迟,负载足够高时甚至可能被丢弃——这适用于 Execution Run 和 shadow 池的 Decision Run。账户 A/B 的 Decision Run 分别跑在 Claude Code / Codex 各自的云端调度上,可靠性未经我们验证(§7),按同样的保守假设处理(可能延迟,不假设精确触发)。这些延迟对低频调度影响可以接受(延迟几分钟到一小时不影响策略逻辑),系统会加一条自动检查(当天该跑的 job 没跑,发通知),这也是一次性写好的代码,不是手动巡检。**Execution Run 如果被延迟,§2.3 的价格容差校验会自然起到保护作用**——延迟越久,价格越可能超出容差带,系统会倾向于 abort 而不是拿一个更旧、更不可靠的 OrderPlan 硬冲;abort 后等下一次正常 decision run,不追单、不补跑。
 
 ---
 
@@ -231,13 +244,13 @@ Execution Agent 下单前重新检查的是"昨晚的决策今天是否还站得
 
 | 项 | 预估 | 说明 |
 |---|---|---|
-| Analyst LLM 调用(账户 A + 账户 B) | ~$10–20/月 | 便宜模型 × 3 analyst × ~15 标的 × 每日一次 × 2 套配置 |
-| PM LLM 调用(账户 A + 账户 B) | ~$10–30/月 | 强模型,每日一次聚合 × 2 套配置(两套模型可能价位不同,取上限估算) |
-| 部署(GitHub Actions) | $0 | 免费额度内 |
-| 市场数据 | $0 | yfinance / Alpaca free tier,两套配置共用同一份行情数据,不重复拉取 |
+| 账户 A 的 Decision Run(Claude) | **≈ $0/月 新增支出** | 吃 Alicia 已有的 Claude Pro 订阅额度,不是额外开销;前提是额度够用(Phase 0 待验证,见 §7) |
+| 账户 B 的 Decision Run(Codex/OpenAI) | **≈ $0/月 新增支出** | 吃 Alicia 已有的 ChatGPT Plus 订阅额度,同上;Codex 定价档位待 Alicia 自行在 openai.com 核实(我这边访问官方定价页被 403 拦截,只查到第三方聚合数据) |
+| 部署(GitHub Actions) | $0 | 免费额度内;承担 Execution Run(两账户)+ shadow 孵化池的 Decision Run |
+| Shadow 孵化池 LLM 调用(metered API) | 非 LLM 策略(均值回归等)≈ $0;每加一个 LLM 驱动的新模型配置候选约 +$10–20/月 | 孵化池不像两个真钱账户那样有现成订阅可用(避免为验证阶段的候选也去开新订阅),用 metered API 更灵活,反正候选阶段调用量小 |
+| 市场数据 | $0 | yfinance / Alpaca free tier |
 | Alpaca paper | $0 | 免费 |
-| **月度合计(账户 A+B)** | **≤ $60** | 超预算 = 设计问题,先降调用量再谈换模型 |
-| Shadow candidate 边际成本 | 非 LLM 策略(均值回归等)≈ $0;LLM 驱动的新模型配置候选,每加一个约 +$10–20/月 | 均值回归、SPY/QQQ 两条固定基准不消耗 LLM 预算;之后加入孵化池的候选如果是新模型配置,按同一套 analyst+PM 调用量估算,超过 $60+候选数×$20 视为异常,提醒你该考虑精简候选数量 |
+| **月度合计** | **≈ $0–20/月新增**(两个真钱账户订阅覆盖,孵化池候选按 metered 计) | **兜底方案**:如果 Pro/Plus 订阅额度撞上限,账户 A/B 的 Decision Run 退化成 metered API,那时月度合计回到 ≤$60 量级——这是成本上限,不是预期值 |
 
 一次性/资本项(不计入月度):**两个** RH Agentic 账户各入金 $500–1000,**总计 $1000–2000**,本金,Phase 2 才入,可全损。**每笔 shadow → 真钱转正会新增一个账户的入金**,金额同样是 $500–1000/账户,由 Alicia 逐笔批准,不预设总账户数上限。
 
@@ -255,8 +268,10 @@ Execution Agent 下单前重新检查的是"昨晚的决策今天是否还站得
 | RH Agentic 更偏"agent 逐次决策"而非确定性中频 API | 综合调研(BROKER_COST_RESEARCH.md) | 支持 D3(每日频率)的选择 |
 | RH 允许最多 10 个 self-directed investing account,Agentic 账户算在其中;但账户与 agent 连接的对应关系(是否可独立连接不同 agent)官方文档未明确说明 | [Agentic Trading overview](https://robinhood.com/us/en/support/articles/agentic-trading-overview/)、[Trading with your agent](https://robinhood.com/us/en/support/articles/trading-with-your-agent/) | 支持 D2(两账户可行);Phase 0 仍需**实测确认**两个 Agentic 账户能否各自独立连接不同的 agent/API credential——这是本提案唯一还留着的、需要 Phase 0 动手验证的假设 |
 | ~~RH Agentic 的下单工具在休市时段调用会怎样~~ | — | **已因 §2 的架构修正而不再相关**:新设计下 Execution Run 固定在 ~9:35am ET(开盘后)才调用下单工具,永远不会在休市时段提交订单,这个假设不需要验证了 |
+| Claude Code 云端 routine / Codex 云端 Automations 的用量额度,在 Pro / Plus 订阅档位下,能否覆盖每日 3-analyst+PM(4 次调用/账户/天)的实际用量 | 三方聚合定价页(非一手 openai.com,访问被拒),Claude Pro/Codex Plus 官方额度说明未逐条核实 | 支持 D2a 的"边际成本≈$0"假设;Phase 0 需要**实测**,不够则退化为 metered API(§6 已写好兜底方案,不影响架构) |
+| Claude Code 云端 routine / Codex 云端 Automations 的定时调度是否原生支持 IANA 时区(如 `America/New_York`),还是只认 UTC/触发时的浏览器本地时区 | 未查到官方明确说明 | 支持 D10a;不管答案是什么,"调度器高频轮询 + 脚本自算 ET 时间再决定是否执行"这个模式都正确,所以这项不确认也不阻塞设计,只是影响调度器配置的具体写法 |
 
-**Phase 0 仍需实测确认的假设(未经官方文档背书,只剩一项)**:两个 Agentic 账户能否各自绑定独立 agent/API credential(支持 D2)。应在开真钱账户之前,用小额/paper 环境验证清楚。
+**Phase 0 仍需实测确认的假设(未经官方文档背书,共三项)**:①两个 Agentic 账户能否各自绑定独立 agent/API credential(支持 D2);②Claude Pro / ChatGPT Plus 的用量额度是否够用(支持 D2a 成本假设);③两个云端调度平台的时区行为(支持 D10a,非阻塞项)。应在开真钱账户之前,用小额/paper 环境验证清楚。
 
 ---
 
@@ -264,7 +279,7 @@ Execution Agent 下单前重新检查的是"昨晚的决策今天是否还站得
 
 - 多 broker(Schwab/Fidelity)接入与周报 pipeline——运维负担与本次"零运维"约束冲突。
 - **Codex 式"共享账户多策略"虚拟账本**(谁能持有哪个标的、禁止静默对冲、虚拟账本与 broker 强一致性对账)——两个真钱策略各自有独立账户,天然不需要这套冲突处理复杂度。**仅有的轻量 `strategy_ledger` 用于两条 shadow 线(均值回归、SPY/QQQ)的纯虚拟记账,不涉及真实资金,不需要冲突处理逻辑。**
-- 税务 lot 管理、wash-sale 检测——超出学习目标范围。
+- 税务 lot 管理(具体 lot 选择、长短期资本利得优化)——超出学习目标范围;wash-sale 检测已改为纳入 §3(见上方新增规则),不再排除。
 - 中频/盘中交易——与"零运维"约束冲突,留给 Phase 3 单独评审。
 - 辩论式 multi-agent 架构——留作日后 ablation,不在 v1。
 - **Shadow candidate 自动转正**——转正必须经过 D5a 门槛判断 + Alicia 人工批准,系统任何情况下都不能自己开户或自己入金。
@@ -275,4 +290,4 @@ Execution Agent 下单前重新检查的是"昨晚的决策今天是否还站得
 
 ## 9. 边界声明
 
-Claude(任何界面)负责设计、代码、backtest 工具、复盘 pipeline;不执行交易、不持有密钥、不给具体标的买卖建议。实盘决策与责任归 Alicia。所有 API key 只走环境变量 / GitHub Actions secrets,永不进仓库。
+Claude(任何界面)负责设计、代码、backtest 工具、复盘 pipeline;不执行交易、不持有密钥、不给具体标的买卖建议。实盘决策与责任归 Alicia。所有 API key / broker credential 只走环境变量、GitHub Actions secrets,或 Claude Code / Codex 各自云端调度的原生 secret 机制,永不进仓库、永不以明文形式出现在 `OrderPlan` 或日志里。
