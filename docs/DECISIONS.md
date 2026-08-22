@@ -24,6 +24,14 @@ Append-only decision log (ADR-style). Each entry records what was decided and wh
 
 **Decision:** Each account gets its own $500–1000 (total exposure $1000–2000 across both), not a shared pool.
 
+## D2c — Zero-ops constraint confirmed compatible with the two-account + shadow-pool scope
+
+**Decision:** The zero-routine-operational-load constraint (see `docs/ARCHITECTURE.md` "Positioning") does not force this design down to a single-account/single-strategy system. Explicitly checked and confirmed: the two-live-account (D2) plus open shadow-pool (D5) design is compatible with near-zero maintenance, because every human touchpoint in it is a rare, high-stakes event (monthly allowlist review, a risk breaker firing, a shadow-candidate graduation approval), not routine toil.
+
+**Why:** A separate, externally-generated document in this repo's history (now `docs/archive/PROPOSAL_COMPARISON.v0.md`) argued for collapsing to a single active strategy specifically *because of* this constraint, reasoning that low maintenance time implies minimal architecture. That conclusion was checked directly and rejected — the constraint is real, but doesn't require that architectural collapse, since reconciliation, cost logging, and missed-run detection are all automated code, not manual work regardless of how many accounts exist. `docs/ARCHITECTURE.md` and `docs/DECISIONS.md` are authoritative over that archived document.
+
+*(Logged after the fact — this was decided in the same working session as D2/D2a/D2b, not chronologically after D11 below; placed here to keep it near the account-scope decisions it protects.)*
+
 ## D3 — Decision/execution split (supersedes an earlier same-evening-submission design)
 
 **Decision:** Signals are generated once daily after market close and persisted as an immutable `OrderPlan`. No order is ever submitted the same evening. A separate Execution Run, ~9:35am ET the next trading day, revalidates and executes.
@@ -88,13 +96,13 @@ Append-only decision log (ADR-style). Each entry records what was decided and wh
 
 **Why:** Schwab requires recurring OAuth token renewal; Fidelity requires a weekly manual CSV export. Both are exactly the kind of recurring operational toil the zero-ops constraint (D-zero-ops, see `docs/ARCHITECTURE.md` §Positioning) rules out. A multi-account weekly report is a separate project if wanted later.
 
-## Wash-sale detection (added; supersedes the original "excluded from v1" call)
+## D12 — Wash-sale detection (added; supersedes the original "excluded from v1" call)
 
 **Decision:** A wash-sale guard is part of the risk layer, not excluded. IRS wash-sale rules apply per taxpayer across *all* accounts, not per account — and both live accounts are under the same person. It blocks buys only (new entries/top-ups), never blocks a stop-loss/take-profit/exit sell (risk management doesn't defer to tax outcome), and covers a configurable linked-account list (both live accounts, plus any others Alicia adds).
 
 **Why this changed:** The original draft excluded wash-sale detection as "out of scope for a learning project." That was correct reasoning for a single account; it stopped being correct once the design grew to two live accounts under one person's name, where a loss sale in one and a repurchase in the other is a real, not hypothetical, wash sale.
 
-## Per-cycle stop-loss/take-profit recheck (added)
+## D13 — Per-cycle stop-loss/take-profit recheck (added)
 
 **Decision:** Every Execution Run rechecks stop-loss/take-profit conditions on *all currently held positions* in that account, independent of whatever the day's `OrderPlan` says. A triggered stop-loss or take-profit fires regardless of how compelling a new thesis sounds.
 

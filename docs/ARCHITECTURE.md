@@ -9,7 +9,7 @@ The goal is not to make money. The capital involved ($500–1000 per live accoun
 1. Learn agent-system design by building a complete "untrusted LLM decision layer + deterministic code-enforced risk layer" system.
 2. Find out whether a multi-agent architecture (3 analysts + PM) and a specific model choice actually add value over a simple deterministic strategy and over doing nothing (passive holding) — which requires a genuinely comparable baseline running alongside the live accounts, not just the agent on its own.
 
-**Hard constraint: zero routine operational load.** The person running this expects near-zero ongoing maintenance time going forward. The system must run unattended after deployment and only ever interrupt for rare, high-stakes events (a risk breaker firing, a shadow candidate clearing the graduation gate) — never for routine chores like manual reconciliation, manual CSV exports, manually confirming each trade, or manual credential renewal. This constraint has been explicitly checked against the two-live-account + open shadow-pool design below and confirmed compatible: every human touchpoint in this document is rare and high-stakes, not routine. See `docs/DECISIONS.md` D1–D2 for how this constraint shaped the scope.
+**Hard constraint: zero routine operational load.** The person running this expects near-zero ongoing maintenance time going forward. The system must run unattended after deployment and only ever interrupt for rare, high-stakes events (a risk breaker firing, a shadow candidate clearing the graduation gate) — never for routine chores like manual reconciliation, manual CSV exports, manually confirming each trade, or manual credential renewal. This constraint has been explicitly checked against the two-live-account + open shadow-pool design below and confirmed compatible: every human touchpoint in this document is rare and high-stakes, not routine. See `docs/DECISIONS.md` D1, D2, and D2c for how this constraint shaped the scope.
 
 **Scope:** two live Robinhood Agentic accounts running the same 3-analyst + PM architecture with different model configurations (a live A/B comparison of model capability), plus an open shadow incubation pool (starting with a mean-reversion baseline and SPY/QQQ buy-and-hold, extensible with new candidates) that can graduate into a new live account under an explicit, human-approved gate.
 
@@ -90,7 +90,7 @@ Once generated, the Execution Agent may only: **execute as-is / abort the whole 
 
 If a plan is aborted, the system waits for the next normal decision run — it never catches up or re-submits a stale plan.
 
-**This is also why the Decision-stage LLM session must never hold a tool capable of placing a live order.** If the model reasoning about the trade also holds the tool that executes it, "risk rules live only in code, never in a prompt" (see Risk layer) degrades into "the prompt tells the model to behave," no matter how deterministic the risk math itself is. The Execution Run is plain, non-agentic code — an MCP client or direct broker API call, not an LLM inference loop — precisely so this guarantee holds regardless of which model powered the decision.
+**Execution must not be an LLM session.** This is also why the Decision-stage LLM session must never hold a tool capable of placing a live order. If the model reasoning about the trade also holds the tool that executes it, "risk rules live only in code, never in a prompt" (see Risk layer) degrades into "the prompt tells the model to behave," no matter how deterministic the risk math itself is. The Execution Run is plain, non-agentic code — an MCP client or direct broker API call, not an LLM inference loop — precisely so this guarantee holds regardless of which model powered the decision.
 
 ### Execution-time revalidation and abort conditions
 
@@ -104,7 +104,7 @@ The Execution Agent's job before placing an order is checking "does last night's
 | Risk layer re-check | Re-run today's account equity through the risk rules (e.g. overnight equity change pushes an order past the 20% position cap) | Clip or reject, same logic as the risk layer itself |
 | Data freshness | Current quotes/account state unavailable (API failure etc.) | No trade, log and notify, wait for the next cycle |
 
-**Existing-position stop-loss/take-profit recheck, independent of the day's OrderPlan:** every Execution Run also re-evaluates stop-loss/take-profit conditions on *all currently held positions* in that account, regardless of whether there's a new decision today or how compelling a new thesis sounds. Any triggered stop-loss/take-profit fires immediately per the risk layer rules. (See `docs/DECISIONS.md` — this closes a gap found while reviewing FriesTrader.)
+**Existing-position stop-loss/take-profit recheck, independent of the day's OrderPlan:** every Execution Run also re-evaluates stop-loss/take-profit conditions on *all currently held positions* in that account, regardless of whether there's a new decision today or how compelling a new thesis sounds. Any triggered stop-loss/take-profit fires immediately per the risk layer rules. (See `docs/DECISIONS.md` D13 — this closes a gap found while reviewing FriesTrader.)
 
 ### Look-ahead bias: backtest/live timing must match
 
