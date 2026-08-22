@@ -21,23 +21,32 @@ The second trigger occurred because the schedule was moved to a later minute whi
 
 ## Environment follow-up
 
-The repository now declares Python 3.12 in its root `.python-version` file. Repository and scheduled Python commands should use `uv run`, for example:
+The repository declares Python 3.12 in its root `.python-version` file. A third local Automation run at the configured 16:44 PDT trigger used:
 
 ```text
 uv run python spikes/codex_scheduler_runtime_probe.py
 ```
 
-This leaves the host's system Python unchanged. Local test success in the pinned environment does not retroactively make either failed Automation run successful, and the paused Automation has not yet rerun with this command.
+It exited 2 before Python started because uv attempted to initialize `/Users/Alicia/.cache/uv`, which the Automation sandbox cannot write. The Automation was immediately paused. The actual start time and drift for this third run were not captured in the handoff, so they are not inferred here.
+
+The next controlled command is:
+
+```text
+uv run --no-cache python spikes/codex_scheduler_runtime_probe.py
+```
+
+[`uv --no-cache`](https://docs.astral.sh/uv/concepts/cache/) uses a temporary cache for a single invocation. Locally, `/opt/homebrew/bin/uv run --no-cache python --version` selected Python 3.12.13 successfully. This leaves the host's system Python unchanged. That local command check and the earlier failed Automation runs do not prove a successful Automation run; the paused Automation has not yet run the no-cache command.
 
 ## What this demonstrates
 
 - A local Codex cron Automation can autonomously create a standalone task against the actual Ripple checkout and start the constrained, read-only command.
 - No human interaction was required for either trigger.
-- The observed local unqualified `python3` runtime lacks the standard-library `zoneinfo` module, so this run did not establish a usable scheduling runtime for the timezone probe.
+- The observed local unqualified `python3` runtime lacks the standard-library `zoneinfo` module, so the first two runs did not establish a usable scheduling runtime for the timezone probe.
+- The third Automation run demonstrated that its default uv cache is not writable; it did not start Python or the probe.
 
 ## What remains unproven
 
 - This is not evidence about cloud Automation, cloud checkout selection, secrets, usage, or any cloud runtime.
-- The probe did not reach its JSON output or Git lookup, so the observed commit and a successful read-only Automation runtime report remain unverified.
-- Two failed starts do not establish scheduler reliability, timing precision, or daylight-saving behavior.
+- The probe has not reached its JSON output or Git lookup in an Automation run, so the observed commit and a successful read-only Automation runtime report remain unverified.
+- Three failed starts do not establish scheduler reliability, timing precision, or daylight-saving behavior.
 - No broker operation, network operation, credential access, or production scheduling behavior was tested.
