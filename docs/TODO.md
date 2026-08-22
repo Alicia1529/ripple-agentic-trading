@@ -12,6 +12,7 @@ Status: **NOT STARTED.** The architecture draft exists, but foundational broker 
 - [ ] Test whether Robinhood accepts a stable client order id / idempotency key
 - [ ] Prove broker-history reconciliation for accepted, rejected, partial, canceled, and ambiguous outcomes
 - [ ] Verify Claude/Codex scheduling, secret lifecycle, usage assumptions, and timezone behavior
+- [ ] Decide whether X (Twitter) is worth adding as a supplementary news source, based on its API access tier and pricing (D19) — the primary free/open financial-data feed does not depend on this decision
 - [ ] Record every result; revise the architecture before implementation if a correctness-critical assumption fails
 
 ## Phase 0 — deterministic core

@@ -166,6 +166,14 @@ Append-only decision log (ADR-style). Each entry records what was decided and wh
 
 **Why:** Forty or so trading days and an open-ended candidate pool make it easy to promote a lucky winner. Selecting thresholds after seeing results creates the same bias. Frozen inputs, pre-registered criteria, a holdout period, and risk-adjusted after-cost reporting make the comparison more informative while keeping the final funding decision human.
 
+## D19 — News/fundamental input source: free/open financial data primary, X (Twitter) optional and undecided
+
+**Decision:** The DecisionSnapshot's news/fundamental input is primarily sourced from free/open financial data providers — e.g. Yahoo Finance, Google Finance, Fidelity's public quote/news pages — covering the trading universe, pulled ahead of the 9:00pm ET Decision Run and frozen into the snapshot like any other input. X (Twitter) is, at most, a *supplementary* source layered on top of that primary feed, never a replacement for it. Whether X is integrated at all is **not yet decided** — it depends on its API pricing/access tier, which has not been checked (see Open question below).
+
+**Why:** Free/open financial data sources give broad, reliable coverage of the trading universe's news and fundamentals without a metered-API dependency, keeping the cost model close to $0 the way market data already is. X, if added later, would only supplement that primary feed with faster-moving discussion — it isn't relied on as the primary input, since its access terms are unverified and could turn out to be costly or unavailable.
+
+**Open question, not yet verified:** whether X is worth integrating at all is undecided, pending its API access tier and pricing (X's free tier has historically been write-only / heavily rate-limited for read/search, with paid tiers reportedly ~$100/month and up — not confirmed against x.com's current developer pricing). If a paid tier turns out to be required, that's a separate cost/benefit call, not something assumed now. Added to Phase −1 feasibility verification (see `docs/ARCHITECTURE.md` Open Questions and `docs/TODO.md`).
+
 ## Open-source references consulted
 
 - [TauricResearch/TradingAgents](https://github.com/TauricResearch/TradingAgents) — started as an architecture reference, later added as an actual shadow-pool candidate (see D5b).

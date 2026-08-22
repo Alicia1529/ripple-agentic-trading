@@ -61,7 +61,7 @@ Why two separate runs: execution always happens after the market has opened, so 
 
 ### DecisionSnapshot, OrderPlan, and execution state
 
-Every comparison lane reads the same immutable `DecisionSnapshot`. It contains the allowed market data, news/fundamental inputs, universe, and as-of timestamps used for that decision. Each lane's exact prompt/config hash, model identifier, runtime version, and tool versions are recorded alongside the snapshot. This controls the evidence available to the models instead of allowing each runtime to fetch a different news corpus and calling the result a controlled A/B test.
+Every comparison lane reads the same immutable `DecisionSnapshot`. It contains the allowed market data, news/fundamental inputs (free/open sources such as Yahoo Finance, Google Finance, and Fidelity's public pages as the primary feed, with X/Twitter as an optional, not-yet-decided supplementary source — see D19), universe, and as-of timestamps used for that decision. Each lane's exact prompt/config hash, model identifier, runtime version, and tool versions are recorded alongside the snapshot. This controls the evidence available to the models instead of allowing each runtime to fetch a different news corpus and calling the result a controlled A/B test.
 
 The output of the decision stage is a persisted, **immutable once written** `OrderPlan`:
 
@@ -255,8 +255,10 @@ If the Execution Run itself is delayed, the price-tolerance check (see above) pr
 | Transactional + object storage | Provisional; target free/low-cost managed tiers | Provider selection happens only after required transaction, lease, retention, and export semantics are verified |
 | Shadow pool LLM calls (metered API) | ~$0 for non-LLM strategies (e.g. mean reversion); roughly +$10–20/month per LLM-driven candidate added | The pool doesn't have a ready subscription the way the two live accounts do, so metered billing is used for whatever candidates need it — call volume in the validation stage is small |
 | Market data | $0 | yfinance / Alpaca free tier |
+| News/fundamental data, primary (D19) | $0 | Free/open sources — Yahoo Finance, Google Finance, Fidelity public pages |
+| News/fundamental data, X supplement (D19, optional) | Not decided whether it's added at all; if it is, unverified — possibly $0, possibly ~$100+/month if a paid search tier is required | X's current API pricing hasn't been checked; resolve in Phase −1 before deciding whether to integrate it (see Open Questions) |
 | Alpaca paper | $0 | Free |
-| **Monthly total** | **~$0–20/month marginal**, with a documented **ceiling of ~$60/month** if both subscriptions' usage caps turn out to be insufficient and Decision Runs fall back to metered API | The ceiling is a worst case, not the expected number |
+| **Monthly total** | **~$0–20/month marginal** (assuming X is not added, or added only within a free tier), with a documented **ceiling of ~$60/month** if both subscriptions' usage caps turn out to be insufficient and Decision Runs fall back to metered API | The ceiling is a worst case for LLM cost and does not include a possible paid X tier, which remains an undecided add-on, not a committed cost |
 
 One-time/capital items (not part of the monthly figure): both live accounts initially get $500–1000 in funding (total initial exposure $1000–2000), funded only in the live phase and fully at risk of loss. That range is the validation starting point, not a permanent cap. If an account later demonstrates stable, attributable profitability after trading costs and within the risk rules, Alicia may manually approve an appropriate funding increase after reviewing the evidence and risk impact; the system never scales capital automatically. Every shadow-to-live graduation likewise starts with its own $500–1000 allocation, individually approved by hand — there's no cap on the eventual number of accounts, only on how fast new accounts or larger allocations get approved.
 
@@ -272,8 +274,14 @@ Real trading costs (commission, spread, slippage, regulatory fees) are logged au
 | Are Claude Pro's / ChatGPT Plus's usage caps enough for daily 3-analyst+PM traffic (4 calls/account/day)? | Only third-party pricing aggregators checked so far, not verified line-by-line against openai.com/anthropic.com | Needed for the "~$0 marginal cost" assumption; metered API is the documented fallback |
 | Do Claude Code's / Codex's cloud scheduling features natively support IANA timezones, or only UTC/browser-local time? | No official documentation found either way | Doesn't block the design — the poll-and-self-check pattern (D10a) is correct regardless of the answer, this only affects how the scheduler itself gets configured |
 | Does Robinhood Agentic's order-placing tool accept a client-supplied order id / idempotency key? | Not confirmed from official documentation | Determines whether strict at-most-once submission is possible; without it D16 requires fail-closed reconciliation for ambiguous outcomes |
+| Is X worth integrating as a supplementary news source at all, and if so at what cost? (D19) | Not confirmed against x.com's current developer pricing; the primary free/open financial-data feed does not depend on this answer | Determines whether X gets added as a supplement, not whether the primary news/fundamental input works — that already runs on free sources |
 
 Resolve the broker and scheduler questions in Phase −1, before building an integration that assumes their answers. Cost-only questions may remain provisional, but no live funding happens while a correctness-critical answer is unknown.
+
+**Lower-priority, deferred:** the following are known open items, deliberately not resolved now — revisit once Phase 1 (paper/shadow) is generating real data rather than speculating ahead of it.
+
+- **Model version drift across cloud-scheduled routines.** Account A/B's Decision Runs go through Claude Code's / Codex's own cloud scheduling; if either resolves to a `latest`-style model alias rather than a pinned model ID, a provider-side model upgrade could silently change one side of the comparison mid-run without an explicit decision to do so. `model_config_version` records a version label but doesn't by itself guarantee the alias is pinned. Low priority because it doesn't block Phase −1/0, but should be checked before Phase 1 begins accumulating comparison data.
+- **Analyst confidence-calibration sample size.** The Baseline & benchmark section calls for per-analyst reliability diagrams, but no minimum sample size has been set for when ~8 weeks × 3 analysts × ~15–18 symbols is actually enough data to draw a meaningful calibration curve versus noise. Low priority because it only affects how the calibration reporting is interpreted, not the trading/risk mechanics; worth pinning down as part of D18's pre-registered evidence criteria before Phase 1's results are read.
 
 ## Explicitly out of scope for v1
 
