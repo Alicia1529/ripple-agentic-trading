@@ -142,6 +142,30 @@ Append-only decision log (ADR-style). Each entry records what was decided and wh
 
 **Why this changed:** The original wording correctly emphasized that learning and valid comparison matter more than short-term returns, but it incorrectly implied that returns would never matter financially and that account size would remain fixed forever. The intended posture is staged capital deployment: validate with a small amount first, then retain the option to scale cautiously if durable live evidence justifies it.
 
+## D15 — Runtime state, audit artifacts, and Git use separate storage responsibilities
+
+**Decision:** Correctness-critical operational state lives in a transactional store: OrderPlans, append-only ExecutionEvents, leases, per-account risk state, broker acknowledgements, and reconciliation results. Large immutable evidence lives in object storage: frozen DecisionSnapshots, raw model outputs, prompt/tool traces, detailed logs, and broker-response artifacts. Each transactional record references its audit objects by URI and content hash. Git contains code, configuration, schemas, migrations, docs, and sanitized reports; scheduled runs do not commit/push live execution state.
+
+**Why:** Order submission needs atomicity, unique constraints, conditional updates, and a cross-runner lease. Git commits provide none of those semantics and introduce push races between accounts and schedulers. Large audit blobs do not need to participate in every correctness decision and would make either Git or a transactional database unnecessarily heavy. The split keeps the immediate decision state small and strongly consistent while preserving complete evidence for later review.
+
+## D16 — Unknown broker outcomes fail closed (supersedes D3c's strict at-most-once claim)
+
+**Decision:** Execution records `submission_started` before a broker call and `broker_acknowledged` only after receiving a broker order identifier. If a process crashes in between, the order enters `unknown`; it is reconciled against broker history before any retry. A transactional cross-runner lease replaces the runner-local single-flight marker. A stable client idempotency key is used if Robinhood supports one. Without broker-side idempotency, an ambiguous order is never blindly resubmitted, and the design claims fail-closed reconciliation rather than strict at-most-once submission.
+
+**Why:** A broker can accept an order just before the runner crashes and before local state records the acknowledgement. No local "check then submit" sequence can eliminate that window. Blind retry risks a duplicate live order; stopping and reconciling is the safe behavior when the external outcome cannot be proven.
+
+## D17 — Feasibility-first staged rollout (supersedes D7's simultaneous two-account start)
+
+**Decision:** Delivery proceeds through explicit gates: Phase −1 broker/scheduler feasibility; Phase 0 deterministic core and failure-injection tests; Phase 1 full paper/shadow operation; Phase 2 one-account live canary; Phase 3 two-account live comparison. D14's $500–1000 range remains the initial live validation allocation, but the accounts are not funded simultaneously. The second account starts only after the first proves credential lifecycle, fills, reconciliation, alerts, and recovery. Additional shadow architectures wait until the core comparison pipeline is stable.
+
+**Why:** The headless Robinhood MCP path, two-account binding, exact order schemas, fractional-order support, reconciliation, client idempotency, and scheduler secret behavior are foundational assumptions, not implementation details. Proving them first prevents building the deterministic core around an unavailable broker boundary. A one-account canary limits operational unknowns before duplicating them.
+
+## D18 — Controlled evaluation and promotion (supersedes D5a's profit-based 8-week gate)
+
+**Decision:** Eight continuous weeks is an operational-stability gate: no unresolved reconciliation, duplicate cycle, missed-run blind spot, or material risk defect. Before a candidate starts, its evaluation record fixes the minimum sample size, untouched holdout period, after-cost benchmark comparisons, turnover/slippage treatment, and drawdown/risk limits. Promotion requires passing both the operational and pre-registered evidence gates plus human approval. A two-account live equity-curve difference is reported as evidence, not causal proof of model superiority.
+
+**Why:** Forty or so trading days and an open-ended candidate pool make it easy to promote a lucky winner. Selecting thresholds after seeing results creates the same bias. Frozen inputs, pre-registered criteria, a holdout period, and risk-adjusted after-cost reporting make the comparison more informative while keeping the final funding decision human.
+
 ## Open-source references consulted
 
 - [TauricResearch/TradingAgents](https://github.com/TauricResearch/TradingAgents) — started as an architecture reference, later added as an actual shadow-pool candidate (see D5b).

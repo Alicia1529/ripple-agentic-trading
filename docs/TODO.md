@@ -2,22 +2,39 @@
 
 Living status doc — this reflects the *current* state of in-flight work, not a growing history. When a section is done, either delete it or fold it into a one-line note under "Recently completed"; don't leave finished work cluttering this file. If there's something a future session genuinely needs to pick up mid-task, that unfinished-work state belongs here, in enough detail that the next agent doesn't have to re-derive it from git log or chat history.
 
-## Phase 0 — build
+Status: **NOT STARTED.** The architecture draft exists, but foundational broker and scheduler assumptions remain unverified. No code exists yet.
 
-Status: **NOT STARTED.** Design is complete (`PROPOSAL.md`, `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`); no code exists yet.
+## Phase −1 — feasibility
 
-Remaining, roughly in dependency order:
+- [ ] Prove a plain, non-agentic runner can authenticate to Robinhood Trading MCP headlessly and refresh credentials without routine human action
+- [ ] Prove explicit account selection and two independent Agentic-account bindings
+- [ ] Capture the exact review/place/cancel/history schemas, including fractional/dollar-order behavior
+- [ ] Test whether Robinhood accepts a stable client order id / idempotency key
+- [ ] Prove broker-history reconciliation for accepted, rejected, partial, canceled, and ambiguous outcomes
+- [ ] Verify Claude/Codex scheduling, secret lifecycle, usage assumptions, and timezone behavior
+- [ ] Record every result; revise the architecture before implementation if a correctness-critical assumption fails
 
-- [ ] `OrderPlan` data model + persistence (see `docs/ARCHITECTURE.md` "OrderPlan data model")
-- [ ] Risk engine (position sizing, daily loss breaker, drawdown tiers, wash-sale guard, stop-loss/take-profit) as unit-testable, stdlib-first code — see `docs/ARCHITECTURE.md` "Risk layer"
-- [ ] Adversarial test cases proving an LLM-authored instruction cannot bypass the risk engine (D6 in `docs/DECISIONS.md`)
-- [ ] Decision Run: Account A (Claude Code cloud routine) and Account B (Codex cloud Automation) against Alpaca paper first, single account for initial wiring
-- [ ] Execution Run: plain code, no LLM in the loop, per the "Execution must not be an LLM session" constraint
-- [ ] Idempotency (D3c): per-order persisted state checked before submission, `order_id` generated once and reused, single-flight guard against overlapping triggers
-- [ ] Timezone-safe scheduling (D10a): poll-and-self-check against `America/New_York`, not a fixed UTC cron
-- [ ] Mean-reversion baseline + SPY/QQQ bookkeeping, both marked at T+1 open (not signal-day close) per the look-ahead rule
-- [ ] Shadow pool scaffolding: register/list candidates, virtual fill simulator
-- [ ] Verify the three open questions in `docs/ARCHITECTURE.md` (two independent Agentic-account credentials, Pro/Plus usage caps, cloud-scheduler timezone support) before funding a live account
+## Phase 0 — deterministic core
+
+- [ ] Choose the smallest transactional and object stores that satisfy D15; document retention, backup/export, unique constraints, conditional writes, and cross-runner leases
+- [ ] Implement immutable `DecisionSnapshot` and `OrderPlan` schemas plus append-only `ExecutionEvent` records
+- [ ] Implement risk engine (position sizing, daily loss breaker, drawdown tiers, wash-sale guard, deterministic exits) as unit-testable code
+- [ ] Implement fake broker, execution state machine, transactional lease, and broker reconciliation
+- [ ] Add adversarial tests proving an LLM-authored instruction cannot bypass the risk engine
+- [ ] Add failure-injection tests: duplicate trigger, crash before submit, crash after broker acceptance, stale data, partial fill, and unresolved broker outcome
+- [ ] Implement timezone-safe scheduling as a trigger only; transactional state decides whether work may proceed
+
+## Phase 1 — paper and shadow
+
+- [ ] Run Claude, OpenAI, mean-reversion, and SPY/QQQ lanes from the same frozen DecisionSnapshot
+- [ ] Register every candidate's sample-size, holdout, cost, benchmark, and risk criteria before its evaluation starts
+- [ ] Complete eight continuous weeks without unresolved reconciliation, duplicate cycles, missed-run blind spots, or material risk defects
+
+## Phase 2/3 — live rollout
+
+- [ ] Start one-account live canary with a manually approved validation allocation
+- [ ] Verify real credential lifecycle, fills, reconciliation, alerts, kill switch, and recovery before enabling the second account
+- [ ] Start the two-account live comparison only after the canary gate passes
 
 Before any increase beyond the initial $500–1000 per live account:
 
@@ -25,6 +42,6 @@ Before any increase beyond the initial $500–1000 per live account:
 
 ## Recently completed
 
-- Design phase: `PROPOSAL.md`, `docs/ARCHITECTURE.md`, `docs/DECISIONS.md` written and internally consistent.
+- Architecture draft: `PROPOSAL.md`, `docs/ARCHITECTURE.md`, and `docs/DECISIONS.md` written and internally consistent; feasibility remains open.
 - Repo reorganized: `docs/archive/` holds the two original independent draft proposals (Claude's and Codex's) plus the comparison research that synthesized them — superseded, kept for history only.
 - Agent collaboration entry points consolidated: `AGENTS.md` and `CLAUDE.md` are thin indexes into shared docs; `docs/INVARIANTS.md` is the common correctness checklist.

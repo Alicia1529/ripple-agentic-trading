@@ -10,9 +10,9 @@ The initial $500–1000 per live account is a deliberately small real-money vali
 2. Find out whether a multi-agent architecture (3 analysts + PM) and a specific model choice actually add value over a simple deterministic strategy and over doing nothing (passive holding) — which requires a genuinely comparable baseline running alongside the live accounts, not just the agent on its own.
 3. Preserve the option to increase an account's funding if live evidence later shows stable, attributable profitability after costs and within the risk rules. Any increase is an explicit human decision, not an automated response to recent performance; its amount and evidence threshold must be reviewed before the increase.
 
-**Hard constraint: zero routine operational load.** The person running this expects near-zero ongoing maintenance time going forward. The system must run unattended after deployment and only ever interrupt for rare, high-stakes events (a risk breaker firing, a shadow candidate clearing the graduation gate, or a live account becoming eligible for a capital review) — never for routine chores like manual reconciliation, manual CSV exports, manually confirming each trade, or manual credential renewal. This constraint has been explicitly checked against the two-live-account + open shadow-pool design below and confirmed compatible: every human touchpoint in this document is rare and high-stakes, not routine. See `docs/DECISIONS.md` D1, D2, D2c, and D14 for how this constraint shaped the scope.
+**Hard constraint: low routine operational load after a stable pilot.** Reconciliation, health checks, credential-expiry checks, missed-run detection, and reporting are automated. Ambiguous broker outcomes, a broken invariant, or a material risk event fail closed and notify a human. The design does not promise zero oversight before the broker integration and recovery behavior have been observed in paper and live-canary phases. See `docs/DECISIONS.md` D1, D2, D2c, D14, and D17 for how this constraint shaped the scope.
 
-**Scope:** two live Robinhood Agentic accounts running the same 3-analyst + PM architecture with different model configurations (a live A/B comparison of model capability), plus an open shadow incubation pool (starting with a mean-reversion baseline and SPY/QQQ buy-and-hold, extensible with new candidates) that can graduate into a new live account under an explicit, human-approved gate.
+**Target scope:** two live Robinhood Agentic accounts running the same 3-analyst + PM architecture with different model configurations, plus a controlled shadow incubation pool. This is the target state, not the starting state; rollout gates are defined below. The live comparison provides useful evidence under controlled inputs, but one realized equity curve per model is not treated as causal proof of model superiority.
 
 ## System architecture: decision and execution are separate stages
 
@@ -34,12 +34,13 @@ Account A, Account B, and the shadow pool share the same market-data snapshot mo
              - Account B: Codex cloud Automation
              - Shadow pool: GitHub Actions
              Each does:
-             1. Market data snapshot
+             1. Freeze one DecisionSnapshot shared by all comparison lanes
              2. Analyst agent(s) produce signals/expected returns (own model config)
              3. Portfolio manager produces a target portfolio
              4. Risk engine validates constraints (see Risk layer, below)
              5. Order planner turns the target portfolio into concrete orders
-             6. Persist the OrderPlan (see below), commit/push it to the repo, status = pending
+             6. Persist the immutable OrderPlan transactionally
+             7. Archive the DecisionSnapshot, prompts/tool traces, and raw model outputs as an immutable audit bundle
 
 Overnight    No trading. The persisted OrderPlan is not touched.
 
@@ -52,12 +53,15 @@ next day     live accounts only, the shadow pool uses a virtual fill simulator i
              5. Execute the orders that pass validation
              6. Monitor fills
              7. Reconcile positions
-             8. Persist execution results/logs, commit/push to the repo
+             8. Append execution events and broker reconciliation transactionally
+             9. Archive detailed logs and fill evidence as an immutable audit bundle
 ```
 
 Why two separate runs: execution always happens after the market has opened, so there is no dependency on how Robinhood Agentic's order tools behave while the market is closed. ~9:35 rather than exactly 9:30:00 avoids the thinnest-liquidity, widest-spread minutes right at open. Phase 0 favors deterministic, debuggable behavior over sophisticated execution — no VWAP/TWAP. Separating decision from execution also makes post-mortems clean: a bad outcome is either "the call was wrong" or "the price moved before execution," never both tangled together — and it's what makes backtests able to share the same timing semantics as production (see Look-ahead bias, below).
 
-### OrderPlan data model
+### DecisionSnapshot, OrderPlan, and execution state
+
+Every comparison lane reads the same immutable `DecisionSnapshot`. It contains the allowed market data, news/fundamental inputs, universe, and as-of timestamps used for that decision. Each lane's exact prompt/config hash, model identifier, runtime version, and tool versions are recorded alongside the snapshot. This controls the evidence available to the models instead of allowing each runtime to fetch a different news corpus and calling the result a controlled A/B test.
 
 The output of the decision stage is a persisted, **immutable once written** `OrderPlan`:
 
@@ -66,8 +70,8 @@ order_plan_id: uuid
 decision_time: 2026-08-21T21:05:00-04:00     # ET
 account_id: account_A                          # account_B / shadow:mean_reversion / shadow:spy_qqq / shadow:candidate_C ...
 model_config_version: config_A_v3              # for reproducibility
-market_snapshot_as_of: 2026-08-21T21:00:00-04:00   # close-price data as of 4pm, snapshotted at 9pm to give post-close news/earnings time to land
-status: pending                                 # pending -> executed | aborted | partially_executed
+decision_snapshot_id: uuid
+market_snapshot_as_of: 2026-08-21T21:00:00-04:00
 
 target_portfolio:
   AAPL: 15%
@@ -88,12 +92,28 @@ orders:
 
 Once generated, the Execution Agent may only: **execute as-is / abort the whole plan / scale down proportionally against available cash / reject specific orders because risk or account state changed**. It may never re-run analyst/PM reasoning or change direction because "its view changed today" — that would be tampering with an already-made decision, which breaks reproducibility, auditability, and attribution.
 
+Execution status is not mutated inside the plan. `planned`, `submission_started`, `broker_acknowledged`, `partially_filled`, `filled`, `rejected`, `aborted`, and `unknown` are append-only `ExecutionEvent` facts. Scaling or clipping produces an event that records the original quantity, the applied rule, and the actual quantity; the original OrderPlan remains unchanged.
+
 - Allowed: a symbol gaps overnight beyond the tolerance threshold → the execution guard rejects that order.
 - Not allowed: the PM decided to buy NVDA yesterday, and the Execution Agent decides today it doesn't like NVDA anymore → sells it.
 
 If a plan is aborted, the system waits for the next normal decision run — it never catches up or re-submits a stale plan.
 
 **Execution must not be an LLM session.** This is also why the Decision-stage LLM session must never hold a tool capable of placing a live order. If the model reasoning about the trade also holds the tool that executes it, "risk rules live only in code, never in a prompt" (see Risk layer) degrades into "the prompt tells the model to behave," no matter how deterministic the risk math itself is. The Execution Run is plain, non-agentic code — an MCP client or direct broker API call, not an LLM inference loop — precisely so this guarantee holds regardless of which model powered the decision.
+
+### Storage responsibilities
+
+The three storage classes have deliberately different jobs:
+
+| Storage | Holds | Required behavior |
+|---|---|---|
+| Transactional store | OrderPlans, ExecutionEvents, per-account risk state, leases, submission attempts, broker acknowledgements, and reconciliation results | Atomic writes, unique constraints, conditional updates, and cross-runner leases. This is the source of truth for what may execute next. |
+| Object storage | Frozen DecisionSnapshots, raw model outputs, prompt/tool traces, detailed logs, broker-response evidence, and generated audit bundles | Immutable or versioned blobs, addressed by URI plus content hash. Losing one must not make the execution state ambiguous. |
+| Git repository | Code, config, schemas, documentation, migrations, and sanitized reports | Human review and version history. Git is not the runtime database, and scheduled jobs do not commit/push live execution state. |
+
+Concrete example: the transactional row says `order_id=123` is in `broker_acknowledged` and points to an object such as `audit/2026-08-21/account_A/order-123/broker-response.json` plus its SHA-256 hash. The small row participates in correctness decisions; the large response remains available for audit without bloating the transactional database.
+
+No storage vendor is chosen here. Phase −1 verifies the required broker behavior; Phase 0 selects the smallest managed services that provide these semantics. Application code depends on the semantics, not a provider-specific API.
 
 ### Execution-time revalidation and abort conditions
 
@@ -111,15 +131,17 @@ The Execution Agent's job before placing an order is checking "does last night's
 
 ### Idempotency
 
-The window-polling scheduler (see Timezone handling, above) means a Decision or Execution Run could in principle be triggered more than once inside the same target window — a crash-and-restart, an overlapping poll, or a scheduler retry. Nothing about "poll every 5–10 minutes and no-op outside the window" by itself prevents *two* in-window triggers from both doing real work, so idempotency has to be handled explicitly, not assumed:
+The window-polling scheduler can trigger more than once, and a process can crash after the broker accepts an order but before the local acknowledgement is recorded. Local "check, submit, then mark submitted" logic cannot close that ambiguity window by itself.
 
-- Every order's `order_id` (see OrderPlan data model, above) is generated exactly once, at Decision Run time, and persisted with the plan — it is never regenerated on a later attempt.
-- Before running the full analyst/PM pipeline, a Decision Run checks whether that account already has a plan for today's decision date; if so, it no-ops rather than generating a second, possibly different plan.
-- Before submitting any order, an Execution Run checks its own persisted execution state for that specific `order_id` and skips it if already marked submitted/filled. State is persisted immediately after each individual order is submitted — not batched at the end of the plan — so a mid-plan crash resumes from the right order instead of resubmitting ones that already went through.
-- `order_id` is passed to the broker as the client order id / idempotency key if the order-placing tool accepts one (unconfirmed for Robinhood Agentic specifically — see Open Questions, below), as a second line of defense on top of the local state check.
-- A simple single-flight guard (an "already running" marker checked at the start of each invocation) prevents two overlapping triggers within the same polling window from both acting at once.
+- A unique constraint on `(account_id, decision_date)` prevents two authoritative plans for one account/day.
+- Every `order_id` is generated once in the OrderPlan. A unique constraint prevents two local execution records for it.
+- A transactional cross-runner lease, not a runner-local marker file, admits only one active execution attempt for an account/plan.
+- Execution appends `submission_started` before the broker call and `broker_acknowledged` only after a broker order identifier is returned.
+- The plan's `order_id` is passed as the broker idempotency key if Robinhood supports it.
+- A retry that sees `submission_started` without an acknowledgement treats the outcome as `unknown`. It queries broker order history and reconciles before doing anything else.
+- If reconciliation cannot prove that the order was rejected or never accepted, the account fails closed and notifies a human; the order is not automatically resubmitted.
 
-This is what makes "at most once" actually true rather than just intended — see `docs/DECISIONS.md` D3c.
+Strict at-most-once submission is claimed only if the broker supports a stable client idempotency key. Without it, the guarantee is fail-closed reconciliation with no blind retry. See `docs/DECISIONS.md` D16, which supersedes the stronger claim in D3c.
 
 ### Look-ahead bias: backtest/live timing must match
 
@@ -133,7 +155,7 @@ This applies equally to the shadow pool's bookkeeping (see Baseline & benchmark,
 ### System diagram
 
 ```
-Shared market data snapshot (one as_of timestamp, shared by both accounts + the shadow pool — decisions stay independent)
+Frozen DecisionSnapshot (same allowed market/news inputs for both accounts + shadow lanes)
                     |
         +-----------+-----------------------+
         v                                    v                               v
@@ -150,7 +172,7 @@ Shared market data snapshot (one as_of timestamp, shared by both accounts + the 
         v                                    v                          (marks fills at T+1 open)
    Robinhood Agentic Account A           Robinhood Agentic Account B          v
         v                                    v                          Virtual equity curve
-   Fill Monitoring -> Position Reconciliation -> Audit/Metrics/Logs (independent per account, no cross-effects)
+   Fill Monitoring -> Transactional Events/Reconciliation -> Immutable Audit Bundles
 ```
 
 **Multi-account note:** this is deliberately not the common "multiple accounts execute the same shared decision, scaled by each account's capital" pattern. Accounts A and B intentionally run independent decision pipelines (different model configs) — that's the point of D2a. What they genuinely share is only the market-snapshot timing and the trading universe (controlled variables), not the target portfolio. A "same decision, per-account sizing" mode would need separate design work and isn't in scope now.
@@ -174,7 +196,7 @@ Both live accounts apply every rule below independently, computed against that a
 | Max new positions per day | 3 per account | Excess orders are dropped and logged |
 | Daily loss circuit breaker | −5% (unrealized + realized, against the account's own equity) | No new positions for the rest of the day; closing positions still allowed |
 | Drawdown tier 1 | −10% from the account's high-water mark | Block new positions, generate a notification (the one case worth glancing at) |
-| Drawdown tier 2 | −15% from the account's high-water mark | That account shuts down entirely, requires manual restart; the other account is unaffected and keeps running independently |
+| Drawdown tier 2 | −15% from the account's high-water mark | Disable new entries and require manual restart; deterministic risk-reducing exits remain available. The other account is unaffected. |
 | Prohibited (v1) | Shorting, leverage, options | Rejected at the adapter layer, both accounts |
 | Wash-sale guard (cross-account) | 30-day lookback (configurable); the IRS rule applies per taxpayer, not per account | Blocks buys only (new entries/top-ups) — never blocks a stop-loss/take-profit/exit sell, since risk management never defers to a tax outcome. A blocked buy is logged and flagged for year-end tax reference. Checked across a configurable `linked_accounts` list covering both live accounts |
 
@@ -182,32 +204,44 @@ Every intercepted/clipped instruction is logged as `{original instruction, rule 
 
 **Wash-sale guard's known limitation:** this only covers accounts and trades this system can see. If a repurchase happens in an account outside the system's control, it can't be prevented — that risk is on the human to track, not this system's responsibility.
 
-**Zero-ops relationship:** everything above runs unattended except the once-a-month allowlist review. A notification only fires on the rare events — a 10%/15% drawdown breaker, or a shadow candidate clearing its graduation gate — which are safety valves, not routine operations. If the system behaves as designed, expect to receive close to zero actionable notifications through Phase 1/2.
+**Low-ops relationship:** once the live canary has proved the operational path, routine reconciliation, health checks, and reports run unattended. Notifications are reserved for ambiguous broker outcomes, missed runs, broken invariants, credential expiry, material drawdown, or an evidence gate that needs a human decision.
 
 **Kill switch, honestly stated:** Robinhood's own documentation does not describe an instant "flatten everything" kill-switch capability — only the ability to cancel a pending order, and it explicitly notes an agent may be "difficult to monitor or stop in real time." This system's "kill switch" means: a code-level flag that immediately stops generating new orders and cancels all pending ones; existing positions still need to be unwound through normal sell orders, not instantly zeroed. This limitation is documented in code comments and the runbook rather than overclaimed.
 
 ## Baseline & benchmark
 
-The periodic report (auto-generated, not manual work) compares, starting with four lines and growing as the shadow pool gains candidates:
+The periodic report compares the following curves after trading costs. Candidate definitions, evaluation windows, and promotion criteria are registered before the candidate starts; adding many candidates and promoting whichever happens to win is not a valid evaluation method.
 
 1. **Account A curve** — Model Config A's live, real-money equity after risk layer A.
 2. **Account B curve** — Model Config B's live, real-money equity after risk layer B.
 3. **Mean-reversion baseline curve** — same universe, same market snapshot, a simple deterministic rule (e.g. reverse-enter when price deviates from its N-day mean beyond a threshold), fills marked at T+1 open by the virtual fill simulator, uninfluenced by any LLM.
 4. **SPY/QQQ buy-and-hold curve** — an equal-dollar buy of SPY and QQQ starting the day the live accounts began trading, held since, also marked at T+1 open, pure bookkeeping, no orders placed.
-5. **(open) Shadow candidate curves** — one per candidate added to the pool later, pure virtual bookkeeping, continuously checked against the 8-week graduation gate (D5a).
+5. **Shadow candidate curves** — one per registered candidate, pure virtual bookkeeping. Additional architectures such as TradingAgents wait until the core comparison pipeline is stable.
 
-What this measures:
+What this provides evidence about:
 
-- **Model-choice gain:** Account A vs. Account B — identical analyst design, risk layer, and universe, differing only in model, so the gap is model capability. This is the central learning target of the current scope.
-- **Agent-architecture gain:** Account A/B vs. the mean-reversion baseline — whether multi-agent decision-making beats a simple rule at all.
-- **Active-management gain:** accounts and baseline vs. SPY/QQQ buy-and-hold — whether the whole system is worth doing relative to doing nothing.
+- **Model-choice difference:** Account A vs. Account B under the same frozen DecisionSnapshot, prompt/tool contract, risk layer, and universe. One live path per model remains observational evidence, not causal proof.
+- **Agent-architecture difference:** Account A/B vs. the mean-reversion baseline, interpreted with risk, turnover, and cost differences rather than raw ending value alone.
+- **Active-management difference:** accounts and baseline vs. SPY/QQQ buy-and-hold, reported with volatility, drawdown, cash exposure, beta, turnover, and after-cost return.
 - Per-analyst direction accuracy and confidence calibration (reliability diagrams), tracked per account.
 
 Every comparison curve's computation is written once as code; none of it needs manual upkeep.
 
+The original 8-week rule is an **operational-stability gate only**: no missed or duplicate cycles, no unresolved reconciliation, and no material risk-layer defect. Strategy promotion additionally requires a pre-registered minimum sample size, an untouched holdout period, after-cost performance against both benchmarks, and drawdown/risk limits. Those numerical thresholds must be decided before a candidate's evaluation begins; they are not chosen after seeing its curve. See D18, which supersedes D5a's profit-based 8-week graduation rule.
+
+## Staged rollout
+
+1. **Phase −1 — feasibility:** prove headless broker authentication/refresh, explicit account selection, two independent Agentic-account bindings, order/review/cancel schemas, fractional-order behavior, broker order-history reconciliation, client idempotency support, and scheduler secret/timezone behavior. Completion means every item has a captured test result; failure changes the architecture before production code is built.
+2. **Phase 0 — deterministic core:** implement DecisionSnapshot, immutable OrderPlan, transactional ExecutionEvents, risk engine, leases, reconciliation, fake broker, and failure-injection tests. Completion means crash-before-submit, crash-after-acceptance, duplicate trigger, stale data, and partial-fill tests all fail closed.
+3. **Phase 1 — paper/shadow:** run both model lanes and fixed baselines on the same frozen inputs. Completion means at least eight continuous weeks with no unresolved operational defect; this establishes reliability, not profitability.
+4. **Phase 2 — one-account live canary:** fund one account with a manually approved validation allocation and verify real credential lifecycle, fills, reconciliation, alerts, and recovery. Risk-reducing exits remain available even when new entries are disabled.
+5. **Phase 3 — two-account live comparison:** add the second account only after the canary gate passes. Additional shadow candidates and any later capital increase follow their separately pre-registered evidence and human-approval gates.
+
 ## Deployment scheduling reliability
 
-GitHub Actions documents that scheduled jobs can be delayed under high load, and can even be dropped. This applies to the Execution Run and the shadow pool's Decision Run. Account A/B's Decision Runs sit on Claude Code's / Codex's own cloud scheduling, whose reliability is unverified (see Open Questions) — treated with the same conservative assumption (may be delayed, no assumption of exact-time triggering). These delays are tolerable for a low-frequency, once-daily cadence (a few minutes to an hour doesn't change the strategy logic); the system adds an automated check for "today's run didn't happen" that notifies rather than requiring a manual daily check.
+GitHub Actions documents that scheduled jobs can be delayed under high load and can be dropped. This applies to the Execution Run and the shadow pool's Decision Run. Account A/B's Decision Runs sit on Claude Code's / Codex's own cloud scheduling, whose reliability is unverified (see Open Questions) and is treated with the same conservative assumption.
+
+The scheduler is only a trigger. The transactional store decides whether a cycle may run, leases prevent overlap, and price/data-freshness checks decide whether a delayed execution is still valid. A missed-run monitor must use an independent heartbeat path rather than relying only on the same scheduler it monitors.
 
 If the Execution Run itself is delayed, the price-tolerance check (see above) provides natural protection: the longer the delay, the more likely the price has moved outside the tolerance band, so the system leans toward aborting rather than forcing a stale plan through. An abort just waits for the next normal decision run — no catch-up, no backfilled orders.
 
@@ -218,6 +252,7 @@ If the Execution Run itself is delayed, the price-tolerance check (see above) pr
 | Account A's Decision Run (Claude) | ~$0/month marginal | Runs against an existing Claude Pro subscription; assumes the usage cap is sufficient (unverified, see Open Questions) |
 | Account B's Decision Run (Codex/OpenAI) | ~$0/month marginal | Same, against an existing ChatGPT Plus subscription; Codex's exact pricing tier should be independently confirmed on openai.com |
 | Deployment (GitHub Actions) | $0 | Free tier covers both live accounts' Execution Run and the shadow pool's Decision Run |
+| Transactional + object storage | Provisional; target free/low-cost managed tiers | Provider selection happens only after required transaction, lease, retention, and export semantics are verified |
 | Shadow pool LLM calls (metered API) | ~$0 for non-LLM strategies (e.g. mean reversion); roughly +$10–20/month per LLM-driven candidate added | The pool doesn't have a ready subscription the way the two live accounts do, so metered billing is used for whatever candidates need it — call volume in the validation stage is small |
 | Market data | $0 | yfinance / Alpaca free tier |
 | Alpaca paper | $0 | Free |
@@ -231,12 +266,14 @@ Real trading costs (commission, spread, slippage, regulatory fees) are logged au
 
 | Question | Basis so far | Why it matters |
 |---|---|---|
+| Can a plain, non-agentic GitHub Actions client authenticate to Robinhood Trading MCP headlessly and refresh credentials without routine human action? | The documented onboarding flow is interactive; long-running service credentials are not yet verified | The entire Execution Run depends on this boundary; resolve before selecting the deployment runtime |
 | Can two Robinhood Agentic accounts each bind an independent agent/API credential? | Robinhood allows up to 10 self-directed investing accounts, Agentic accounts included, but the account-to-agent relationship isn't documented | Needed for D2 (two accounts) to work as designed |
+| Can every order call select the intended account and support the required fractional/dollar-order shape? | Tool schemas have not been captured in a paper test | Small validation accounts and account isolation depend on this |
 | Are Claude Pro's / ChatGPT Plus's usage caps enough for daily 3-analyst+PM traffic (4 calls/account/day)? | Only third-party pricing aggregators checked so far, not verified line-by-line against openai.com/anthropic.com | Needed for the "~$0 marginal cost" assumption; metered API is the documented fallback |
 | Do Claude Code's / Codex's cloud scheduling features natively support IANA timezones, or only UTC/browser-local time? | No official documentation found either way | Doesn't block the design — the poll-and-self-check pattern (D10a) is correct regardless of the answer, this only affects how the scheduler itself gets configured |
-| Does Robinhood Agentic's order-placing tool accept a client-supplied order id / idempotency key? | Not confirmed from official documentation | Affects how strong the idempotency guarantee is (D3c) — local execution-state tracking works regardless, but a broker-side idempotency key would be a second line of defense against duplicate live orders |
+| Does Robinhood Agentic's order-placing tool accept a client-supplied order id / idempotency key? | Not confirmed from official documentation | Determines whether strict at-most-once submission is possible; without it D16 requires fail-closed reconciliation for ambiguous outcomes |
 
-Resolve these with a small/paper-environment test before funding a live account.
+Resolve the broker and scheduler questions in Phase −1, before building an integration that assumes their answers. Cost-only questions may remain provisional, but no live funding happens while a correctness-critical answer is unknown.
 
 ## Explicitly out of scope for v1
 

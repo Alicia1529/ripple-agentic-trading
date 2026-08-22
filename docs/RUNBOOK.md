@@ -36,8 +36,8 @@ Not yet implemented — this section will describe:
 
 ## Debug
 
-Not yet implemented — this section will describe how to replay a specific day's decision chain from the persisted `OrderPlan` + logs, and how to distinguish "the call was wrong" from "the price moved before execution" using the decision/execution timestamps.
+Not yet implemented — this section will describe how to replay a specific day's chain from the frozen `DecisionSnapshot`, immutable `OrderPlan`, transactional `ExecutionEvents`, and referenced audit objects; and how to distinguish "the call was wrong" from "the price moved before execution" using the decision/execution timestamps.
 
 ## Recovery
 
-Not yet implemented — this section will describe what to do after a crashed or partially-completed Execution Run (including broker reconciliation before any retry), and how to confirm the system has recovered before letting the next scheduled cycle run. The idempotency design itself is decided (`docs/DECISIONS.md` D3c: per-order persisted state, checked before every submission) — what's still open is the operational playbook for a human reviewing a crash, not the underlying safety mechanism.
+Not yet implemented — this section will describe what to do after a crashed or partially-completed Execution Run and how to confirm recovery before the next cycle. Per D16, `submission_started` without `broker_acknowledged` is an unknown outcome: query broker history, append a reconciliation result, and resume only if the outcome is proven. Unresolved ambiguity keeps that account blocked and requires human review; it never triggers a blind resubmission.

@@ -18,7 +18,7 @@ Not financial advice. Read [`PROPOSAL.md`](PROPOSAL.md) for what this is and why
 
 ## Status
 
-Design complete, implementation not started. See `docs/TODO.md`.
+Architecture draft complete; broker/scheduler feasibility and implementation not started. See `docs/TODO.md`.
 
 ## License
 

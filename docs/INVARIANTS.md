@@ -8,10 +8,11 @@ These are the non-negotiable constraints already established by `PROPOSAL.md`, `
 4. **Execution cannot invent a trade.** The Execution Run is plain code. It may execute, abort, scale down, or reject a published plan within the documented rules; it cannot reverse direction or generate a new investment thesis.
 5. **Uncertainty fails closed.** Missing or stale market data, unavailable account state, or a failed risk check produces no new trade for that cycle.
 6. **Decision and fill times stay honest.** A signal using Day T closing data is never treated as filled at that same close. Backtests, shadow fills, and live evaluation use the documented Day T decision / Day T+1 execution semantics.
-7. **Comparisons share controlled inputs.** Live accounts and shadow candidates use the same market-snapshot timing and trading universe while producing independent decisions.
+7. **Comparisons share frozen inputs.** Comparison lanes read the same immutable DecisionSnapshot, including allowed market/news inputs, universe, and as-of timestamps; model/runtime differences are recorded explicitly.
 8. **Live accounts remain isolated.** Each live account has separate risk state, execution calls, and broker reconciliation; one account's failure or breaker does not silently change the other.
 9. **Credentials remain outside artifacts.** Secrets live only in approved secret stores or environment variables and never in the repository, an `OrderPlan`, or logs.
 10. **Funding, capital increases, and promotion remain human decisions.** A shadow candidate or live performance record may trigger a review, but the system cannot open an account, deposit funds, increase an account allocation, or promote itself to live trading.
-11. **An order is submitted at most once.** Per-order execution state is checked and persisted before and immediately after every broker submission, so an overlapping or retried trigger cannot resubmit an order that already went through.
+11. **Unknown submissions fail closed.** A submission attempt without a recorded broker acknowledgement is reconciled against broker history. It is never blindly retried; unresolved ambiguity blocks that account and notifies a human.
+12. **Runtime truth is transactional.** OrderPlans, ExecutionEvents, leases, risk state, and broker reconciliation live in the transactional store. Git and object storage preserve versioned development assets and audit evidence but never decide whether an order may execute next.
 
 For implementation or review work, identify the affected invariants and add verification proportional to the risk. If a proposed change invalidates an invariant, record a new decision and update the shared source-of-truth documents instead of weakening an entry file or prompt.
