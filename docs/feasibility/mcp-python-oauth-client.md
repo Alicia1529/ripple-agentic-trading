@@ -54,3 +54,9 @@ Use a dedicated non-trading test path and sanitized observations only:
 6. Confirm logs and failure artifacts contain no token, authorization code, callback query, client secret, account identifier, balance, position, or order detail.
 
 Until steps 1–6 pass against the target authorization server, the supported conclusion is **interactive OAuth bootstrap is designed, but cross-process unattended refresh is not yet demonstrated**.
+
+## Local adapter status
+
+The Phase −1 adapter in `spikes/mcp_oauth_restart_adapter.py` pins MCP Python SDK 2.0.0 and implements the restart seam described above. Mock-transport contract tests cover complete bootstrap persistence, fresh-process restoration, refresh before an expired or age-unknown token is sent, refresh-token rotation, compare-and-swap conflict, invalid-refresh clearing, transient-refresh preservation, binding validation, and rejection of any headless fallback to interactive authorization.
+
+This is local contract evidence only. There is no concrete encrypted state-store adapter or callback command yet, and no runner-owned Robinhood credential has been created. The six live proof steps above remain open.

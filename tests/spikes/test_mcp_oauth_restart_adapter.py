@@ -1,0 +1,295 @@
+import asyncio
+import importlib.util
+import time
+import unittest
+from pathlib import Path
+
+import httpx2
+from mcp.shared.auth import (
+    OAuthClientInformationFull,
+    OAuthClientMetadata,
+    OAuthMetadata,
+    OAuthToken,
+    ProtectedResourceMetadata,
+)
+
+
+ADAPTER_PATH = Path(__file__).resolve().parents[2] / "spikes" / "mcp_oauth_restart_adapter.py"
+ADAPTER_SPEC = importlib.util.spec_from_file_location("ripple_mcp_oauth_restart_adapter", ADAPTER_PATH)
+adapter = importlib.util.module_from_spec(ADAPTER_SPEC)
+ADAPTER_SPEC.loader.exec_module(adapter)
+
+SERVER_URL = "https://agent.robinhood.com/mcp/trading"
+ISSUER = "https://auth.example"
+
+
+class MemoryStateStore:
+    def __init__(self, versioned_state=None):
+        self.versioned_state = versioned_state
+        self.saved = []
+        self.cleared = []
+        self.reject_swap = False
+
+    async def load(self):
+        return self.versioned_state
+
+    async def compare_and_swap(self, expected_revision, state):
+        if self.reject_swap:
+            raise RuntimeError("stale OAuth state")
+        revision = str(len(self.saved) + 2)
+        self.saved.append((expected_revision, state))
+        self.versioned_state = adapter.VersionedOAuthState(revision, state)
+        return revision
+
+    async def clear(self, expected_revision):
+        self.cleared.append(expected_revision)
+        self.versioned_state = None
+
+
+def stored_state(
+    *,
+    expires_at,
+    refresh_token="refresh-old",
+    server_url=SERVER_URL,
+    issuer=ISSUER,
+    token_endpoint=ISSUER + "/token",
+):
+    state = adapter.OAuthState(
+        server_url=server_url,
+        resource_url=server_url,
+        issuer=issuer,
+        access_token_expires_at=expires_at,
+        tokens=OAuthToken(
+            access_token="access-old",
+            expires_in=3600,
+            refresh_token=refresh_token,
+        ),
+        client_info=OAuthClientInformationFull(
+            client_id="client-id",
+            grant_types=["authorization_code", "refresh_token"],
+            issuer=issuer,
+        ),
+        oauth_metadata=OAuthMetadata(
+            issuer=issuer,
+            authorization_endpoint=issuer + "/authorize",
+            token_endpoint=token_endpoint,
+        ),
+    )
+    return adapter.VersionedOAuthState("1", state)
+
+
+def provider(store):
+    return adapter.RestartSafeOAuthClientProvider(
+        SERVER_URL,
+        OAuthClientMetadata(
+            client_name="Ripple feasibility probe",
+            redirect_uris=["http://127.0.0.1:8765/callback"],
+        ),
+        store,
+        interactive=False,
+    )
+
+
+def bootstrap_provider(store):
+    instance = adapter.RestartSafeOAuthClientProvider(
+        SERVER_URL,
+        OAuthClientMetadata(
+            client_name="Ripple feasibility probe",
+            redirect_uris=["http://127.0.0.1:8765/callback"],
+        ),
+        store,
+        interactive=True,
+    )
+    instance.context.client_info = stored_state(expires_at=None).state.client_info
+    instance.context.oauth_metadata = stored_state(expires_at=None).state.oauth_metadata
+    instance.context.auth_server_url = ISSUER
+    instance.context.protected_resource_metadata = ProtectedResourceMetadata(
+        resource=SERVER_URL,
+        authorization_servers=[ISSUER],
+    )
+    return instance
+
+
+async def request_with(provider_instance, handler):
+    async with httpx2.AsyncClient(
+        auth=provider_instance,
+        transport=httpx2.MockTransport(handler),
+    ) as client:
+        return await client.post(SERVER_URL, headers={"MCP-Protocol-Version": "2025-11-25"})
+
+
+class RestartSafeOAuthClientProviderTests(unittest.TestCase):
+    def test_bootstrap_token_exchange_atomically_persists_complete_state(self):
+        store = MemoryStateStore()
+        instance = bootstrap_provider(store)
+        response = httpx2.Response(
+            200,
+            json={
+                "access_token": "access-new",
+                "token_type": "Bearer",
+                "expires_in": 3600,
+                "refresh_token": "refresh-new",
+            },
+        )
+
+        asyncio.run(instance._handle_token_response(response))
+
+        self.assertEqual(store.saved[0][0], None)
+        self.assertEqual(store.saved[0][1].tokens.access_token, "access-new")
+        self.assertEqual(store.saved[0][1].client_info.client_id, "client-id")
+        self.assertGreater(store.saved[0][1].access_token_expires_at, time.time())
+
+    def test_bootstrap_without_refresh_token_is_not_persisted(self):
+        store = MemoryStateStore()
+        instance = bootstrap_provider(store)
+        response = httpx2.Response(
+            200,
+            json={"access_token": "access-new", "token_type": "Bearer", "expires_in": 3600},
+        )
+
+        with self.assertRaises(adapter.OAuthBootstrapRequired):
+            asyncio.run(instance._handle_token_response(response))
+
+        self.assertEqual(store.saved, [])
+
+    def test_fresh_process_restores_unexpired_token_without_refresh(self):
+        store = MemoryStateStore(stored_state(expires_at=time.time() + 3600))
+        calls = []
+
+        async def handler(request):
+            calls.append(request)
+            return httpx2.Response(200)
+
+        response = asyncio.run(request_with(provider(store), handler))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([call.url.host for call in calls], ["agent.robinhood.com"])
+        self.assertEqual(calls[0].headers["authorization"], "Bearer access-old")
+        self.assertEqual(store.saved, [])
+        self.assertNotIn("access-old", repr(store.versioned_state))
+        self.assertNotIn("client-id", repr(store.versioned_state))
+
+    def test_expired_token_refreshes_then_atomically_replaces_state(self):
+        store = MemoryStateStore(stored_state(expires_at=time.time() - 1))
+        calls = []
+
+        async def handler(request):
+            calls.append(request)
+            if request.url.host == "auth.example":
+                return httpx2.Response(
+                    200,
+                    json={
+                        "access_token": "access-new",
+                        "token_type": "Bearer",
+                        "expires_in": 7200,
+                        "refresh_token": "refresh-new",
+                    },
+                )
+            self.assertEqual(request.headers["authorization"], "Bearer access-new")
+            return httpx2.Response(200)
+
+        response = asyncio.run(request_with(provider(store), handler))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([call.url.host for call in calls], ["auth.example", "agent.robinhood.com"])
+        self.assertEqual(store.saved[0][0], "1")
+        self.assertEqual(store.saved[0][1].tokens.refresh_token, "refresh-new")
+        self.assertGreater(store.saved[0][1].access_token_expires_at, time.time())
+
+    def test_unknown_expiry_refreshes_before_sending_access_token(self):
+        store = MemoryStateStore(stored_state(expires_at=None))
+        calls = []
+
+        async def handler(request):
+            calls.append(request)
+            if request.url.host == "auth.example":
+                return httpx2.Response(
+                    200,
+                    json={"access_token": "access-new", "token_type": "Bearer", "expires_in": 60},
+                )
+            return httpx2.Response(200)
+
+        asyncio.run(request_with(provider(store), handler))
+
+        self.assertEqual([call.url.host for call in calls], ["auth.example", "agent.robinhood.com"])
+        self.assertEqual(store.saved[0][1].tokens.refresh_token, "refresh-old")
+
+    def test_refresh_rejection_clears_state_without_calling_resource(self):
+        store = MemoryStateStore(stored_state(expires_at=time.time() - 1))
+        calls = []
+
+        async def handler(request):
+            calls.append(request)
+            return httpx2.Response(400, json={"error": "invalid_grant"})
+
+        with self.assertRaises(adapter.OAuthBootstrapRequired):
+            asyncio.run(request_with(provider(store), handler))
+
+        self.assertEqual([call.url.host for call in calls], ["auth.example"])
+        self.assertEqual(store.cleared, ["1"])
+
+    def test_refresh_server_error_preserves_state_for_later_retry(self):
+        store = MemoryStateStore(stored_state(expires_at=time.time() - 1))
+
+        async def handler(_request):
+            return httpx2.Response(503)
+
+        with self.assertRaises(adapter.OAuthBootstrapRequired):
+            asyncio.run(request_with(provider(store), handler))
+
+        self.assertEqual(store.cleared, [])
+        self.assertIsNotNone(store.versioned_state)
+
+    def test_missing_or_mismatched_state_fails_before_network(self):
+        cases = [
+            MemoryStateStore(),
+            MemoryStateStore(stored_state(expires_at=time.time() + 60, server_url="https://wrong.example/mcp")),
+            MemoryStateStore(stored_state(expires_at=time.time() + 60, refresh_token=None)),
+            MemoryStateStore(stored_state(expires_at=time.time() + 60, token_endpoint="http://auth.example/token")),
+            MemoryStateStore(stored_state(expires_at=time.time() + 60, issuer="https://user@auth.example")),
+        ]
+        for store in cases:
+            with self.subTest(store=store):
+                calls = []
+
+                async def handler(request):
+                    calls.append(request)
+                    return httpx2.Response(200)
+
+                with self.assertRaises(adapter.OAuthBootstrapRequired):
+                    asyncio.run(request_with(provider(store), handler))
+                self.assertEqual(calls, [])
+
+    def test_stale_state_write_aborts_before_resource_request(self):
+        store = MemoryStateStore(stored_state(expires_at=time.time() - 1))
+        store.reject_swap = True
+        calls = []
+
+        async def handler(request):
+            calls.append(request)
+            return httpx2.Response(
+                200,
+                json={"access_token": "access-new", "token_type": "Bearer", "expires_in": 60},
+            )
+
+        with self.assertRaises(RuntimeError):
+            asyncio.run(request_with(provider(store), handler))
+
+        self.assertEqual([call.url.host for call in calls], ["auth.example"])
+
+    def test_server_rejection_never_starts_interactive_authorization(self):
+        store = MemoryStateStore(stored_state(expires_at=time.time() + 3600))
+        calls = []
+
+        async def handler(request):
+            calls.append(request)
+            return httpx2.Response(401)
+
+        with self.assertRaises(adapter.OAuthBootstrapRequired):
+            asyncio.run(request_with(provider(store), handler))
+
+        self.assertEqual([call.url.host for call in calls], ["agent.robinhood.com"])
+
+
+if __name__ == "__main__":
+    unittest.main()

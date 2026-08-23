@@ -8,6 +8,7 @@ Status: **PHASE −1 IN PROGRESS.** The architecture draft exists, and a safe, r
 
 - Partial: a disposable Robinhood MCP probe can discover sanitized public OAuth metadata after the endpoint's unauthenticated 401 challenge. It can also accept a runner-owned access token from the environment and safely exercise only `initialize`/`tools/list`; that authenticated path is mock-tested but has not received a live runner token.
 - Partial: Alicia's Codex MCP connection completed sanitized tool discovery and an account-scoped read. This proves the interactive Codex connection, not a plain runner's independent bootstrap or refresh lifecycle. The Python SDK restart gap and minimum proof are recorded in `docs/feasibility/mcp-python-oauth-client.md`.
+- Partial: a version-pinned restart adapter now restores expiry/authorization-server state, atomically persists refresh rotation through a store seam, and prevents a headless process from falling into interactive authorization. Its contract tests use mock transport; the encrypted store, callback bootstrap, and live cross-process refresh proof remain unfinished.
 - Partial: one controlled local Codex Automation run successfully executed the read-only probe with `uv run --no-cache`; cloud Automation, secrets, usage limits, repeated-run reliability, and DST behavior remain unverified.
 - [ ] Prove a plain, non-agentic runner can authenticate to Robinhood Trading MCP headlessly and refresh credentials without routine human action
 - [ ] Prove explicit account selection and two independent Agentic-account bindings
