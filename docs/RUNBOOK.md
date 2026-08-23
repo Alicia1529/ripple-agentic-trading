@@ -2,6 +2,19 @@
 
 Operational procedures for the D26 single-account hosted v1. Replace placeholders with exact platform controls and commands during implementation.
 
+## Dry-run verification
+
+Run the complete fixture-backed path without broker tools:
+
+```bash
+uv run --no-cache python -m ripple.mvp run-dry-cycle \
+  --config config/mvp.json \
+  --fixture fixtures/mvp/dry_cycle.json \
+  --output /tmp/ripple-mvp
+```
+
+The two hosted stages use `publish-decision` and `execute-dry-run` exactly as documented in `routines/DECISION.md` and `routines/EXECUTION.md`. Their credential-free continuity output belongs under `state/`. A second command for the same cycle fails instead of overwriting it.
+
 ## Kill switch
 
 There is no instantaneous broker-side "flatten everything" switch.
@@ -20,7 +33,7 @@ Because v1 execution is LLM-mediated, disabling the hosted schedules is the stro
 - Connect Robinhood through the hosted platform's MCP connection. Do not export its tokens into repository secrets or local files.
 - Give the Decision Routine only approved read tools and repository access. It must have no Robinhood place/cancel capability. If the platform cannot enforce that separation, do not run the Decision Routine there.
 - Give only the isolated Execution Routine the narrow Robinhood read/review/place/cancel tools it needs. Do not provide news browsing or investment-reasoning inputs to that routine.
-- Enable exactly one Decision schedule and one Execution schedule. Confirm their repository, branch, timezone, and `America/New_York` self-check.
+- Enable exactly one Decision schedule and one Execution schedule following `routines/SCHEDULE.md`. Confirm their repository, branch, timezone, and `America/New_York` self-check.
 - Keep `execution.mode=dry_run` through one complete scheduled Day T decision → Day T+1 execution cycle. Review its plan, script output, exact proposed calls, JSONL records, and report.
 - Alicia alone changes `execution.mode` to `live` for the initial small allocation.
 

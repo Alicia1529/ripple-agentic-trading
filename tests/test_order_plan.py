@@ -102,6 +102,10 @@ class OrderPlanTests(unittest.TestCase):
         naive_time["decision_time"] = "2026-08-22T21:05:00"
         invalid_documents.append(naive_time)
 
+        future_snapshot = self.valid_document()
+        future_snapshot["market_snapshot_as_of"] = "2026-08-22T21:06:00-04:00"
+        invalid_documents.append(future_snapshot)
+
         empty_account = self.valid_document()
         empty_account["account_id"] = ""
         invalid_documents.append(empty_account)
@@ -130,6 +134,54 @@ class OrderPlanTests(unittest.TestCase):
             "price_tolerance_pct": "0.005", "reference_price_at_decision": "226.40",
         }]
         invalid_documents.append(invalid_order_decimal)
+
+        for document in invalid_documents:
+            with self.subTest(document=document):
+                with self.assertRaises(ValueError):
+                    OrderPlan.from_dict(document)
+
+    def test_mvp_portfolio_and_order_semantics_fail_closed(self):
+        valid_order = {
+            "order_id": "04bbf1c7-416b-4ca2-b5a6-0e27be980965",
+            "symbol": "AAPL",
+            "side": "BUY",
+            "quantity": "1",
+            "order_type": "LIMIT",
+            "limit_price": "101.00",
+            "price_tolerance_pct": "0.01",
+            "reference_price_at_decision": "100.00",
+        }
+        invalid_documents = []
+
+        bad_weight_sum = self.valid_document()
+        bad_weight_sum["target_portfolio"] = {"AAPL": "0.15", "cash": "0.80"}
+        invalid_documents.append(bad_weight_sum)
+
+        negative_weight = self.valid_document()
+        negative_weight["target_portfolio"] = {"AAPL": "-0.15", "cash": "1.15"}
+        invalid_documents.append(negative_weight)
+
+        for field, value in (
+            ("side", "SHORT"),
+            ("order_type", "STOP_LIMIT"),
+            ("quantity", "0"),
+            ("limit_price", "0"),
+            ("limit_price", "103"),
+            ("price_tolerance_pct", "0"),
+            ("reference_price_at_decision", "-1"),
+        ):
+            document = self.valid_document()
+            document["orders"] = [{**valid_order, field: value}]
+            invalid_documents.append(document)
+
+        missing_target = self.valid_document()
+        missing_target["orders"] = [valid_order]
+        missing_target["target_portfolio"] = {"MSFT": "0.15", "cash": "0.85"}
+        invalid_documents.append(missing_target)
+
+        duplicate_order = self.valid_document()
+        duplicate_order["orders"] = [valid_order, dict(valid_order)]
+        invalid_documents.append(duplicate_order)
 
         for document in invalid_documents:
             with self.subTest(document=document):

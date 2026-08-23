@@ -2,30 +2,30 @@
 
 Living status doc. Keep only genuinely unfinished work here.
 
-Status: **D26 HOSTED MVP IN PROGRESS — THREE-DAY DRY RUN / ONE-WEEK SMALL-ACCOUNT LIVE TARGET.** Production v1 is one Robinhood account, one hosted Decision Routine without broker write tools, one isolated hosted Execution Routine with the platform-managed Robinhood MCP connection, deterministic risk scripts, and credential-free continuity records in a private Git repository. SQLite, a plain executor, self-managed OAuth, exactly-once execution, multi-account support, and shadow strategies are not v1 launch work.
+Status: **LOCAL DRY-RUN MVP IMPLEMENTED; FIRST HOSTED SCHEDULED CYCLE PENDING.** The repository now has strict decision publication, deterministic risk revalidation, separate Decision/Execution CLI commands, fixture-backed end-to-end acceptance, credential-free JSON/JSONL/report output, and exact hosted routine contracts. Production v1 remains one Robinhood account. SQLite, a plain executor, self-managed OAuth, exactly-once execution, multi-account support, and shadow strategies are not v1 launch work.
 
 ## Development day 1 — deterministic core
 
-- [ ] Freeze the first strategy's universe, schedule, and minimum input set; do not add a plugin system or generic strategy interface
-- [ ] Implement only the sizing, position-cap, order-count, loss/drawdown, prohibited-product, price-tolerance, and available-cash calculations used by the first run
-- [ ] Make the scripts accept and return strict credential-free JSON with base-10 decimal strings
-- [ ] Add focused fixture tests for allowed, clipped, rejected, stale-price, malformed-input, and `execution.mode != live` cases
-- [ ] Finish only the `OrderPlan` semantic checks needed by those scripts and the hosted routines
+- [x] Freeze the first strategy's universe, schedule, and minimum input set; do not add a plugin system or generic strategy interface
+- [x] Implement only the sizing, position-cap, order-count, loss/drawdown, prohibited-product, price-tolerance, available-cash, wash-sale, and position-threshold calculations used by the first run
+- [x] Make the scripts accept and return strict credential-free JSON with base-10 decimal strings
+- [x] Add focused fixture tests for allowed, clipped, rejected, stale-price, malformed-input, and non-live mode cases
+- [x] Finish only the `OrderPlan` semantic checks needed by those scripts and the hosted routines
 
 ## Development day 2 — Decision Routine
 
-- [ ] Write the narrow Decision Routine contract: fresh session, approved read-only inputs, no Robinhood write tools, no credential handling
-- [ ] Produce exactly one strict per-cycle OrderPlan file with stable plan/order IDs and `account_id`
-- [ ] Append one compact credential-free JSONL decision record and sanitized human report
-- [ ] Pull before the run; commit and push after the run; report and stop on a Git conflict or failed push
-- [ ] Test the prompt and scripts against fixed fixtures; reject unknown fields, malformed output, and any proposed instrument outside the configured universe
+- [x] Write the narrow Decision Routine contract: fresh session, approved read-only inputs, no Robinhood write tools, no credential handling
+- [x] Produce exactly one strict per-cycle DecisionSnapshot and OrderPlan with stable plan/order IDs and `account_id`
+- [x] Append one compact credential-free JSONL decision record
+- [x] Document pull-before-run, commit/push-after-run, and fail-on-conflict behavior in the routine contract
+- [x] Test the command and scripts against fixed fixtures; reject unknown fields, malformed output, and any proposed instrument outside the configured universe
 
 ## Development day 3 — dry-run MVP
 
-- [ ] Write the isolated Execution Routine contract: load only the published plan/config/account facts, never investment news or thesis material
-- [ ] Re-run deterministic checks and permit only execute-as-is, downward scaling, rejection, or whole-plan abort
-- [ ] In `dry_run`, emit the exact proposed Robinhood calls without invoking write tools; append compact JSONL results and a report
-- [ ] Configure exactly one hosted Decision schedule and one hosted Execution schedule with an `America/New_York` time/date self-check
+- [x] Write the isolated Execution Routine contract: load only the published plan/config/account facts, never investment news or thesis material
+- [x] Re-run deterministic checks and permit only execute-as-is, downward scaling, rejection, or whole-plan abort
+- [x] In `dry_run`, emit credential-free proposed Robinhood arguments without invoking write tools; append compact JSONL results and a report
+- [ ] Configure exactly one hosted Decision schedule and one hosted Execution schedule with an `America/New_York` time/date self-check; verify the Decision environment excludes broker write capability
 - [ ] Observe one complete scheduled Day T decision → Day T+1 dry execution; resolve any schedule, repository, schema, or risk-script defect
 
 MVP is complete when that scheduled dry cycle is understandable from the OrderPlan, script outputs, JSONL records, and report without using broker write tools.

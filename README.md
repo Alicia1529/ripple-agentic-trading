@@ -28,7 +28,30 @@ On macOS, run [`scripts/verify-robinhood-mcp-oauth.sh`](scripts/verify-robinhood
 
 ## Status
 
-The three-day dry-run MVP and one-week hosted-routine production path are in progress. See `docs/TODO.md`.
+The fixture-backed dry-run MVP is implemented. It validates a strict decision, publishes one immutable-per-cycle snapshot and OrderPlan, re-runs deterministic execution risk checks, and produces credential-free JSON/JSONL records plus a human report. The first real hosted scheduled cycle is still an operational acceptance gate; see `docs/TODO.md`.
+
+## Run the dry-run MVP
+
+From the repository root:
+
+```bash
+uv run --no-cache python -m ripple.mvp run-dry-cycle \
+  --config config/mvp.json \
+  --fixture fixtures/mvp/dry_cycle.json \
+  --output /tmp/ripple-mvp
+```
+
+Review `/tmp/ripple-mvp/` for the frozen snapshot, published plan, execution result, JSONL records, and report. The command refuses to overwrite an existing cycle. It never calls a broker tool.
+
+The two hosted stages use the same implementation through `publish-decision` and `execute-dry-run`. Their exact contracts and schedule are in [`routines/`](routines/).
+
+Run the core suite with:
+
+```bash
+uv run --no-cache python -m unittest \
+  tests.test_decision_snapshot tests.test_order_plan tests.test_execution_event \
+  tests.test_risk tests.test_mvp_cycle
+```
 
 ## License
 

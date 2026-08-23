@@ -1,6 +1,9 @@
 """Immutable decision-stage order plans."""
 
 from dataclasses import dataclass
+from datetime import datetime
+from decimal import Decimal
+import re
 from typing import Any, Mapping
 
 from ._immutable_json import freeze_json, thaw_json, validate_json
@@ -49,6 +52,7 @@ _DECIMAL_ORDER_FIELDS = {
     "price_tolerance_pct",
     "reference_price_at_decision",
 }
+_SYMBOL = re.compile(r"[A-Z][A-Z0-9.-]{0,9}")
 
 
 def _validate_planned_order(order: Mapping[str, Any]) -> None:
@@ -63,6 +67,34 @@ def _validate_planned_order(order: Mapping[str, Any]) -> None:
     for field in scalar_fields:
         validator = require_decimal_string if field in _DECIMAL_ORDER_FIELDS else require_nonempty_string
         validator(order[field], field)
+    if not _SYMBOL.fullmatch(order["symbol"]):
+        raise ValueError("symbol must be an uppercase equity symbol")
+    if order["side"] not in {"BUY", "SELL"}:
+        raise ValueError("side must be BUY or SELL")
+    if order["order_type"] not in {"LIMIT", "MARKET"}:
+        raise ValueError("order_type must be LIMIT or MARKET")
+    if order["order_type"] == "LIMIT" and "limit_price" not in order:
+        raise ValueError("LIMIT orders require limit_price")
+    if order["order_type"] == "MARKET" and "limit_price" in order:
+        raise ValueError("MARKET orders must not have limit_price")
+    if "dollar_amount" in order and order["order_type"] != "MARKET":
+        raise ValueError("dollar_amount is valid only for MARKET orders")
+    if "stop_price" in order:
+        raise ValueError("stop orders are outside the MVP OrderPlan schema")
+    if "market_hours" in order and order["market_hours"] != "regular_hours":
+        raise ValueError("MVP orders require regular_hours")
+    if "time_in_force" in order and order["time_in_force"] != "gfd":
+        raise ValueError("MVP orders require gfd")
+    for field in fields & _DECIMAL_ORDER_FIELDS:
+        if Decimal(order[field]) <= 0:
+            raise ValueError(f"{field} must be greater than zero")
+    if Decimal(order["price_tolerance_pct"]) > Decimal("0.10"):
+        raise ValueError("price_tolerance_pct must not exceed 0.10")
+    if order["order_type"] == "LIMIT":
+        reference_price = Decimal(order["reference_price_at_decision"])
+        limit_move = abs(Decimal(order["limit_price"]) - reference_price) / reference_price
+        if limit_move > Decimal(order["price_tolerance_pct"]):
+            raise ValueError("limit_price must be inside price_tolerance_pct")
 
 
 @dataclass(frozen=True, init=False)
@@ -94,6 +126,12 @@ class OrderPlan:
                 document["market_snapshot_as_of"], "market_snapshot_as_of"
             ),
         }
+        decision_at = datetime.fromisoformat(values["decision_time"].replace("Z", "+00:00"))
+        snapshot_at = datetime.fromisoformat(
+            values["market_snapshot_as_of"].replace("Z", "+00:00")
+        )
+        if snapshot_at > decision_at:
+            raise ValueError("market_snapshot_as_of must not be after decision_time")
         target_portfolio = document["target_portfolio"]
         orders = document["orders"]
         if not isinstance(target_portfolio, Mapping):
@@ -107,8 +145,21 @@ class OrderPlan:
             raise ValueError("target_portfolio must map symbols to decimal strings")
         for weight in target_portfolio.values():
             require_decimal_string(weight, "target_portfolio weight")
+        if "cash" not in target_portfolio:
+            raise ValueError("target_portfolio must include cash")
+        weights = [Decimal(weight) for weight in target_portfolio.values()]
+        if any(weight < 0 or weight > 1 for weight in weights) or sum(weights) != Decimal("1"):
+            raise ValueError("target_portfolio weights must be between zero and one and sum to one")
         for order in orders:
             _validate_planned_order(order)
+            if order["symbol"] not in target_portfolio:
+                raise ValueError("planned order symbol must appear in target_portfolio")
+        order_ids = [order["order_id"] for order in orders]
+        if len(order_ids) != len(set(order_ids)):
+            raise ValueError("planned order ids must be unique")
+        order_symbols = [order["symbol"] for order in orders]
+        if len(order_symbols) != len(set(order_symbols)):
+            raise ValueError("MVP permits at most one planned order per symbol")
         validate_json(target_portfolio)
         validate_json(orders)
 
