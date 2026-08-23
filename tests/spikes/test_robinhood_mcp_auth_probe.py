@@ -21,11 +21,12 @@ VALID_ENV = {probe.URL_ENV: probe.EXPECTED_URL}
 
 
 class FakeMcpTransport:
-    def __init__(self, failure_status=None, malformed=False, exception=None):
+    def __init__(self, failure_status=None, malformed=False, exception=None, challenge=None):
         self.calls = []
         self.failure_status = failure_status
         self.malformed = malformed
         self.exception = exception
+        self.challenge = challenge
 
     async def handle(self, request):
         self.calls.append(request)
@@ -33,6 +34,8 @@ class FakeMcpTransport:
             raise self.exception
         if self.failure_status:
             headers = {"content-type": "application/json"}
+            if self.challenge:
+                headers["www-authenticate"] = self.challenge
             if 300 <= self.failure_status < 400:
                 headers["location"] = "https://interaction.example/authorize"
             return httpx2.Response(self.failure_status, headers=headers)
@@ -81,6 +84,25 @@ def invoke_main(environ, factory, argv=(), metadata_discoverer=probe.discover_oa
 
 
 class RobinhoodMcpAuthProbeTests(unittest.TestCase):
+    def test_bearer_parameter_parser_accepts_commas_and_rejects_missing_comma(self):
+        self.assertEqual(
+            probe._resource_metadata_url(['Bearer realm="mcp", resource_metadata="https://metadata.example/resource"']),
+            "https://metadata.example/resource",
+        )
+        with self.assertRaises(probe.MalformedProtocolResponse):
+            probe._resource_metadata_url(['Bearer realm="mcp" resource_metadata="https://metadata.example/resource"'])
+
+    def test_main_discovery_output_is_sanitized_and_always_nonzero(self):
+        transport = FakeMcpTransport(401, challenge='Bearer resource_metadata="https://metadata.example/resource"')
+
+        async def discovered(_config, _challenges):
+            return {"authentication": "not_demonstrated", "authorization_endpoint_advertised": True, "client_registration": "none", "headless_authentication_proven": False, "outcome": "oauth_metadata_discovered", "server": probe.SERVER_NAME, "token_endpoint_advertised": True}
+
+        status, stdout, stderr = invoke_main(VALID_ENV, session_factory(transport), metadata_discoverer=discovered)
+        self.assertEqual(status, 1)
+        self.assertEqual(json.loads(stdout)["outcome"], "oauth_metadata_discovered")
+        self.assertEqual(stderr, "")
+        self.assertEqual([call.method for call in transport.calls], ["POST"])
     def test_oauth_metadata_discovery_is_read_only_and_sanitized(self):
         secret = "metadata-secret-must-not-leak"
         calls = []
@@ -112,6 +134,29 @@ class RobinhoodMcpAuthProbeTests(unittest.TestCase):
             with self.subTest(challenge=challenge):
                 with self.assertRaises(probe.MalformedProtocolResponse):
                     asyncio.run(probe.discover_oauth_metadata(probe.ProbeConfig(probe.EXPECTED_URL), challenge, httpx2.MockTransport(lambda request: None)))
+
+    def test_metadata_documents_and_transport_fail_closed(self):
+        cases = [
+            ("malformed_json", None),
+            ("resource_redirect", None),
+            ("auth_redirect", None),
+            ("non_https_issuer", {"resource": probe.EXPECTED_URL, "authorization_servers": ["http://auth.example"]}),
+            ("missing_resource", {"authorization_servers": ["https://auth.example"]}),
+            ("network", None),
+        ]
+        for name, resource in cases:
+            with self.subTest(name=name):
+                async def handler(request, name=name, resource=resource):
+                    if name == "network":
+                        raise OSError("secret-network-error")
+                    if request.url.path == "/resource":
+                        if name == "malformed_json": return httpx2.Response(200, content=b"{")
+                        if name == "resource_redirect": return httpx2.Response(302, headers={"location": "https://elsewhere"})
+                        return httpx2.Response(200, json=resource or {"resource": probe.EXPECTED_URL, "authorization_servers": ["https://auth.example"]})
+                    if name == "auth_redirect": return httpx2.Response(302, headers={"location": "https://elsewhere"})
+                    return httpx2.Response(200, json={"issuer": "https://auth.example", "authorization_endpoint": "http://bad.example"})
+                with self.assertRaises((probe.MalformedProtocolResponse, OSError, ValueError)):
+                    asyncio.run(probe.discover_oauth_metadata(probe.ProbeConfig(probe.EXPECTED_URL), ['Bearer resource_metadata="https://metadata.example/resource"'], httpx2.MockTransport(handler)))
 
     def test_transport_only_initializes_and_lists_tools_without_delete_or_tool_call(self):
         transport = FakeMcpTransport()

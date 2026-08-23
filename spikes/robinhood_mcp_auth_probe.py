@@ -91,14 +91,22 @@ def _https_url(value: Any) -> str:
 
 def _resource_metadata_url(challenges: Sequence[str]) -> str:
     for challenge in challenges:
-        if not isinstance(challenge, str):
+        if not isinstance(challenge, str) or not challenge.lower().startswith("bearer "):
             continue
-        match = re.search(
-            r'(?:^|,)\s*Bearer\s+[^,]*?resource_metadata="([^"\\]*(?:\\.[^"\\]*)*)"', challenge,
-            re.IGNORECASE,
-        )
-        if match:
-            return _https_url(match.group(1).replace(r'\"', '"'))
+        rest = challenge[7:].strip()
+        params = {}
+        while rest:
+            match = re.match(r"([!#$%&'*+.^_`|~0-9A-Za-z-]+)=\"((?:\\.|[^\"])*)\"", rest)
+            if not match:
+                raise MalformedProtocolResponse
+            params[match.group(1).lower()] = match.group(2).replace(r'\"', '"')
+            rest = rest[match.end():].lstrip()
+            if rest:
+                if not rest.startswith(","):
+                    raise MalformedProtocolResponse
+                rest = rest[1:].lstrip()
+        if "resource_metadata" in params:
+            return _https_url(params["resource_metadata"])
     raise MalformedProtocolResponse
 
 
@@ -262,7 +270,7 @@ def main(
         logging.disable(previous_logging_disable)
 
     print(json.dumps(result, separators=(",", ":"), sort_keys=True))
-    return 0 if result["outcome"] == "authenticated_discovery" else 1
+    return 1
 
 
 if __name__ == "__main__":
