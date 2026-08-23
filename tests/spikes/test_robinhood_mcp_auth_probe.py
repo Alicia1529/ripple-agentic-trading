@@ -4,6 +4,7 @@ import json
 import sys
 import unittest
 import asyncio
+from functools import partial
 from contextlib import asynccontextmanager, redirect_stderr, redirect_stdout
 from pathlib import Path
 
@@ -103,6 +104,19 @@ class RobinhoodMcpAuthProbeTests(unittest.TestCase):
         self.assertEqual(json.loads(stdout)["outcome"], "oauth_metadata_discovered")
         self.assertEqual(stderr, "")
         self.assertEqual([call.method for call in transport.calls], ["POST"])
+
+    def test_main_uses_real_discoverer_with_fake_metadata_transport(self):
+        mcp = FakeMcpTransport(401, challenge='Bearer resource_metadata="https://metadata.example/resource"')
+        metadata_calls = []
+        async def handler(request):
+            metadata_calls.append(request)
+            if request.url.path == "/resource":
+                return httpx2.Response(200, json={"resource": probe.EXPECTED_URL, "authorization_servers": ["https://auth.example"]})
+            return httpx2.Response(200, json={"issuer": "https://auth.example"})
+        status, stdout, _stderr = invoke_main(VALID_ENV, session_factory(mcp), metadata_discoverer=partial(probe.discover_oauth_metadata, http_transport=httpx2.MockTransport(handler)))
+        self.assertEqual(status, 1)
+        self.assertEqual(json.loads(stdout)["outcome"], "oauth_metadata_discovered")
+        self.assertEqual([call.method for call in metadata_calls], ["GET", "GET"])
     def test_oauth_metadata_discovery_is_read_only_and_sanitized(self):
         secret = "metadata-secret-must-not-leak"
         calls = []
@@ -142,6 +156,14 @@ class RobinhoodMcpAuthProbeTests(unittest.TestCase):
             ("auth_redirect", None),
             ("non_https_issuer", {"resource": probe.EXPECTED_URL, "authorization_servers": ["http://auth.example"]}),
             ("missing_resource", {"authorization_servers": ["https://auth.example"]}),
+            ("http_resource", {"resource": "http://resource.example", "authorization_servers": ["https://auth.example"]}),
+            ("missing_servers", {"resource": probe.EXPECTED_URL}),
+            ("missing_issuer", None),
+            ("auth_network", None),
+            ("auth_malformed_json", None),
+            ("http_authorization_endpoint", None),
+            ("http_token_endpoint", None),
+            ("http_registration_endpoint", None),
             ("network", None),
         ]
         for name, resource in cases:
@@ -153,8 +175,15 @@ class RobinhoodMcpAuthProbeTests(unittest.TestCase):
                         if name == "malformed_json": return httpx2.Response(200, content=b"{")
                         if name == "resource_redirect": return httpx2.Response(302, headers={"location": "https://elsewhere"})
                         return httpx2.Response(200, json=resource or {"resource": probe.EXPECTED_URL, "authorization_servers": ["https://auth.example"]})
+                    if name == "auth_network": raise OSError("secret-auth-network-error")
+                    if name == "auth_malformed_json": return httpx2.Response(200, content=b"{")
                     if name == "auth_redirect": return httpx2.Response(302, headers={"location": "https://elsewhere"})
-                    return httpx2.Response(200, json={"issuer": "https://auth.example", "authorization_endpoint": "http://bad.example"})
+                    metadata = {"issuer": "https://auth.example"}
+                    if name == "missing_issuer": metadata = {}
+                    if name == "http_authorization_endpoint": metadata["authorization_endpoint"] = "http://bad.example"
+                    if name == "http_token_endpoint": metadata["token_endpoint"] = "http://bad.example"
+                    if name == "http_registration_endpoint": metadata["registration_endpoint"] = "http://bad.example"
+                    return httpx2.Response(200, json=metadata)
                 with self.assertRaises((probe.MalformedProtocolResponse, OSError, ValueError)):
                     asyncio.run(probe.discover_oauth_metadata(probe.ProbeConfig(probe.EXPECTED_URL), ['Bearer resource_metadata="https://metadata.example/resource"'], httpx2.MockTransport(handler)))
 
