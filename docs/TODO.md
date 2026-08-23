@@ -2,16 +2,13 @@
 
 Living status doc — this reflects the *current* state of in-flight work, not a growing history. When a section is done, either delete it or fold it into a one-line note under "Recently completed"; don't leave finished work cluttering this file. If there's something a future session genuinely needs to pick up mid-task, that unfinished-work state belongs here, in enough detail that the next agent doesn't have to re-derive it from git log or chat history.
 
-Status: **PHASE −1 IN PROGRESS.** The architecture draft exists, and a safe, read-only Robinhood MCP probe scaffold now exists. Headless authentication, credential refresh, and broker feasibility remain unverified.
+Status: **PHASE −1 IN PROGRESS.** The architecture draft exists, and local runner-owned Robinhood MCP bootstrap, headless reuse, and cross-process refresh are verified. Account binding, idempotency, reconciliation, and deployment-runtime feasibility remain unverified.
 
 ## Phase −1 — feasibility
 
-- Partial: a disposable Robinhood MCP probe can discover sanitized public OAuth metadata after the endpoint's unauthenticated 401 challenge. It can also accept a runner-owned access token from the environment and safely exercise only `initialize`/`tools/list`; that authenticated path is mock-tested but has not received a live runner token.
-- Partial: Alicia's Codex MCP connection completed sanitized tool discovery and an account-scoped read. This proves the interactive Codex connection, not a plain runner's independent bootstrap or refresh lifecycle. The Python SDK restart gap and minimum proof are recorded in `docs/feasibility/mcp-python-oauth-client.md`.
-- Partial: a version-pinned restart adapter now restores expiry/authorization-server state, atomically persists refresh rotation through a store seam, and prevents a headless process from falling into interactive authorization. A local macOS Keychain store, strict loopback callback, interactive bootstrap command, fresh-process headless probe, two-pass forced-expiry refresh proof, and repeatable verification wizard are implemented and mock-tested. No live bootstrap or cross-process refresh proof has run, and the production secret-store choice remains unfinished.
 - Partial: one controlled local Codex Automation run successfully executed the read-only probe with `uv run --no-cache`; cloud Automation, secrets, usage limits, repeated-run reliability, and DST behavior remain unverified.
 - Partial: the current equity tool schemas require explicit `account_number` on review/place/cancel/history, and placement advertises a reusable UUID `ref_id`. Two-account binding and live broker deduplication remain unverified.
-- [ ] Prove a plain, non-agentic runner can authenticate to Robinhood Trading MCP headlessly and refresh credentials without routine human action
+- [x] Prove a plain, non-agentic runner can authenticate to Robinhood Trading MCP headlessly and refresh credentials without routine human action (`docs/feasibility/mcp-python-oauth-client.md`)
 - [ ] Prove explicit account selection and two independent Agentic-account bindings
 - [x] Capture the exact review/place/cancel/history schemas, including fractional/dollar-order behavior (`docs/feasibility/robinhood-equity-tool-schemas.md`)
 - [ ] Test whether Robinhood accepts a stable client order id / idempotency key
@@ -48,6 +45,7 @@ Before any increase beyond the initial $500–1000 per live account:
 
 ## Recently completed
 
+- On 2026-08-22 Alicia completed the local OAuth wizard: runner-owned interactive bootstrap, sanitized stored-state validation, two fresh-process forced-expiry refreshes, and final browser-free `initialize`/`tools/list` reuse all succeeded. No broker tool was called.
 - Architecture draft: `PROPOSAL.md`, `docs/ARCHITECTURE.md`, and `docs/DECISIONS.md` written and internally consistent; feasibility remains open.
 - Repo reorganized: `docs/archive/` holds the two original independent draft proposals (Claude's and Codex's) plus the comparison research that synthesized them — superseded, kept for history only.
 - Agent collaboration entry points consolidated: `AGENTS.md` and `CLAUDE.md` are thin indexes into shared docs; `docs/INVARIANTS.md` is the common correctness checklist.
