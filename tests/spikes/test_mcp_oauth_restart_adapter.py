@@ -54,6 +54,7 @@ def stored_state(
     server_url=SERVER_URL,
     issuer=ISSUER,
     token_endpoint=ISSUER + "/token",
+    scope="mcp:tools",
 ):
     state = adapter.OAuthState(
         server_url=server_url,
@@ -64,6 +65,7 @@ def stored_state(
             access_token="access-old",
             expires_in=3600,
             refresh_token=refresh_token,
+            scope=scope,
         ),
         client_info=OAuthClientInformationFull(
             client_id="client-id",
@@ -250,6 +252,7 @@ class RestartSafeOAuthClientProviderTests(unittest.TestCase):
         self.assertEqual([call.url.host for call in calls], ["auth.example", "agent.robinhood.com"])
         self.assertEqual(store.saved[0][0], "1")
         self.assertEqual(store.saved[0][1].tokens.refresh_token, "refresh-new")
+        self.assertEqual(store.saved[0][1].tokens.scope, "mcp:tools")
         self.assertGreater(store.saved[0][1].access_token_expires_at, time.time())
 
     def test_unknown_expiry_refreshes_before_sending_access_token(self):
