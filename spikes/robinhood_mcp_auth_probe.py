@@ -8,7 +8,7 @@ import os
 import re
 import sys
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, AsyncContextManager, Callable, Mapping, Protocol, Sequence
 from urllib.parse import urlparse
 
@@ -16,6 +16,7 @@ from urllib.parse import urlparse
 SERVER_NAME = "robinhood_trading"
 EXPECTED_URL = "https://agent.robinhood.com/mcp/trading"
 URL_ENV = "ROBINHOOD_MCP_URL"
+ACCESS_TOKEN_ENV = "ROBINHOOD_MCP_ACCESS_TOKEN"
 
 
 class ProbeSession(Protocol):
@@ -34,6 +35,7 @@ SessionFactory = Callable[["ProbeConfig"], AsyncContextManager[ProbeSession]]
 @dataclass(frozen=True)
 class ProbeConfig:
     url: str
+    access_token: str | None = field(default=None, repr=False)
 
 
 class MalformedProtocolResponse(Exception):
@@ -68,7 +70,10 @@ def _load_config(environ: Mapping[str, str]) -> ProbeConfig:
     url = environ.get(URL_ENV, "").strip()
     if url != EXPECTED_URL:
         raise ValueError
-    return ProbeConfig(url=url)
+    access_token = environ.get(ACCESS_TOKEN_ENV)
+    if access_token is not None and (not access_token or "\r" in access_token or "\n" in access_token):
+        raise ValueError
+    return ProbeConfig(url=url, access_token=access_token)
 
 
 def _failure(outcome: str) -> Mapping[str, Any]:
@@ -200,6 +205,8 @@ async def run_probe(config: ProbeConfig, session_factory: SessionFactory, metada
                     raise MalformedProtocolResponse
     except Exception as exc:
         if any(status == 401 for status in getattr(session, "status_codes", ())):
+            if config.access_token:
+                return _failure("access_token_rejected")
             try:
                 return await metadata_discoverer(config, getattr(session, "challenges", ()))
             except Exception:
@@ -207,9 +214,9 @@ async def run_probe(config: ProbeConfig, session_factory: SessionFactory, metada
         return _failure(_classify_exception(exc, getattr(session, "status_codes", ())))
 
     return {
-        "authentication": "not_demonstrated",
+        "authentication": "demonstrated" if config.access_token else "not_demonstrated",
         "headless_authentication_proven": False,
-        "outcome": "protocol_reachable_tool_discovery",
+        "outcome": "access_token_authenticated_tool_discovery" if config.access_token else "protocol_reachable_tool_discovery",
         "protocol_version": protocol_version,
         "server": SERVER_NAME,
         "tool_count": len(tools),
@@ -234,6 +241,7 @@ async def mcp_session(config: ProbeConfig, http_transport: Any = None):
     async with httpx2.AsyncClient(
         event_hooks={"response": [record_status]},
         follow_redirects=False,
+        headers={"Authorization": f"Bearer {config.access_token}"} if config.access_token else None,
         transport=http_transport,
     ) as http_client:
         async with streamable_http_client(
@@ -270,7 +278,7 @@ def main(
         logging.disable(previous_logging_disable)
 
     print(json.dumps(result, separators=(",", ":"), sort_keys=True))
-    return 1
+    return 0 if result["outcome"] == "access_token_authenticated_tool_discovery" else 1
 
 
 if __name__ == "__main__":

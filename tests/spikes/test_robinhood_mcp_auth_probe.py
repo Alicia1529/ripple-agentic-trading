@@ -19,6 +19,7 @@ PROBE_SPEC.loader.exec_module(probe)
 
 
 VALID_ENV = {probe.URL_ENV: probe.EXPECTED_URL}
+TOKEN_ENV = {**VALID_ENV, probe.ACCESS_TOKEN_ENV: "test-access-token"}
 
 
 class FakeMcpTransport:
@@ -217,6 +218,61 @@ class RobinhoodMcpAuthProbeTests(unittest.TestCase):
             [json.loads(request.content.decode())["method"] for request in transport.calls],
         )
 
+    def test_access_token_authenticates_without_tool_call_or_secret_output(self):
+        transport = FakeMcpTransport()
+
+        status, stdout, stderr = invoke_main(TOKEN_ENV, session_factory(transport))
+
+        self.assertEqual(status, 0)
+        self.assertEqual(
+            json.loads(stdout),
+            {
+                "authentication": "demonstrated",
+                "headless_authentication_proven": False,
+                "outcome": "access_token_authenticated_tool_discovery",
+                "protocol_version": "2025-11-25",
+                "server": "robinhood_trading",
+                "tool_count": 1,
+            },
+        )
+        self.assertEqual(stderr, "")
+        self.assertNotIn(TOKEN_ENV[probe.ACCESS_TOKEN_ENV], stdout)
+        self.assertNotIn(
+            TOKEN_ENV[probe.ACCESS_TOKEN_ENV],
+            repr(probe._load_config(TOKEN_ENV)),
+        )
+        self.assertTrue(all(
+            request.headers["authorization"] == "Bearer " + TOKEN_ENV[probe.ACCESS_TOKEN_ENV]
+            for request in transport.calls
+        ))
+        self.assertNotIn(
+            "tools/call",
+            [json.loads(request.content.decode())["method"] for request in transport.calls],
+        )
+
+    def test_rejected_access_token_fails_closed_without_metadata_discovery(self):
+        transport = FakeMcpTransport(
+            failure_status=401,
+            challenge='Bearer resource_metadata="https://metadata.example/resource"',
+        )
+        metadata_called = False
+
+        async def metadata_discoverer(_config, _challenges):
+            nonlocal metadata_called
+            metadata_called = True
+
+        status, stdout, stderr = invoke_main(
+            TOKEN_ENV,
+            session_factory(transport),
+            metadata_discoverer=metadata_discoverer,
+        )
+
+        self.assertEqual(status, 1)
+        self.assertEqual(json.loads(stdout)["outcome"], "access_token_rejected")
+        self.assertEqual(stderr, "")
+        self.assertFalse(metadata_called)
+        self.assertNotIn(TOKEN_ENV[probe.ACCESS_TOKEN_ENV], stdout)
+
     def test_authentication_and_interaction_requirements_fail_closed_without_redirects(self):
         for status_code, outcome in (
             (401, "oauth_metadata_discovery_failed"),
@@ -276,6 +332,15 @@ class RobinhoodMcpAuthProbeTests(unittest.TestCase):
         self.assertEqual(status, 1)
         self.assertEqual(json.loads(stdout)["outcome"], "arguments_not_allowed")
         self.assertEqual(transport.calls, [])
+
+        for invalid_token in ("", "bad\rvalue", "bad\nvalue"):
+            with self.subTest(invalid_token=repr(invalid_token)):
+                status, stdout, _stderr = invoke_main(
+                    {**VALID_ENV, probe.ACCESS_TOKEN_ENV: invalid_token},
+                    session_factory(transport),
+                )
+                self.assertEqual(status, 1)
+                self.assertEqual(json.loads(stdout)["outcome"], "missing_or_invalid_config")
 
 
 if __name__ == "__main__":
