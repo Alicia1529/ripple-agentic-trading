@@ -153,22 +153,41 @@ class RestartSafeOAuthClientProviderTests(unittest.TestCase):
 
         self.assertEqual(store.saved, [])
 
-    def test_token_exchange_failure_does_not_expose_response_body(self):
+    def test_token_exchange_failures_do_not_expose_response_body(self):
         secret = "authorization-code-or-secret"
-        instance = bootstrap_provider(MemoryStateStore())
-        response = httpx2.Response(400, content=("failure " + secret).encode())
+        responses = [
+            httpx2.Response(400, content=("failure " + secret).encode()),
+            httpx2.Response(200, json={"error_description": secret}),
+        ]
+        for response in responses:
+            with self.subTest(status=response.status_code):
+                instance = bootstrap_provider(MemoryStateStore())
+                with self.assertLogs("mcp.client.auth.oauth2", level="ERROR") as captured:
+                    try:
+                        asyncio.run(instance._handle_token_response(response))
+                    except adapter.OAuthBootstrapRequired as raised:
+                        caught = raised
+                        logging.getLogger("mcp.client.auth.oauth2").exception("OAuth flow error")
+                    else:
+                        self.fail("expected OAuthBootstrapRequired")
 
-        with self.assertLogs("mcp.client.auth.oauth2", level="ERROR") as captured:
-            try:
-                asyncio.run(instance._handle_token_response(response))
-            except adapter.OAuthBootstrapRequired as raised:
-                caught = raised
-                logging.getLogger("mcp.client.auth.oauth2").exception("OAuth flow error")
-            else:
-                self.fail("expected OAuthBootstrapRequired")
+                self.assertNotIn(secret, str(caught))
+                self.assertNotIn(secret, "\n".join(captured.output))
 
-        self.assertNotIn(secret, str(caught))
-        self.assertNotIn(secret, "\n".join(captured.output))
+    def test_malformed_successful_refresh_does_not_log_or_clear_state(self):
+        secret = "refresh-secret-must-not-leak"
+        store = MemoryStateStore(stored_state(expires_at=time.time() - 1))
+
+        async def handler(_request):
+            return httpx2.Response(200, json={"error_description": secret})
+
+        with self.assertNoLogs("mcp.client.auth.oauth2", level="ERROR"):
+            with self.assertRaises(adapter.OAuthRefreshUnavailable) as raised:
+                asyncio.run(request_with(provider(store), handler))
+
+        self.assertNotIn(secret, str(raised.exception))
+        self.assertEqual(store.cleared, [])
+        self.assertIsNotNone(store.versioned_state)
 
     def test_interactive_bootstrap_clears_invalid_state_with_revision(self):
         store = MemoryStateStore(

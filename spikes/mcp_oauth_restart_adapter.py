@@ -209,7 +209,10 @@ class RestartSafeOAuthClientProvider(OAuthClientProvider):
             raise OAuthBootstrapRequired(
                 f"OAuth token exchange failed with status {response.status_code}"
             )
-        await super()._handle_token_response(response)
+        try:
+            await super()._handle_token_response(response)
+        except Exception:
+            raise OAuthBootstrapRequired("OAuth token exchange returned an invalid response") from None
         await self._persist()
 
     async def _handle_refresh_response(self, response: httpx2.Response) -> bool:
@@ -237,9 +240,20 @@ class RestartSafeOAuthClientProvider(OAuthClientProvider):
                 f"OAuth refresh failed with status {response.status_code}"
             )
 
-        refreshed = await super()._handle_refresh_response(response)
-        if not refreshed:  # pragma: no cover - guarded by the explicit status check above
-            raise OAuthRefreshUnavailable("OAuth refresh response was invalid")
+        body = await response.aread()
+        try:
+            refreshed_tokens = OAuthToken.model_validate_json(body)
+        except Exception:
+            raise OAuthRefreshUnavailable("OAuth refresh returned an invalid response") from None
+
+        prior_tokens = self.context.current_tokens
+        if refreshed_tokens.scope is None and prior_tokens is not None:
+            refreshed_tokens.scope = prior_tokens.scope
+        if refreshed_tokens.refresh_token is None and prior_tokens is not None:
+            refreshed_tokens.refresh_token = prior_tokens.refresh_token
+        self.context.current_tokens = refreshed_tokens
+        self.context.update_token_expiry(refreshed_tokens)
+        await self._buffer.set_tokens(refreshed_tokens)
         await self._persist()
         return True
 
