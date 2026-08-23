@@ -98,9 +98,15 @@ The current registry exposes order history through `get_equity_orders`; there is
 
 No review identifier or approval token is returned by `review_equity_order`; placement repeats the order parameters. No declaration states that review output is cryptographically or transactionally bound to a later placement. [R1]
 
+### Local live result — 2026-08-22
+
+The plain local runner selected the one caller-accessible account and invoked `get_equity_orders` once with that account number. The response contained a well-formed nullable/list `orders` envelope. The probe emitted only fixed booleans and a fixed outcome string: it did not emit or retain order identifiers, symbols, quantities, prices, states, counts, or pagination data.
+
+This proves that the authenticated runner can reach and structurally parse the history read path. It does **not** prove history completeness, pagination, lifecycle transitions, or reconciliation of accepted, rejected, partial, canceled, or ambiguous placements. In particular, the declared history output does not expose the placement `ref_id`, so a safe matching strategy for ambiguous placement outcomes remains unresolved.
+
 ## What schema inspection does not prove
 
-Without invoking the tools, this snapshot does not prove:
+Schema inspection and the sanitized read-path probe do not prove:
 
 - that live account eligibility, symbol tradability, fractional eligibility, buying power, or tax-lot eligibility will pass;
 - actual minimum/maximum notionals, share increments beyond the stated six-decimal fractional ceiling, enum rejection behavior, or session availability for a particular instrument;

@@ -45,7 +45,7 @@ def _field(value: Any, name: str) -> Any:
     raise AccountBindingError("Robinhood account response is malformed")
 
 
-def _select_account(response: Any) -> tuple[AgenticAccountBinding, int, bool]:
+def select_agentic_account(response: Any) -> tuple[AgenticAccountBinding, int, bool]:
     structured = _field(response, "structured_content")
     data = _field(structured, "data")
     accounts = _field(data, "accounts")
@@ -85,7 +85,7 @@ async def run_account_probe(provider: Any, session_factory: SessionFactory = mcp
     async with session_factory(provider) as session:
         await session.initialize()
         response = await session.call_tool("get_accounts", {})
-    binding, account_count, active = _select_account(response)
+    binding, account_count, active = select_agentic_account(response)
     return AccountProbeResult(
         binding=binding,
         evidence={
