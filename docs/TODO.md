@@ -6,7 +6,7 @@ Status: **PHASE −1 IN PROGRESS.** The architecture draft exists, and local run
 
 ## Phase −1 — feasibility
 
-- Partial: one controlled local Codex Automation run successfully executed the read-only probe with `uv run --no-cache`; cloud Automation, secrets, usage limits, repeated-run reliability, and DST behavior remain unverified.
+- Partial: one controlled local Codex Automation run successfully executed the read-only probe with `uv run --no-cache`. The same safe temporary Automation was activated at 2026-08-22 21:43 PDT for its next unchanged daily trigger at 2026-08-23 19:28 PDT, configured about 21 hours 44 minutes in advance; after observing that run, pause it or leave it active for one additional unchanged trigger to test repetition. Cloud Automation, secrets, usage limits, repeated-run reliability, and live DST-boundary behavior remain unverified.
 - Partial: the local runner's sanitized `get_accounts` probe found two brokerage accounts and selected exactly one active caller-accessible account without disclosing its identifier. A second independent credential/account binding remains unverified. The equity schemas require explicit `account_number` on review/place/cancel/history, and placement advertises a reusable UUID `ref_id`; live broker deduplication remains unverified.
 - [x] Prove a plain, non-agentic runner can authenticate to Robinhood Trading MCP headlessly and refresh credentials without routine human action (`docs/feasibility/mcp-python-oauth-client.md`)
 - [ ] Prove explicit account selection and two independent Agentic-account bindings

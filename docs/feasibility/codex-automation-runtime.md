@@ -58,3 +58,7 @@ uv run --no-cache python spikes/codex_scheduler_runtime_probe.py
 Later on 2026-08-22, the same paused Automation was reactivated twice with the unchanged safe prompt and command, first for 19:25 PDT and then for 19:28 PDT. No new standalone task appeared in the project task list by 19:26:36 (96 seconds after the first trigger) or by 19:29:07 (67 seconds after the second trigger). The Automation memory also remained unchanged from the successful 16:50 run. It was paused again at 19:29 PDT to prevent a late or next-day execution.
 
 These are bounded missed-trigger observations, not probe-command failures: the Python command never became observable as started. Because both schedules were edited only shortly before their target minute, this does not prove that a stable schedule configured well in advance is unreliable. It does show that near-term RRULE edits are not a dependable way to request an immediate verification run and must not be used as the production scheduling model.
+
+## Stable-schedule follow-up in progress
+
+At 2026-08-22 21:43 PDT, the same temporary Automation was reactivated without changing its safe prompt, command, project, or 19:28 PDT daily schedule. Its next trigger is 2026-08-23 19:28 PDT, about 21 hours 44 minutes after activation. This deliberately avoids the near-term-edit condition above. The run is pending and is not evidence until its standalone task and output are observed; after observation, pause the Automation or retain exactly one further unchanged trigger to test repetition.
