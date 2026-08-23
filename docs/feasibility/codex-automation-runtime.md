@@ -52,3 +52,9 @@ uv run --no-cache python spikes/codex_scheduler_runtime_probe.py
 - This is not evidence about cloud Automation, cloud checkout selection, secrets, usage limits, or any cloud runtime.
 - One successful controlled run does not establish repeated-run reliability, timing precision, or daylight-saving behavior.
 - No broker operation, network operation, credential access, or production scheduling behavior was tested.
+
+## Near-term reschedule observation
+
+Later on 2026-08-22, the same paused Automation was reactivated twice with the unchanged safe prompt and command, first for 19:25 PDT and then for 19:28 PDT. No new standalone task appeared in the project task list by 19:26:36 (96 seconds after the first trigger) or by 19:29:07 (67 seconds after the second trigger). The Automation memory also remained unchanged from the successful 16:50 run. It was paused again at 19:29 PDT to prevent a late or next-day execution.
+
+These are bounded missed-trigger observations, not probe-command failures: the Python command never became observable as started. Because both schedules were edited only shortly before their target minute, this does not prove that a stable schedule configured well in advance is unreliable. It does show that near-term RRULE edits are not a dependable way to request an immediate verification run and must not be used as the production scheduling model.
