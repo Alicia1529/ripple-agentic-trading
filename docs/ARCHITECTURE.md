@@ -98,6 +98,13 @@ Once generated, the Execution Agent may only: **execute as-is / abort the whole 
 
 Execution status is not mutated inside the plan. `planned`, `submission_started`, `broker_acknowledged`, `partially_filled`, `filled`, `rejected`, `aborted`, and `unknown` are append-only `ExecutionEvent` facts. Scaling or clipping produces an event that records the original quantity, the applied rule, and the actual quantity; the original OrderPlan remains unchanged.
 
+The initial `ExecutionEvent` value object has a strict seven-field envelope, finite
+kind-specific payloads, detached immutable serialization, downward-only adjustment
+values, and credential-free URI plus SHA-256 evidence pointers. It deliberately does
+not provide append-only persistence, event ordering, transition validation, order-to-plan
+membership, transactional writes, leases, or reconciliation; those correctness
+guarantees belong to the later transactional repository and execution state machine.
+
 - Allowed: a symbol gaps overnight beyond the tolerance threshold → the execution guard rejects that order.
 - Not allowed: the PM decided to buy NVDA yesterday, and the Execution Agent decides today it doesn't like NVDA anymore → sells it.
 

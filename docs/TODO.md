@@ -19,7 +19,7 @@ Status: **PHASE −1 IN PROGRESS.** The architecture draft exists, and local run
 
 ## Phase 0 — deterministic core
 
-- Partial: the initial `DecisionSnapshot` and `OrderPlan` modules now enforce strict, deeply immutable JSON envelopes with canonical UUIDs and timezone-aware timestamps; `OrderPlan` uses a scalar planned-order field allowlist so execution outcomes cannot be nested into it, while tax lots remain out of scope. Feed-specific inputs, semantic portfolio/order validation, Decimal parsing/ranges, canonical hashing/persistence, and `ExecutionEvent` remain unfinished.
+- Partial: `DecisionSnapshot`, `OrderPlan`, and `ExecutionEvent` now enforce strict, deeply immutable document envelopes; `ExecutionEvent` has finite kind-specific payloads, downward-only adjustment values, fail-closed unknown facts, and URI plus SHA-256 evidence pointers. Feed-specific inputs, semantic portfolio/order validation, canonical hashing, append-only persistence, event uniqueness/order, transition validation, order-to-plan membership, transactional writes, and unknown-submission blocking remain unfinished.
 - [ ] Choose the smallest transactional and object stores that satisfy D15; document retention, backup/export, unique constraints, conditional writes, and cross-runner leases
 - [ ] Implement immutable `DecisionSnapshot` and `OrderPlan` schemas plus append-only `ExecutionEvent` records
 - [ ] Implement risk engine (position sizing, daily loss breaker, drawdown tiers, wash-sale guard, deterministic exits) as unit-testable code
