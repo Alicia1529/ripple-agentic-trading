@@ -1,10 +1,20 @@
 # Robinhood MCP equity-order tool schemas
 
-Research date: 2026-08-22. This is a read-only snapshot of the first-party `robinhood_trading` MCP tool declarations exposed to the current authenticated Codex session. The declarations were inspected through the session's tool registry; none of the Robinhood tools—including review, place, cancel, or order history—was invoked. All schema and behavioral claims below come from those runtime declarations. [R1]
+Research date: 2026-08-22. This is a read-only snapshot of the first-party `robinhood_trading` MCP tool declarations exposed to the current authenticated Codex session. The declarations were inspected through the session's tool registry without invoking a Robinhood tool. All schema and behavioral claims below come from those runtime declarations; the separate local result records the later read-only account call. [R1]
+
+## `get_accounts`
+
+`get_accounts` takes no arguments. It returns nullable `data.accounts`; each non-null account includes a full `account_number`, caller-relative `agentic_allowed`, account state/deactivation fields, brokerage and trading types, default status, options level, and an `rhs_account_number`. Nickname, affiliate, management type, linked crypto account number, and unsettled funds are optional. Account and crypto identifiers must be masked except when passed unchanged to another broker tool. [R1]
+
+The declaration says exactly one account is accessible to the current agent identity and that `agentic_allowed` is the sole eligibility signal; nickname text must not be used to infer eligibility. Ripple's local probe therefore selects only when exactly one account has that signal, keeps the full identifier in process memory, and fails closed on zero, multiple, or malformed candidates. It reports account count and sanitized booleans only. [R1]
+
+### Local live result — 2026-08-22
+
+After the OAuth wizard completed, the plain local runner invoked `get_accounts` once. The sanitized result reported two brokerage accounts, exactly one caller-accessible binding, and an active selected account. No account identifier, nickname, balance, position, or order detail was emitted. This proves one local credential-to-account binding; it does not yet prove the second independent binding required by the target architecture.
 
 ## Account selection and shared order semantics
 
-All four tools require an explicit `account_number`. It must come from the user or be clearly implied; the declarations explicitly prohibit defaulting to an account returned by `get_accounts`. Review, place, and cancel additionally require `agentic_allowed=true`; `get_equity_orders` does not declare that restriction. Cancellation requires the same account that owns the order. [R1]
+All four tools require an explicit `account_number`. The current account declaration directs callers to use its unique accessible account for trades; the order declarations also require the account to be explicitly identified in each call rather than omitted. Review, place, and cancel additionally require `agentic_allowed=true`; `get_equity_orders` does not declare that restriction. Cancellation requires the same account that owns the order. [R1]
 
 `review_equity_order` and `place_equity_order` share these order fields and rules: [R1]
 
@@ -103,4 +113,4 @@ Those properties require separately authorized, deliberately scoped live tests. 
 
 ## Source
 
-- **[R1] First-party runtime tool registry:** current-session declarations for `mcp__robinhood_trading__review_equity_order`, `mcp__robinhood_trading__place_equity_order`, `mcp__robinhood_trading__cancel_equity_order`, and `mcp__robinhood_trading__get_equity_orders`, inspected 2026-08-22 without calling any Robinhood tool. Because this is a session-local runtime contract rather than a public web page, it has no stable external URL.
+- **[R1] First-party runtime tool registry:** current-session declarations for `mcp__robinhood_trading__get_accounts`, `mcp__robinhood_trading__review_equity_order`, `mcp__robinhood_trading__place_equity_order`, `mcp__robinhood_trading__cancel_equity_order`, and `mcp__robinhood_trading__get_equity_orders`, inspected 2026-08-22 without calling any Robinhood tool. Because this is a session-local runtime contract rather than a public web page, it has no stable external URL.

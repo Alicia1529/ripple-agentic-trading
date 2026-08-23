@@ -66,11 +66,18 @@ The local feasibility path now also includes:
 - `spikes/robinhood_mcp_oauth_cli.py probe`: a separate headless command with no redirect or callback handler. It performs only MCP `initialize` and `tools/list` and emits sanitized aggregate output.
 - `spikes/robinhood_mcp_oauth_cli.py refresh-proof`: atomically marks only the stored absolute expiry stale, starts the same headless probe, and requires the store revision to show exactly one refresh replacement.
 - `scripts/verify-robinhood-mcp-oauth.sh`: the repeatable local five-stage verification wizard. It runs `refresh-proof` twice as separate processes before an ordinary headless probe, exercising a rotated or reused refresh credential. Run it from any directory; it returns to the repository root itself.
+- `spikes/robinhood_mcp_account_probe.py`: a separate read-only follow-up that reuses the headless credential, invokes only `get_accounts`, selects the one account accessible to that identity, keeps its full identifier in memory, and emits only sanitized count/boolean evidence. Run it only when a live account-read verification is intended:
+
+  ```bash
+  uv run --no-cache \
+    --with-requirements spikes/requirements-robinhood-mcp-auth-probe.txt \
+    python spikes/robinhood_mcp_account_probe.py
+  ```
 
 The Keychain store is intentionally a local proof, not the Phase 0 production secret-store decision: its file lock provides CAS only to processes on this Mac, and it does not establish deployment auditability or cross-host coordination. The `keyring` project documents macOS Keychain as a supported system backend and notes that processes using the same Python executable may inherit access unless Keychain Access controls are tightened; use a dedicated runtime identity before treating this pattern as production isolation. [Official keyring backend documentation](https://github.com/jaraco/keyring/blob/main/README.rst#using-keyring) [Official keyring security considerations](https://github.com/jaraco/keyring/blob/main/README.rst#security-considerations)
 
 ## Local live result — 2026-08-22
 
-Alicia completed the five-stage wizard against Robinhood. Its success exit proves the runner-owned bootstrap stored valid model types, finite absolute expiry, and issuer/resource-bound metadata; two separate fresh Python processes each forced expiry and observed exactly one atomic refresh-state replacement; and a final fresh process completed browser-free MCP `initialize` plus `tools/list`. The CLI emitted only sanitized aggregate results, and no broker tool was called.
+Alicia completed the five-stage wizard against Robinhood. Its success exit proves the runner-owned bootstrap stored valid model types, finite absolute expiry, and issuer/resource-bound metadata; two separate fresh Python processes each forced expiry and observed exactly one atomic refresh-state replacement; and a final fresh process completed browser-free MCP `initialize` plus `tools/list`. The OAuth CLI emitted only sanitized aggregate results and called no broker tool. A subsequent separate read-only account probe called `get_accounts` once and selected the one active caller-accessible account from two brokerage accounts without emitting an identifier.
 
 This closes positive-path proof steps 1–4 for the local macOS runner. Refresh rejection remains mock-transport evidence, and a deliberate failure-artifact audit is still required for steps 5–6. The macOS Keychain store remains a local feasibility store; selecting a production store with encryption, per-account isolation, atomic CAS, and auditability is still Phase 0 work.
