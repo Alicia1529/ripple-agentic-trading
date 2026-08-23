@@ -186,6 +186,12 @@ Append-only decision log (ADR-style). Each entry records what was decided and wh
 
 **Why:** The third local Codex Automation probe selected Python 3.12 with `uv run` but exited 2 before Python startup because its sandbox could not write uv's default cache at `/Users/Alicia/.cache/uv`. `--no-cache` uses a temporary cache for one invocation, avoiding that proven cache-permission boundary. A successful Automation rerun remains required before scheduler compatibility is considered proven.
 
+## D22 — Runner-owned OAuth state is versioned and restart-safe
+
+**Decision:** Each live-account Execution Run uses its own OAuth client registration and one private credential record shared only by a one-time interactive bootstrap command and that account's plain headless runner. The record atomically stores the SDK token and client-registration models, absolute access-token expiry, and validated MCP resource/authorization-server metadata. A version-pinned adapter restores that state before the first request and replaces it with compare-and-swap semantics after refresh. The headless path never initiates authorization or client registration; missing, mismatched, expired-without-refresh, refresh-rejected, or concurrently superseded state fails closed and requires a human bootstrap.
+
+**Why:** An authenticated Codex MCP session proves Robinhood account access but does not give the independent execution runner an appropriate credential lifecycle. The current Python MCP SDK v2 storage interface persists token/client information, but its fresh-process initialization does not restore the absolute expiry or discovered token endpoint. A short-lived scheduler can therefore send an age-unknown stale bearer token, then fall into interactive authorization, or refresh against the wrong endpoint. Persisting and validating the missing restart state behind one deep module keeps this SDK-specific workaround local and testable. Static environment injection remains useful for the disposable access-token probe, but cannot safely preserve rotated refresh tokens in production. See `docs/feasibility/mcp-python-oauth-client.md`.
+
 ## Open-source references consulted
 
 - [TauricResearch/TradingAgents](https://github.com/TauricResearch/TradingAgents) — started as an architecture reference, later added as an actual shadow-pool candidate (see D5b).
