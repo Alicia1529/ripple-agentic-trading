@@ -4,7 +4,12 @@ from dataclasses import dataclass
 from typing import Any, Mapping
 
 from ._immutable_json import freeze_json, thaw_json, validate_json
-from ._validation import require_aware_timestamp, require_canonical_uuid, require_nonempty_string
+from ._validation import (
+    require_aware_timestamp,
+    require_canonical_uuid,
+    require_decimal_string,
+    require_nonempty_string,
+)
 
 
 _REQUIRED_FIELDS = {
@@ -36,6 +41,15 @@ _OPTIONAL_ORDER_FIELDS = {
     "time_in_force",
 }
 
+_DECIMAL_ORDER_FIELDS = {
+    "quantity",
+    "dollar_amount",
+    "limit_price",
+    "stop_price",
+    "price_tolerance_pct",
+    "reference_price_at_decision",
+}
+
 
 def _validate_planned_order(order: Mapping[str, Any]) -> None:
     fields = set(order)
@@ -47,7 +61,8 @@ def _validate_planned_order(order: Mapping[str, Any]) -> None:
     require_canonical_uuid(order["order_id"], "order_id")
     scalar_fields = fields - {"order_id"}
     for field in scalar_fields:
-        require_nonempty_string(order[field], field)
+        validator = require_decimal_string if field in _DECIMAL_ORDER_FIELDS else require_nonempty_string
+        validator(order[field], field)
 
 
 @dataclass(frozen=True, init=False)
@@ -86,13 +101,12 @@ class OrderPlan:
         if not isinstance(orders, list) or any(not isinstance(order, Mapping) for order in orders):
             raise ValueError("orders must be a list of objects")
         if not target_portfolio or any(
-            not isinstance(symbol, str)
-            or not symbol
-            or not isinstance(weight, str)
-            or not weight
+            not isinstance(symbol, str) or not symbol or not isinstance(weight, str) or not weight
             for symbol, weight in target_portfolio.items()
         ):
             raise ValueError("target_portfolio must map symbols to decimal strings")
+        for weight in target_portfolio.values():
+            require_decimal_string(weight, "target_portfolio weight")
         for order in orders:
             _validate_planned_order(order)
         validate_json(target_portfolio)

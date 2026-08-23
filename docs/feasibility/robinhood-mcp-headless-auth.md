@@ -8,7 +8,7 @@ Sanitized result:
 {"authentication":"not_demonstrated","authorization_endpoint_advertised":true,"client_registration":"registration_endpoint","headless_authentication_proven":false,"outcome":"oauth_metadata_discovered","server":"robinhood_trading","token_endpoint_advertised":true}
 ```
 
-This proves only that the endpoint advertises OAuth metadata after an unauthenticated challenge. It does not prove that client registration is permitted, that any headless flow exists, or that authentication, token refresh, account selection, or any order behavior works.
+This historical unauthenticated probe proves only that the endpoint advertises OAuth metadata after an unauthenticated challenge. It did not by itself prove registration, headless authentication, refresh, account selection, or any order behavior.
 
 ## Authenticated Codex observation
 
@@ -16,4 +16,4 @@ Later on 2026-08-22, an already-authorized Codex MCP connection successfully lis
 
 This proves that Alicia's Codex connection is authenticated and can reach account-scoped reads. It does **not** provide a credential to the plain Python runner: the runner must own a separate bootstrap, token-storage, and refresh lifecycle. See `mcp-python-oauth-client.md` for the SDK boundary and the remaining cross-process refresh gap.
 
-The probe now accepts an optional `ROBINHOOD_MCP_ACCESS_TOKEN` supplied by the process environment. With a valid token it performs only MCP `initialize` and `tools/list`, returns a sanitized success record, and exits zero. A rejected token fails closed without falling back to metadata discovery. This path is covered with a mock transport; it has not been run against Robinhood because no runner-owned token has been bootstrapped.
+The optional environment access-token probe remains a historical mock-transport boundary, distinct from the later runner-owned OAuth proof. On 2026-08-22, the local macOS runner completed browser bootstrap, two cross-process refresh proofs, and browser-free `initialize`/`tools/list` reuse against Robinhood; see `mcp-python-oauth-client.md`. This does not prove a second account binding or production deployment.

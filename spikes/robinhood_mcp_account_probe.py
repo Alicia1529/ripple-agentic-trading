@@ -5,7 +5,7 @@ import asyncio
 import json
 import logging
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Mapping
 
 from macos_keychain_oauth_store import MacOSKeychainOAuthStateStore
@@ -26,7 +26,7 @@ class AccountBindingError(Exception):
 class AgenticAccountBinding:
     """Private in-process account identifier for later broker calls."""
 
-    account_number: str
+    account_number: str = field(repr=False)
 
 
 @dataclass(frozen=True)

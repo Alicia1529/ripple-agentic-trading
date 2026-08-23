@@ -23,7 +23,7 @@ Ripple is designed for independent Codex threads, Claude Code sessions, or other
 
 ## Verify local Robinhood MCP OAuth
 
-On macOS, run [`scripts/verify-robinhood-mcp-oauth.sh`](scripts/verify-robinhood-mcp-oauth.sh). The five-stage wizard checks Python 3.12, walks through one browser authorization, runs two forced-expiry refresh proofs in separate headless processes, and finishes with ordinary headless reuse. Every MCP session performs only `initialize` and `tools/list`. Credentials are stored in macOS Keychain; Docker and `.env` secrets are not used. This enables the local proof but does not claim it has been run against Robinhood yet, and the production secret store remains undecided.
+On macOS, run [`scripts/verify-robinhood-mcp-oauth.sh`](scripts/verify-robinhood-mcp-oauth.sh). The five-stage wizard checks Python 3.12, walks through one browser authorization, runs two forced-expiry refresh proofs in separate headless processes, and finishes with ordinary headless reuse. Every MCP session performs only `initialize` and `tools/list`. Credentials are stored in macOS Keychain; Docker and `.env` secrets are not used. This runner-owned local proof has completed against Robinhood; it remains distinct from the earlier unauthenticated/access-token probes, and the production secret store remains undecided.
 
 ## Status
 

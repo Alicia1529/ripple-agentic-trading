@@ -1,6 +1,7 @@
 """Internal validation shared by persisted domain documents."""
 
 from datetime import datetime
+import re
 from typing import Any
 from uuid import UUID
 
@@ -31,4 +32,11 @@ def require_aware_timestamp(value: Any, field: str) -> str:
 def require_nonempty_string(value: Any, field: str) -> str:
     if not isinstance(value, str) or not value:
         raise ValueError(f"{field} must be a non-empty string")
+    return value
+
+
+def require_decimal_string(value: Any, field: str) -> str:
+    value = require_nonempty_string(value, field)
+    if not re.fullmatch(r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)", value):
+        raise ValueError(f"{field} must be a base-10 decimal string")
     return value

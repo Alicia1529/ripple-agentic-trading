@@ -122,6 +122,13 @@ class AccountProbeTests(unittest.TestCase):
         self.assertEqual(json.loads(stdout.getvalue())["outcome"], "account_binding_failed")
         self.assertNotIn(secret, stdout.getvalue() + stderr.getvalue())
 
+    def test_account_bearing_dataclasses_do_not_reveal_identifier_in_repr(self):
+        secret = "private-agentic-account"
+        result = account_probe.AccountProbeResult(
+            binding=account_probe.AgenticAccountBinding(account_number=secret), evidence={"outcome": "ok"}
+        )
+        self.assertNotIn(secret, repr(result))
+
 
 if __name__ == "__main__":
     unittest.main()

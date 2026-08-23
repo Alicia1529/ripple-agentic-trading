@@ -118,6 +118,19 @@ class OrderPlanTests(unittest.TestCase):
         non_json_order["orders"] = [{"symbols": {"AAPL"}}]
         invalid_documents.append(non_json_order)
 
+        for value in ("15%", "not-a-decimal"):
+            invalid_decimal = self.valid_document()
+            invalid_decimal["target_portfolio"] = {"AAPL": value}
+            invalid_documents.append(invalid_decimal)
+
+        invalid_order_decimal = self.valid_document()
+        invalid_order_decimal["orders"] = [{
+            "order_id": "04bbf1c7-416b-4ca2-b5a6-0e27be980965", "symbol": "AAPL", "side": "BUY",
+            "quantity": "12", "order_type": "LIMIT", "limit_price": "15%",
+            "price_tolerance_pct": "0.005", "reference_price_at_decision": "226.40",
+        }]
+        invalid_documents.append(invalid_order_decimal)
+
         for document in invalid_documents:
             with self.subTest(document=document):
                 with self.assertRaises(ValueError):

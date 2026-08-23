@@ -1,7 +1,6 @@
 """Internal helpers for validated, immutable JSON documents."""
 
 from copy import deepcopy
-import math
 from types import MappingProxyType
 from typing import Any, Mapping
 
@@ -10,9 +9,7 @@ def validate_json(value: Any) -> None:
     if value is None or isinstance(value, (str, bool, int)):
         return
     if isinstance(value, float):
-        if math.isfinite(value):
-            return
-        raise ValueError("Document contains a non-finite number")
+        raise ValueError("Document must not contain floating-point values")
     if isinstance(value, list):
         for item in value:
             validate_json(item)

@@ -67,6 +67,10 @@ class DecisionSnapshotTests(unittest.TestCase):
         non_json_input["inputs"] = {"symbols": {"AAPL"}}
         invalid_documents.append(non_json_input)
 
+        floating_input = self.valid_document()
+        floating_input["inputs"] = {"market": {"AAPL": {"close": 226.40}}}
+        invalid_documents.append(floating_input)
+
         for document in invalid_documents:
             with self.subTest(document=document):
                 with self.assertRaises(ValueError):
