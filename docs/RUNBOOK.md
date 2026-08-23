@@ -1,6 +1,6 @@
 # Runbook
 
-Operational procedures for the D26 single-account hosted v1. Replace placeholders with exact platform controls and commands during implementation.
+Operational procedures for the D26/D27 two-lane hosted v1. Each account is operated independently; never combine both accounts in one routine session.
 
 ## Dry-run verification
 
@@ -10,7 +10,12 @@ Run the complete fixture-backed path without broker tools:
 uv run --no-cache python -m ripple.mvp run-dry-cycle \
   --config config/mvp.json \
   --fixture fixtures/mvp/dry_cycle.json \
-  --output /tmp/ripple-mvp
+  --output /tmp/ripple-mvp/account_A
+
+uv run --no-cache python -m ripple.mvp run-dry-cycle \
+  --config config/mvp-account-b.json \
+  --fixture fixtures/mvp/dry_cycle_account_b.json \
+  --output /tmp/ripple-mvp/account_B
 ```
 
 The two hosted stages use `publish-decision` and `execute-dry-run` exactly as documented in `routines/DECISION.md` and `routines/EXECUTION.md`. Their credential-free continuity output belongs under `state/`. A second command for the same cycle fails instead of overwriting it.
@@ -19,8 +24,8 @@ The two hosted stages use `publish-decision` and `execute-dry-run` exactly as do
 
 There is no instantaneous broker-side "flatten everything" switch.
 
-1. Alicia changes the human-owned `execution.mode` to `disabled` in the private repository and pushes it. Neither routine may edit this setting.
-2. Disable both hosted schedules if immediate certainty is needed.
+1. Alicia changes the affected lane's human-owned `execution.mode` to `disabled` in the private repository and pushes it. No routine may edit this setting. Disable both configs when the affected account is uncertain.
+2. Disable that lane's two hosted schedules; disable all four schedules if immediate system-wide certainty is needed.
 3. The next Decision Routine produces no new OrderPlan.
 4. The next Execution Routine submits no new orders and may cancel visible pending orders.
 5. Existing positions are not automatically liquidated. Use ordinary manual broker orders if an immediate exit is required.
@@ -30,20 +35,20 @@ Because v1 execution is LLM-mediated, disabling the hosted schedules is the stro
 ## Before first live run
 
 - Keep the repository private and confirm plans, JSONL records, reports, prompts, and test fixtures contain no credentials, cookies, account numbers, or raw authenticated responses.
-- Connect Robinhood through the hosted platform's MCP connection. Do not export its tokens into repository secrets or local files.
+- Bind one hosted Robinhood MCP connection to each account lane. Prove that each connection selects the intended account; do not export account numbers or tokens into repository secrets or local files.
 - Give the Decision Routine only approved read tools and repository access. It must have no Robinhood place/cancel capability. If the platform cannot enforce that separation, do not run the Decision Routine there.
 - Give only the isolated Execution Routine the narrow Robinhood read/review/place/cancel tools it needs. Do not provide news browsing or investment-reasoning inputs to that routine.
-- Enable exactly one Decision schedule and one Execution schedule following `routines/SCHEDULE.md`. Confirm their repository, branch, timezone, and `America/New_York` self-check.
-- Keep `execution.mode=dry_run` through one complete scheduled Day T decision → Day T+1 execution cycle. Review its plan, script output, exact proposed calls, JSONL records, and report.
-- Alicia alone changes `execution.mode` to `live` for the initial small allocation.
+- Enable exactly one Decision schedule and one Execution schedule per account following `routines/SCHEDULE.md`. Confirm their assigned config, state root, broker connection, repository, branch, timezone, and `America/New_York` self-check.
+- Keep each lane's `execution.mode=dry_run` through its complete scheduled Day T decision → Day T+1 execution cycle. Review its plan, script output, exact proposed calls, JSONL records, and report.
+- Alicia alone changes each lane's `execution.mode` to `live`; the lanes may be activated on different days.
 
 ## Routine checks
 
 For each hosted run, verify:
 
 1. It pulled the expected private branch without a conflict.
-2. The Decision Routine created no more than one plan for the trading date.
-3. The Execution Routine loaded that exact committed plan and the expected account configuration.
+2. The Decision Routine created no more than one plan for its account and trading date.
+3. The Execution Routine loaded that exact committed plan, matching execution-context `account_id`, and expected account configuration.
 4. Deterministic script output, proposed/actual quantities, Robinhood result IDs, and final status appear in compact credential-free logs.
 5. The run committed and pushed its output. Never force-push to repair a routine conflict.
 
@@ -66,4 +71,4 @@ During the initial canary, Alicia should inspect the first live results directly
 
 Production v1 intentionally does not implement a transactionally durable submission journal, cross-runner lease, exactly-once guarantee, automatic ambiguous-outcome reconciliation, or non-LLM execution boundary. An LLM can still misread risk output, send the wrong arguments, call a tool twice, misuse configuration, or change behavior after a model/prompt update. D26 accepts those risks only for the initial small allocation and fast launch.
 
-Before any capital increase or second account, review actual incidents and near misses and make a new durable architecture decision. Eight weeks of operation permits that review; it does not automatically approve scaling.
+Before any capital increase or third account, review actual incidents and near misses and make a new durable architecture decision. Eight weeks of operation permits that review; it does not automatically approve scaling.

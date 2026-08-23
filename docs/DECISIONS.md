@@ -228,6 +228,16 @@ Before any capital increase or second live account, explicitly revisit whether t
 
 **Why:** Platform-managed Robinhood MCP credentials and hosted routines eliminate the largest implementation and deployment boundaries in the one-account system. The stronger design reduces low-probability but real execution failures; for the initial small account, the owner has chosen faster evidence and less code instead. Recording the lost guarantees prevents future documentation from describing prompt-mediated behavior as structural enforcement.
 
+## D27 — Exactly two isolated account lanes without a multi-account framework
+
+**Decision:** Production v1 supports exactly two account lanes, `account_A` and `account_B`. This supersedes D24's one-account production scope and completes the second-account review required by D26. Each lane uses one concrete configuration, one account-scoped state root, one Decision schedule, one Execution schedule, and one platform-managed broker connection. The same CLI and deterministic risk code run once per lane; there is no accounts collection, batch coordinator, shared execution session, credential abstraction, shared ledger, or generic strategy interface.
+
+`config/mvp.json` remains Account A so the existing commands and schedule are not broken. Account B uses `config/mvp-account-b.json`. Callers pass distinct output roots such as `state/accounts/account_A` and `state/accounts/account_B`. Account B's Decision and Execution schedules run ten minutes after Account A inside the same allowed windows, reducing routine Git conflicts without adding a coordinator or lock. The execution context now carries `account_id`, and deterministic validation rejects a plan, configuration, or execution context that names different accounts. Actual broker account numbers remain only in the separately bound platform connections and tool arguments.
+
+Each lane starts in `dry_run` and has an independent human-owned live gate. Account B may not go live until its hosted MCP connection is proven to select the intended account and its complete scheduled dry cycle passes. The D26 prompt-mediated execution, duplicate-call, ambiguous-timeout, crash-before-log, and configuration risks are explicitly accepted for both initial $500–1000 allocations, for total exposure of $1000–2000 when both are live. A capital increase, third account, shared scheduling, or richer A/B orchestration requires another architecture review.
+
+**Why:** The domain records already carry `account_id`, and the existing command boundary already processes one configuration at a time. Reusing that boundary twice adds the requested capability with minimal code and preserves failure isolation. Changing the schema to `accounts[]` or adding a coordinator would create new shared failure modes and abstractions without improving the first two concrete lanes. Account-scoped execution context validation is the one small code change needed to prevent facts from one account being evaluated as another.
+
 ## Open-source references consulted
 
 - [TauricResearch/TradingAgents](https://github.com/TauricResearch/TradingAgents) — started as an architecture reference, later added as an actual shadow-pool candidate (see D5b).

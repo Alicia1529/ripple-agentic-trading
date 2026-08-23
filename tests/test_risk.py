@@ -30,6 +30,7 @@ class RiskEvaluationTests(unittest.TestCase):
 
     def context(self):
         return {
+            "account_id": "account_A",
             "as_of": "2026-08-25T09:35:00-04:00",
             "account": {
                 "equity": "1000",
@@ -201,6 +202,10 @@ class RiskEvaluationTests(unittest.TestCase):
         bad_mode = self.rules()
         bad_mode["execution"]["mode"] = "production"
         cases.append((self.plan(), self.context(), bad_mode))
+
+        wrong_account = self.context()
+        wrong_account["account_id"] = "account_B"
+        cases.append((self.plan(), wrong_account, self.rules()))
 
         for plan, context, rules in cases:
             with self.subTest(context=context, rules=rules):

@@ -1,10 +1,10 @@
 # Ripple Trading — Proposal
 
-**Status:** Building a three-day single-account paper MVP, followed by a one-week target for the first live release. Production v1 follows the intentionally lean hosted-routine pattern in D26; the accepted reliability trade-offs are documented rather than silently overclaimed. This file is the *what and why*; the living technical spec is `docs/ARCHITECTURE.md`, and the record of how each decision was reached is `docs/DECISIONS.md`.
+**Status:** The paper MVP now supports two isolated account lanes; hosted-cycle and live-account acceptance remain operational work. Production v1 follows the intentionally lean hosted-routine pattern in D26 and the minimal two-account extension in D27; the accepted reliability trade-offs are documented rather than silently overclaimed. This file is the *what and why*; the living technical spec is `docs/ARCHITECTURE.md`, and the record of how each decision was reached is `docs/DECISIONS.md`.
 
 ## What this is
 
-A deliberately small trading system whose first production release runs one Robinhood Agentic account through two isolated hosted LLM routines: one decides and one executes. The delivery target is a working paper MVP in three development days and live operation within one week. Multi-account model comparison remains a later expansion goal, not a prerequisite for launching the first account.
+A deliberately small trading system whose first production release can run two Robinhood Agentic accounts through isolated hosted LLM routines: each account has one decision lane and one execution lane. The same concrete commands and risk code are reused for both accounts; configuration, state, broker connection, and live activation remain separate. Rich model-comparison infrastructure remains later work.
 
 ## Why
 
@@ -18,19 +18,19 @@ The person running this expects low ongoing maintenance time. Production v1 ther
 
 ## Scope at a glance
 
-- **Three-day MVP target**: two hosted routines run one account through frozen input → decision → deterministic risk scripts → dry-run order record → sanitized report.
-- **One-week production target**: connect the isolated Execution Routine to the platform-managed Robinhood MCP, keep `execution.mode` human-owned, and enable live after one reviewed dry-run cycle.
+- **Paper MVP**: each of two account configurations can independently run frozen input → decision → deterministic risk scripts → dry-run order record → sanitized report.
+- **Production target**: connect each isolated Execution Routine to its own platform-managed Robinhood account connection, keep each `execution.mode` human-owned, and enable a lane only after its reviewed dry-run cycle.
 - **Eight-week capital gate**: after eight continuous live weeks with no unresolved execution or risk defect, the owner may review whether to increase the account allocation. No increase is automatic.
-- **One-account production v1**, with account-scoped records and narrow broker/repository boundaries that preserve a straightforward path to the later two-account target — see `docs/DECISIONS.md` D24.
+- **Exactly two account lanes**, implemented as two concrete configurations over the same commands—not an account framework, batch coordinator, or shared ledger. See D27.
 - **Decision and execution are separate sessions**: the Decision Routine has no broker write tools; the next-morning Execution Routine may call them but must not redo investment reasoning.
 - **Risk calculations are deterministic scripts**: production v1 relies on the Execution Routine to pass correct inputs and follow their output. It does not claim that the LLM is structurally unable to bypass them.
 - **Minimal hosted state**: a private Git repository carries configuration, per-cycle plans, JSONL logs, and sanitized reports between fresh routine sessions. Broker credentials remain only in the platform-managed MCP connection.
-- **Deferred comparison infrastructure**: additional accounts, model A/B lanes, and a controlled shadow pool are added only after the single-account production path is stable.
+- **Deferred comparison infrastructure**: analyst ensembles, statistical A/B evaluation, additional accounts, and a controlled shadow pool remain outside the launch path.
 - Explicitly **not** attempting: multi-broker integration, intraday trading, tax-lot optimization, or anything that would reintroduce recurring manual maintenance. See `docs/ARCHITECTURE.md` "Explicitly out of scope for v1" for the full list and reasoning.
 
 ## MVP definition
 
-The three-day MVP is deliberately dry-run only. It has one fixed allowlist, one Decision Routine, one Execution Routine, deterministic risk scripts, one per-cycle OrderPlan file, append-only JSONL decision/order logs, and one sanitized report. Its acceptance test is one complete scheduled decision-to-dry-run cycle with no live order placed.
+The MVP is deliberately dry-run only. Each account lane has one fixed allowlist, one Decision Routine, one Execution Routine, deterministic risk scripts, one per-cycle OrderPlan file, account-scoped JSONL decision/order logs, and one sanitized report. Its repository acceptance test runs both lanes into separate state roots and proves that a plan cannot execute against the other account's configuration. Hosted acceptance still requires complete scheduled decision-to-dry-run cycles with no live order placed.
 
 The MVP does not include a dashboard, backtesting framework, cloud deployment, multiple models, multiple accounts, analyst debate, shadow strategies, generic plugins, or production broker writes. Those omissions are scope decisions, not unfinished MVP defects.
 

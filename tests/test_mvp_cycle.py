@@ -11,6 +11,71 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class MvpDryCycleTests(unittest.TestCase):
+    def test_two_account_lanes_produce_isolated_state(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            base = ["python3.12", "-m", "ripple.mvp", "run-dry-cycle"]
+            lanes = {
+                "account_A": (
+                    ROOT / "config" / "mvp.json",
+                    ROOT / "fixtures" / "mvp" / "dry_cycle.json",
+                ),
+                "account_B": (
+                    ROOT / "config" / "mvp-account-b.json",
+                    ROOT / "fixtures" / "mvp" / "dry_cycle_account_b.json",
+                ),
+            }
+
+            plans = {}
+            for account_id, (config, fixture) in lanes.items():
+                output = root / account_id
+                completed = subprocess.run(
+                    base + [
+                        "--config", str(config),
+                        "--fixture", str(fixture),
+                        "--output", str(output),
+                    ],
+                    cwd=ROOT, text=True, capture_output=True, check=False,
+                )
+                self.assertEqual(completed.returncode, 0, completed.stderr)
+                plan_path = output / "plans" / "2026-08-24" / "order_plan.json"
+                plans[account_id] = json.loads(plan_path.read_text())
+                self.assertEqual(plans[account_id]["account_id"], account_id)
+                decision_log = json.loads(
+                    (output / "logs" / "decisions.jsonl").read_text()
+                )
+                execution_log = json.loads(
+                    (output / "logs" / "executions.jsonl").read_text()
+                )
+                self.assertEqual(decision_log["account_id"], account_id)
+                self.assertEqual(execution_log["account_id"], account_id)
+
+            self.assertNotEqual(
+                plans["account_A"]["order_plan_id"],
+                plans["account_B"]["order_plan_id"],
+            )
+            account_b_fixture = json.loads(lanes["account_B"][1].read_text())
+            account_b_context = root / "account_b_context.json"
+            account_b_context.write_text(json.dumps(
+                account_b_fixture["execution_context"]
+            ))
+            crossed = subprocess.run(
+                [
+                    "python3.12", "-m", "ripple.mvp", "execute-dry-run",
+                    "--config", str(lanes["account_B"][0]),
+                    "--plan", str(
+                        root / "account_A" / "plans" / "2026-08-24" /
+                        "order_plan.json"
+                    ),
+                    "--context", str(account_b_context),
+                    "--output", str(root / "crossed"),
+                ],
+                cwd=ROOT, text=True, capture_output=True, check=False,
+            )
+            self.assertNotEqual(crossed.returncode, 0)
+            self.assertIn("account_id does not match", crossed.stderr)
+            self.assertFalse((root / "crossed").exists())
+
     def test_cli_produces_one_reviewable_credential_free_cycle(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             output = Path(temporary_directory)

@@ -1,6 +1,6 @@
 # Ripple Trading
 
-A small, real-money trading system built to learn agent-system design. The current target is a three-day dry-run MVP and a one-week live release for one Robinhood Agentic account using separate hosted Decision and Execution routines. Risk arithmetic is deterministic; the small-account v1 deliberately accepts the prompt-mediated execution risks recorded in D26.
+A small, real-money trading system built to learn agent-system design. The dry-run MVP supports exactly two isolated Robinhood Agentic account lanes using the same simple commands and separate hosted Decision and Execution routines. Risk arithmetic is deterministic; the small-account v1 deliberately accepts the prompt-mediated execution risks recorded in D26/D27.
 
 Not financial advice. Read [`PROPOSAL.md`](PROPOSAL.md) for what this is and why before anything else.
 
@@ -28,7 +28,7 @@ On macOS, run [`scripts/verify-robinhood-mcp-oauth.sh`](scripts/verify-robinhood
 
 ## Status
 
-The fixture-backed dry-run MVP is implemented. It validates a strict decision, publishes one immutable-per-cycle snapshot and OrderPlan, re-runs deterministic execution risk checks, and produces credential-free JSON/JSONL records plus a human report. The first real hosted scheduled cycle is still an operational acceptance gate; see `docs/TODO.md`.
+The fixture-backed dry-run MVP is implemented for Account A and Account B. Each lane validates a strict decision, publishes one immutable-per-cycle snapshot and OrderPlan, re-runs deterministic execution risk checks, and produces credential-free JSON/JSONL records plus a human report beneath its own state root. Real hosted scheduled cycles are still operational acceptance gates; see `docs/TODO.md`.
 
 ## Run the dry-run MVP
 
@@ -38,10 +38,15 @@ From the repository root:
 uv run --no-cache python -m ripple.mvp run-dry-cycle \
   --config config/mvp.json \
   --fixture fixtures/mvp/dry_cycle.json \
-  --output /tmp/ripple-mvp
+  --output /tmp/ripple-mvp/account_A
+
+uv run --no-cache python -m ripple.mvp run-dry-cycle \
+  --config config/mvp-account-b.json \
+  --fixture fixtures/mvp/dry_cycle_account_b.json \
+  --output /tmp/ripple-mvp/account_B
 ```
 
-Review `/tmp/ripple-mvp/` for the frozen snapshot, published plan, execution result, JSONL records, and report. The command refuses to overwrite an existing cycle. It never calls a broker tool.
+Review both account directories for the frozen snapshot, published plan, execution result, JSONL records, and report. The command refuses to overwrite an existing cycle. It never calls a broker tool. Account A's original config and command remain valid; Account B is the same concrete path with a second config and output root.
 
 The two hosted stages use the same implementation through `publish-decision` and `execute-dry-run`. Their exact contracts and schedule are in [`routines/`](routines/).
 

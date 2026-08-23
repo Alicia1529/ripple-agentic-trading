@@ -21,7 +21,7 @@ _RISK_FIELDS = {
     "stop_loss_pct",
     "take_profit_pct",
 }
-_CONTEXT_FIELDS = {"as_of", "account", "quotes"}
+_CONTEXT_FIELDS = {"account_id", "as_of", "account", "quotes"}
 _ACCOUNT_FIELDS = {
     "equity",
     "cash",
@@ -100,6 +100,8 @@ def _validate_inputs(execution_context: Mapping[str, Any], rules: Mapping[str, A
 
     if not isinstance(execution_context, Mapping) or set(execution_context) != _CONTEXT_FIELDS:
         raise ValueError("execution context fields do not match the schema")
+    if execution_context["account_id"] != rules["account_id"]:
+        raise ValueError("execution context account_id does not match rules")
     _timestamp(execution_context["as_of"])
     account = execution_context["account"]
     if not isinstance(account, Mapping) or set(account) != _ACCOUNT_FIELDS:

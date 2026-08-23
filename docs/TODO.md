@@ -2,7 +2,7 @@
 
 Living status doc. Keep only genuinely unfinished work here.
 
-Status: **LOCAL DRY-RUN MVP IMPLEMENTED; FIRST HOSTED SCHEDULED CYCLE PENDING.** The repository now has strict decision publication, deterministic risk revalidation, separate Decision/Execution CLI commands, fixture-backed end-to-end acceptance, credential-free JSON/JSONL/report output, and exact hosted routine contracts. Production v1 remains one Robinhood account. SQLite, a plain executor, self-managed OAuth, exactly-once execution, multi-account support, and shadow strategies are not v1 launch work.
+Status: **TWO-ACCOUNT LOCAL DRY-RUN MVP IMPLEMENTED; HOSTED SCHEDULED CYCLES PENDING.** Account A and Account B run the same strict decision/risk CLI independently with separate configurations and state roots. Execution context, plan, configuration, logs, and reports carry matching `account_id`; cross-account evaluation fails closed. SQLite, a plain executor, self-managed OAuth, exactly-once execution, a batch account coordinator, third-account support, and shadow strategies are not v1 launch work.
 
 ## Development day 1 — deterministic core
 
@@ -25,39 +25,41 @@ Status: **LOCAL DRY-RUN MVP IMPLEMENTED; FIRST HOSTED SCHEDULED CYCLE PENDING.**
 - [x] Write the isolated Execution Routine contract: load only the published plan/config/account facts, never investment news or thesis material
 - [x] Re-run deterministic checks and permit only execute-as-is, downward scaling, rejection, or whole-plan abort
 - [x] In `dry_run`, emit credential-free proposed Robinhood arguments without invoking write tools; append compact JSONL results and a report
-- [ ] Configure exactly one hosted Decision schedule and one hosted Execution schedule with an `America/New_York` time/date self-check; verify the Decision environment excludes broker write capability
-- [ ] Observe one complete scheduled Day T decision → Day T+1 dry execution; resolve any schedule, repository, schema, or risk-script defect
+- [x] Configure Account A's one hosted Decision schedule and one hosted Execution schedule with an `America/New_York` time/date self-check
+- [x] Add Account B's concrete config, fixture, account-scoped state contract, and cross-account rejection test without adding a coordinator
+- [ ] Verify Account A's Decision environment excludes broker write capability and observe its complete scheduled Day T decision → Day T+1 dry execution
+- [ ] Bind Account B's hosted MCP connection to the intended broker account, configure its two schedules, and observe its complete scheduled dry cycle
 
-The two dry-run Codex schedules are active and the completed temporary scheduler probe is paused. The first scheduled Decision run must still prove that its environment excludes broker write capability; if it cannot, it stops by contract and the Decision host must change.
+Account A's two dry-run Codex schedules are active and the completed temporary scheduler probe is paused. Its first scheduled Decision run must still prove that the environment excludes broker write capability; if it cannot, it stops by contract. Account B schedules are not enabled until its separate broker connection/account binding is verified.
 
-MVP is complete when that scheduled dry cycle is understandable from the OrderPlan, script outputs, JSONL records, and report without using broker write tools.
+Repository MVP acceptance is complete. Hosted acceptance is complete per lane when its scheduled dry cycle is understandable from the account-scoped OrderPlan, script outputs, JSONL records, and report without using broker write tools.
 
-## Development days 4–7 — one-account live canary
+## Development days 4–7 — two independent small-account canaries
 
-- [ ] Connect the platform-managed Robinhood MCP only to the Execution Routine; keep credentials and raw authenticated responses out of Git and logs
-- [ ] Verify one explicit account is selected and confirm the current read/review/place/cancel tool schemas with non-writing or smallest-safe probes
-- [ ] Verify the Decision Routine cannot access broker write tools; if the hosted platform cannot provide that capability separation, do not launch on it
+- [ ] Connect a separately bound platform-managed Robinhood MCP to each account's Execution Routine; keep credentials, account numbers, and raw authenticated responses out of Git and logs
+- [ ] Verify each connection selects its intended account and confirm the current read/review/place/cancel tool schemas with non-writing or smallest-safe probes
+- [ ] Verify both Decision Routines cannot access broker write tools; if the hosted platform cannot provide that capability separation, do not launch the affected lane on it
 - [ ] Keep one scheduler per phase, stable IDs, a pre-submit history/log check, and no immediate blind retry after timeout as best-effort guards
 - [ ] Finish the operator report, kill-switch instructions, MCP reconnection steps, Git-conflict response, and manual Robinhood inspection after an ambiguous outcome
-- [ ] Alicia reviews one full dry cycle and explicitly changes the human-owned `execution.mode` from `dry_run` to `live`
-- [ ] Start with the manually approved small validation allocation and monitor the first live cycle
+- [ ] Alicia reviews each lane's full dry cycle and explicitly changes that lane's human-owned `execution.mode` from `dry_run` to `live`
+- [ ] Start each account with its manually approved small validation allocation and monitor its first live cycle; activation may be staggered
 
 The accepted D26 risks—wrong tool arguments, duplicate calls, crash-after-submit/before-log, ambiguous timeout, config misuse, prompt injection, and model/prompt drift—do not block this small-account launch. Do not silently claim that v1 prevents them.
 
 ## Eight-week capital review
 
-- [ ] Operate the single account for eight continuous weeks and record after-cost performance, drawdown, missed/failed runs, MCP reconnects, Git conflicts, ambiguous outcomes, and any divergence from risk-script output
+- [ ] Operate each enabled account for eight continuous weeks and record after-cost performance, drawdown, missed/failed runs, MCP reconnects, Git conflicts, ambiguous outcomes, and any divergence from risk-script output
 - [ ] Before any capital increase, explicitly revisit D26 and decide whether evidence justifies retaining LLM execution or requires a non-LLM executor, transactional submission journal, broker idempotency proof, stronger reconciliation, or other controls
 - [ ] Record any approved architecture change in `docs/DECISIONS.md`, update `docs/ARCHITECTURE.md`, and let Alicia approve the exact funding change; never increase capital automatically
 
-## Later — multi-account expansion
+## Later — expansion beyond two accounts
 
-- [ ] Do not add a second account by copying the routine
+- [ ] Do not add a third account by copying a config and schedule without review
 - [ ] First complete a durable architecture review covering credential isolation, transactional state, duplicate/ambiguous submissions, per-account risk state, and operational ownership
-- [ ] Then add the smallest second-account seam without changing the proven single-account domain behavior
+- [ ] Add coordination or account-collection abstractions only when a third concrete lane or shared operation demonstrates the need
 
 ## Existing evidence, not launch blockers
 
 - Immutable `DecisionSnapshot`, `OrderPlan`, and `ExecutionEvent` value objects exist with focused tests. Transactional append-only persistence and a complete execution state machine are deferred.
-- Local Python MCP bootstrap, fresh-process reuse/refresh, one-account selection, sanitized order-history reads, and a local Codex Automation runtime probe succeeded. This remains a fallback/hardening path, not the production-v1 credential/runtime design.
+- Local Python MCP bootstrap, fresh-process reuse/refresh, one-account selection, sanitized order-history reads, and a local Codex Automation runtime probe succeeded. Account B binding remains unproven. The local path remains fallback evidence, not the production-v1 credential/runtime design.
 - Robinhood review/place/cancel/history schemas are recorded in `docs/feasibility/`; live idempotency and comprehensive outcome reconciliation are unproven and accepted only at the D26 initial-allocation boundary.

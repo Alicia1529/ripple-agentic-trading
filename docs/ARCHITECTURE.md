@@ -10,11 +10,11 @@ The initial $500–1000 per live account is a deliberately small real-money vali
 2. Find out whether a multi-agent architecture (3 analysts + PM) and a specific model choice actually add value over a simple deterministic strategy and over doing nothing (passive holding) — which requires a genuinely comparable baseline running alongside the live accounts, not just the agent on its own.
 3. Preserve the option to increase an account's funding if live evidence later shows stable, attributable profitability after costs and within the risk rules. Any increase is an explicit human decision, not an automated response to recent performance; its amount and evidence threshold must be reviewed before the increase.
 
-**Hard constraint: ship quickly with low routine operational load.** The first release deliberately uses the hosted LLM platform's scheduler, repository access, and Robinhood MCP credential lifecycle instead of building a separate runtime. The owner monitors the small-account canary. Before funding is increased or a second account is added, the accepted execution risks in D26 must be reviewed and the architecture may need hardening.
+**Hard constraint: ship quickly with low routine operational load.** The first release deliberately uses the hosted LLM platform's scheduler, repository access, and Robinhood MCP credential lifecycle instead of building a separate runtime. The owner monitors the small-account canaries. D27 accepts extending D26 to exactly two small accounts without adding hardening infrastructure. Before funding is increased or a third account is added, those execution risks must be reviewed again.
 
-**Production v1 scope:** one live Robinhood Agentic account, two isolated hosted LLM routines, a private Git repository for continuity, deterministic risk scripts, and the platform-managed Robinhood MCP connection. The delivery target is a dry-run MVP after three development days and a small-account live canary within one week. Two-account comparison, a dedicated non-LLM executor, transactional storage, self-managed OAuth, and shadow strategies are later work.
+**Production v1 scope:** exactly two Robinhood Agentic account lanes. Each lane has its own configuration, state root, Decision Routine, Execution Routine, platform-managed broker connection, and human-controlled live gate. Both reuse the same CLI and deterministic risk scripts. A dedicated non-LLM executor, transactional storage, self-managed OAuth, analyst ensemble, statistical comparison harness, and shadow strategies are later work.
 
-The expansion seam is intentionally small: persisted plan and log records retain `account_id`, but runtime configuration resolves exactly one account. There is no account collection, credential abstraction, cross-account coordinator, strategy-plugin framework, or shared ledger. Multi-account work starts with a new architecture review rather than speculative v1 abstractions.
+The account seam remains intentionally small: one command invocation resolves exactly one account configuration and writes below that account's state root. `config/mvp.json` remains Account A for backward compatibility; `config/mvp-account-b.json` adds Account B. There is no `accounts[]` schema, batch coordinator, credential abstraction, strategy-plugin framework, or shared ledger. The operator or hosted scheduler invokes the same command once per lane. A third account requires another architecture review.
 
 ## System architecture: decision and execution are separate stages
 
@@ -22,7 +22,7 @@ The expansion seam is intentionally small: persisted plan and log records retain
 
 ### Daily timeline (US Eastern Time)
 
-Production v1 runs this timeline for one configured account and one decision lane. A later comparison release may run additional isolated account contexts from the same frozen market-data snapshot, but v1 does not coordinate multiple lanes.
+Production v1 runs this timeline independently for each configured account lane. The two lanes may share the same frozen market-data facts, but there is no cross-account runtime coordinator: one lane's command, files, broker calls, and failure state do not authorize work in the other lane.
 
 **Timezone handling:** none of the triggers below are a fixed UTC cron time. The scheduler polls every 5–10 minutes inside a loose window around the target time; the script itself computes the real current time in `America/New_York` and no-ops if it isn't inside the window yet. See D10a in `docs/DECISIONS.md` for why.
 
@@ -31,7 +31,7 @@ Production v1 runs this timeline for one configured account and one decision lan
 4:00–9:00    Wait — earnings and other market-moving news often come out after the close
              (sometimes hours after), so the gap gives that information time to land before
              the day's decision is made, rather than analyzing a still-incomplete picture
-9:00 PM ET   Decision Run (one configured account and decision lane):
+9:00–9:10 PM ET   Decision Runs (Account A, then Account B):
              It does:
              1. Start a fresh Decision Routine without broker write tools
              2. Gather the allowed inputs and produce a target portfolio
@@ -41,7 +41,7 @@ Production v1 runs this timeline for one configured account and one decision lan
 
 Overnight    No trading. The persisted OrderPlan is not touched.
 
-~9:35 AM ET  Execution Run (a fresh hosted Execution Routine, ~5 minutes after open):
+~9:35–9:45 AM ET  Execution Runs (Account A, then Account B):
 next day     1. Pull and load yesterday's published OrderPlan
              2. Read current positions, cash, price, mode, and risk configuration
              3. Run deterministic revalidation scripts
@@ -50,7 +50,7 @@ next day     1. Pull and load yesterday's published OrderPlan
              6. Append compact JSONL results and push them to the private repository
 ```
 
-Why two separate runs: execution happens after the market opens, while the decision uses completed Day T information. ~9:35 rather than exactly 9:30 avoids the most volatile opening minutes. Fresh isolated sessions also keep news and thesis material out of the session that owns broker write tools. This is a capability and prompt boundary, not a code-enforced security boundary.
+Why separate decision and execution runs: execution happens after the market opens, while the decision uses completed Day T information. Starting ~9:35 rather than exactly 9:30 avoids the most volatile opening minutes. Account B runs ten minutes after Account A to avoid ordinary Git push collisions without introducing a coordinator. Fresh isolated sessions also keep news and thesis material out of sessions that own broker write tools. This is a capability and prompt boundary, not a code-enforced security boundary.
 
 ### DecisionSnapshot, OrderPlan, and execution state
 
@@ -109,7 +109,7 @@ Production v1 deliberately has only two continuity mechanisms:
 | Private Git repository | Code, config, one per-cycle OrderPlan file, compact JSONL decision/execution records, and sanitized reports | Pull before a run; commit and push after a run; never force-push over a conflict. A push failure is reported and the next run stops until repository state is understood. |
 | Hosted platform MCP connection | Robinhood OAuth state and account authorization | The platform owns storage and refresh. Credentials, tokens, cookies, and raw authenticated responses never enter Git, prompts, plans, or logs. Reconnect is a human platform operation if the connection expires. |
 
-This is intentionally not a transactional trading journal. Git does not close the interval between a successful broker call and a later log commit, and it does not provide a lease across multiple schedulers. Production v1 therefore permits exactly one configured scheduler for each phase and accepts the remaining crash, duplicate, and ambiguity risks under D26.
+This is intentionally not a transactional trading journal. Git does not close the interval between a successful broker call and a later log commit, and it does not provide a lease across multiple schedulers. Production v1 therefore permits exactly one Decision scheduler and one Execution scheduler per account lane and accepts the remaining crash, duplicate, and ambiguity risks under D26/D27. Every lane writes beneath a distinct account-scoped state root.
 
 ### Execution-time revalidation and abort conditions
 
@@ -135,7 +135,7 @@ Production v1 uses best-effort duplicate reduction, not exactly-once or crash-sa
 - an MCP timeout or malformed response ends the current run rather than causing an immediate blind retry;
 - after a timeout or crash, the owner checks Robinhood before the next scheduled run.
 
-These guards do not close a crash-after-acceptance/before-log window and cannot guarantee that an LLM will never issue the same tool call twice. D26 accepts that risk for the initial allocation. A capital increase or second account requires an architecture review of transactional submission state, broker idempotency, and non-LLM execution.
+These guards do not close a crash-after-acceptance/before-log window and cannot guarantee that an LLM will never issue the same tool call twice. D26/D27 accept that risk for the two initial small allocations. A capital increase or third account requires another architecture review of transactional submission state, broker idempotency, and non-LLM execution.
 
 ### Look-ahead bias: backtest/live timing must match
 
@@ -148,7 +148,7 @@ This applies equally to the shadow pool's bookkeeping (see Baseline & benchmark,
 
 ### Eventual comparison topology
 
-The following diagram describes the later multi-account comparison target, not components to build for production v1. The v1 executable path is one vertical lane: one frozen snapshot → one decision lane → risk engine → OrderPlan → next-day execution/reconciliation.
+The following diagram describes the later full comparison target. Production v1 implements only two independent vertical lanes over the same concrete modules; it does not yet implement analyst ensembles, a comparison coordinator, or the shadow pool.
 
 ```
 Frozen DecisionSnapshot (same allowed market/news inputs for both accounts + shadow lanes)
@@ -194,7 +194,7 @@ Production v1 computes every rule below in deterministic scripts against the con
 | Drawdown tier 1 | −10% from the account's high-water mark | Block new positions, generate a notification (the one case worth glancing at) |
 | Drawdown tier 2 | −15% from the account's high-water mark | Disable new entries and require manual restart; deterministic risk-reducing exits remain available. |
 | Prohibited (v1) | Shorting, leverage, options | Rejected at the adapter layer |
-| Wash-sale guard | 30-day lookback (configurable); the IRS rule applies per taxpayer, not per account | Blocks buys only (new entries/top-ups) — never blocks a stop-loss/take-profit/exit sell. Production v1 checks the system's one account; later linked accounts extend the same input without changing the rule. |
+| Wash-sale guard | 30-day lookback (configurable); the IRS rule applies per taxpayer, not per account | Blocks buys only (new entries/top-ups) — never blocks a stop-loss/take-profit/exit sell. Each lane's `loss_sales` input includes visible sales from both configured accounts; missing linked-account history fails closed for new buys. |
 
 Every intercepted/clipped instruction is logged as `{original instruction, rule triggered, actual action, account_id}`.
 
@@ -232,11 +232,11 @@ For production v1, D26 supersedes the former eight-week pre-live gate and D25 ru
 1. **Development day 1 — deterministic core:** implement only the fixed-universe sizing and risk scripts required by the first strategy, with small fixture tests.
 2. **Development day 2 — Decision Routine:** define its narrow prompt/tool contract and produce one strict per-cycle OrderPlan plus JSONL decision record in the private repository.
 3. **Development day 3 — dry-run MVP:** define the isolated Execution Routine, run risk revalidation in `dry_run`, append results, and prove one scheduled Day T → Day T+1 cycle without broker writes.
-4. **Development days 4–6 — live connection:** connect the platform-managed Robinhood MCP only to the Execution Routine, verify read/review/place/cancel behavior with the smallest safe probes, configure the two schedules, and finish the operator report/runbook.
-5. **One complete production-path dry-run cycle:** observe both hosted routines and resolve any plan, tool, schedule, or repository failure.
-6. **Development day 7 target — one-account live:** Alicia explicitly changes `execution.mode` to `live` for the initial small allocation. Credentials stay in the platform connection; the repository remains private and credential-free.
+4. **Live connections:** bind one platform-managed Robinhood MCP connection to each account's Execution Routine, verify explicit account selection plus read/review/place/cancel behavior with the smallest safe probes, and configure exactly two schedules per lane.
+5. **Production-path dry-run cycles:** observe each lane's Decision and Execution Routines and resolve any plan, account-binding, tool, schedule, or repository failure.
+6. **Small-account live activation:** Alicia explicitly changes one lane's `execution.mode` to `live` after reviewing that lane's dry cycle. The second lane is enabled independently after its own account binding and dry cycle. Credentials stay in platform connections; the repository remains private and credential-free.
 7. **After eight continuous live weeks:** review after-cost performance, drawdown, operational failures, and every D26 accepted risk. A capital increase requires a new architecture decision; it is never automatic.
-8. **Later — multi-account expansion:** first perform that same architecture review, then design a second isolated account path.
+8. **Later expansion:** before a third account, richer model-comparison orchestration, or larger capital, perform another architecture review based on observed operation.
 
 ## Deployment scheduling reliability
 
@@ -262,7 +262,7 @@ If the Execution Run is delayed, the price-tolerance script should reject stale 
 | News/fundamental data, X supplement | $0 | Excluded from v1 by D19; no X integration or credential is provisioned |
 | **Monthly total** | **Primarily hosted-model/API usage** | No dedicated Mac runtime, database, or custom OAuth service is required for v1 |
 
-One-time/capital items (not part of the monthly figure): the production-v1 account initially gets $500–1000, funded only after the paper gate and fully at risk of loss. That range is the validation starting point, not a permanent cap. If the account later demonstrates stable, attributable profitability after trading costs and within the risk rules, Alicia may manually approve an increase; the system never scales capital automatically. Funding a later second account is a separate human decision.
+One-time/capital items (not part of the monthly figure): each production-v1 account may initially receive $500–1000 after its own dry-run gate, for total initial exposure of $1000–2000 when both are live. Each allocation is fully at risk of loss. If later evidence supports an increase, Alicia may approve it manually; the system never scales capital automatically.
 
 When broker responses expose them, trading costs, fills, and result IDs are copied into credential-free records and kept separate from P&L. Production v1 does not claim complete automatic reconciliation.
 
@@ -271,7 +271,7 @@ When broker responses expose them, trading costs, fills, and result IDs are copi
 | Question | Basis so far | Why it matters |
 |---|---|---|
 | Can the selected hosted routine expose the Robinhood MCP connection reliably in scheduled fresh sessions? | Interactive/local probes proved the MCP schemas and account reads; hosted scheduled write-path behavior has not yet been observed | Must be proven with a complete scheduled dry run and the smallest safe live connection probes |
-| Can two Robinhood Agentic accounts each bind an independent agent/API credential? | Robinhood allows up to 10 self-directed investing accounts, Agentic accounts included, but the account-to-agent relationship isn't documented | Deferred to Phase 3; it does not block the one-account production release |
+| Can two Robinhood Agentic accounts each bind an independent hosted MCP connection? | Robinhood allows multiple self-directed investing accounts, but the account-to-agent relationship isn't documented | Must be verified before Account B live activation; it does not block two-account repository dry-run support or Account A operation |
 | Does live Robinhood behavior honor explicit account selection and the declared fractional/dollar-order shapes? | The current review/place/cancel/history schemas require `account_number`; review/place declare share-or-dollar inputs and regular-hours market-only fractional support up to six decimals. No live eligibility or routing test has run. | Small validation accounts and account isolation depend on this |
 | What is the real token/context footprint and rejection rate for the one production-v1 decision call? | Official vendor docs confirm variable shared subscription allowances and metered automation paths; no fixed capacity is promised. The actual Ripple prompt does not exist yet to measure | Determines the explicit API fallback budget and whether monitored subscription runs are operationally sufficient |
 | Do Claude Code's / Codex's cloud scheduling features natively support IANA timezones, or only UTC/browser-local time? | No official documentation found either way | Doesn't block the design — the poll-and-self-check pattern (D10a) is correct regardless of the answer, this only affects how the scheduler itself gets configured |
@@ -279,7 +279,7 @@ When broker responses expose them, trading costs, fills, and result IDs are copi
 
 Resolve hosted MCP availability, explicit account selection, and declared order shape before enabling live mode. The accepted D26 ambiguity and LLM-execution risks are not launch blockers for the initial allocation; they become mandatory review items before scaling.
 
-**Lower-priority, deferred:** the following are known open items, deliberately not resolved now — revisit once the one-account paper path is generating real data rather than speculating ahead of it.
+**Lower-priority, deferred:** the following are known open items, deliberately not resolved now—revisit once the two concrete account lanes are generating real data rather than speculating ahead of it.
 
 - **Model version drift across cloud-scheduled routines.** The production-v1 Decision Run must record the resolved model identifier. Whether later comparison lanes can pin model aliases is deferred to Phase 3.
 - **Analyst confidence-calibration sample size.** The Baseline & benchmark section calls for per-analyst reliability diagrams, but no minimum sample size has been set for when ~8 weeks × 3 analysts × ~15–18 symbols is actually enough data to draw a meaningful calibration curve versus noise. Low priority because it only affects how the calibration reporting is interpreted, not the trading/risk mechanics; worth pinning down as part of D18's pre-registered evidence criteria before Phase 1's results are read.

@@ -5,8 +5,12 @@ Ripple separates model-authored investment decisions from a narrow hosted execut
 ## Language
 
 **DecisionSnapshot**:
-The immutable set of market, news, fundamental, universe, and as-of inputs for one decision cycle. Production v1 has one lane; later comparison lanes may share the same snapshot.
+The immutable set of market, news, fundamental, universe, and as-of inputs for one decision cycle. Account lanes may share the same snapshot when they intentionally compare decisions from the same facts.
 _Avoid_: Prompt context, market snapshot
+
+**Account Lane**:
+One account's isolated decision-to-execution path, identified by `account_id`. A lane is not a shared multi-account coordinator and never owns another lane's plan or broker actions.
+_Avoid_: Account worker, account collection
 
 **OrderPlan**:
 An immutable decision-stage instruction for one account and decision cycle. It contains intended portfolio and orders, but never execution outcomes.
