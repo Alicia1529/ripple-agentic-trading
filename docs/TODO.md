@@ -28,6 +28,8 @@ Status: **LOCAL DRY-RUN MVP IMPLEMENTED; FIRST HOSTED SCHEDULED CYCLE PENDING.**
 - [ ] Configure exactly one hosted Decision schedule and one hosted Execution schedule with an `America/New_York` time/date self-check; verify the Decision environment excludes broker write capability
 - [ ] Observe one complete scheduled Day T decision → Day T+1 dry execution; resolve any schedule, repository, schema, or risk-script defect
 
+The two dry-run Codex schedules are active and the completed temporary scheduler probe is paused. The first scheduled Decision run must still prove that its environment excludes broker write capability; if it cannot, it stops by contract and the Decision host must change.
+
 MVP is complete when that scheduled dry cycle is understandable from the OrderPlan, script outputs, JSONL records, and report without using broker write tools.
 
 ## Development days 4–7 — one-account live canary
