@@ -2,7 +2,7 @@
 
 Living status doc — this reflects the *current* state of in-flight work, not a growing history. When a section is done, either delete it or fold it into a one-line note under "Recently completed"; don't leave finished work cluttering this file. If there's something a future session genuinely needs to pick up mid-task, that unfinished-work state belongs here, in enough detail that the next agent doesn't have to re-derive it from git log or chat history.
 
-Status: **PHASE −1 IN PROGRESS.** The architecture draft exists, and local runner-owned Robinhood MCP bootstrap, headless reuse, and cross-process refresh are verified. Account binding, idempotency, reconciliation, and deployment-runtime feasibility remain unverified.
+Status: **PHASE −1 IN PROGRESS.** The architecture draft exists, and local runner-owned Robinhood MCP bootstrap, headless reuse, cross-process refresh, and one account binding are verified. The second account binding, idempotency, reconciliation, and deployment-runtime feasibility remain unverified.
 
 ## Phase −1 — feasibility
 
@@ -14,7 +14,6 @@ Status: **PHASE −1 IN PROGRESS.** The architecture draft exists, and local run
 - [ ] Test whether Robinhood accepts a stable client order id / idempotency key
 - [ ] Prove broker-history reconciliation for accepted, rejected, partial, canceled, and ambiguous outcomes
 - [ ] Verify Claude/Codex scheduling, secret lifecycle, usage assumptions, and timezone behavior
-- [ ] Decide whether X (Twitter) is worth adding as a supplementary news source, based on its API access tier and pricing (D19) — the primary free/open financial-data feed does not depend on this decision
 - [ ] Record every result; revise the architecture before implementation if a correctness-critical assumption fails
 
 ## Phase 0 — deterministic core
@@ -47,6 +46,8 @@ Before any increase beyond the initial $500–1000 per live account:
 
 - On 2026-08-22 Alicia completed the local OAuth wizard: runner-owned interactive bootstrap, sanitized stored-state validation, two fresh-process forced-expiry refreshes, and final browser-free `initialize`/`tools/list` reuse all succeeded. No broker tool was called.
 - The local OAuth failure gate is covered end to end with mock transport: rejected refresh credentials fail closed before MCP session creation, require bootstrap, and emit no credential or response detail.
+- Official model-usage research established that Claude Pro and ChatGPT Plus are suitable only for monitored feasibility, not a fixed production capacity boundary; actual Ripple prompt usage and any explicit API fallback budget remain to be measured (`docs/feasibility/model-subscription-usage.md`).
+- X is excluded from v1 after official API/terms research found no measured incremental value and unresolved retention/external-LLM policy conflicts; D19 records explicit reconsideration gates (`docs/feasibility/x-api-news-source.md`).
 - Architecture draft: `PROPOSAL.md`, `docs/ARCHITECTURE.md`, and `docs/DECISIONS.md` written and internally consistent; feasibility remains open.
 - Repo reorganized: `docs/archive/` holds the two original independent draft proposals (Claude's and Codex's) plus the comparison research that synthesized them — superseded, kept for history only.
 - Agent collaboration entry points consolidated: `AGENTS.md` and `CLAUDE.md` are thin indexes into shared docs; `docs/INVARIANTS.md` is the common correctness checklist.
