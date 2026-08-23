@@ -53,7 +53,7 @@ Use a dedicated non-trading test path and sanitized observations only:
 5. Simulate refresh rejection and prove the runner exits with an "interactive bootstrap required" status without looping, registering repeatedly, or calling a broker tool.
 6. Confirm logs and failure artifacts contain no token, authorization code, callback query, client secret, account identifier, balance, position, or order detail.
 
-Steps 1–4 establish the positive live path. Steps 5–6 remain failure-path and artifact-audit gates. Until all six are complete, the supported conclusion is **local cross-process unattended refresh is demonstrated, but the full credential lifecycle and deployment boundary are not yet proven**.
+Steps 1–4 establish the positive live path. Steps 5–6 establish the mock-transport failure path and sanitized local CLI boundary. Completing all six supports the conclusion that the **local credential lifecycle is demonstrated**; it does not prove the production deployment secret store, runner identity, or cross-host coordination boundary.
 
 ## Local adapter status
 
@@ -80,4 +80,6 @@ The Keychain store is intentionally a local proof, not the Phase 0 production se
 
 Alicia completed the five-stage wizard against Robinhood. Its success exit proves the runner-owned bootstrap stored valid model types, finite absolute expiry, and issuer/resource-bound metadata; two separate fresh Python processes each forced expiry and observed exactly one atomic refresh-state replacement; and a final fresh process completed browser-free MCP `initialize` plus `tools/list`. The OAuth CLI emitted only sanitized aggregate results and called no broker tool. A subsequent separate read-only account probe called `get_accounts` once and selected the one active caller-accessible account from two brokerage accounts without emitting an identifier.
 
-This closes positive-path proof steps 1–4 for the local macOS runner. Refresh rejection remains mock-transport evidence, and a deliberate failure-artifact audit is still required for steps 5–6. The macOS Keychain store remains a local feasibility store; selecting a production store with encryption, per-account isolation, atomic CAS, and auditability is still Phase 0 work.
+This closes positive-path proof steps 1–4 for the local macOS runner. A command-level mock-transport test closes step 5 by proving an `invalid_grant` refresh response makes exactly one authorization-server request, clears the rejected credential, returns `oauth_bootstrap_required`, and never enters an MCP session. The same test closes the refresh-rejection portion of step 6 by capturing stdout/stderr and proving response secrets are absent; the broader CLI suite independently covers authorization codes, token/client values, backend failures, account identifiers, and arbitrary exception text. These probes create no failure artifact files and emit only fixed-schema sanitized JSON.
+
+All six local proof steps are therefore complete. The macOS Keychain store remains a local feasibility store; selecting a production store with encryption, per-account isolation, atomic CAS, and auditability is still Phase 0 work.

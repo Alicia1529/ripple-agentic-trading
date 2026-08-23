@@ -314,6 +314,49 @@ class OAuthCliTests(unittest.TestCase):
         self.assertTrue(result["stored_state_model_types_valid"])
         self.assertNotIn("refresh-rotated", json.dumps(result))
 
+    def test_refresh_rejection_requires_bootstrap_without_session_or_secret_output(self):
+        store = MemoryStateStore(versioned_state())
+        network_hosts = []
+        session_entries = []
+        secret = "refresh-response-secret-must-not-leak"
+
+        @asynccontextmanager
+        async def session_factory(provider):
+            async def handler(request):
+                network_hosts.append(request.url.host)
+                return httpx2.Response(
+                    400,
+                    json={"error": "invalid_grant", "error_description": secret},
+                )
+
+            async with httpx2.AsyncClient(
+                auth=provider,
+                transport=httpx2.MockTransport(handler),
+            ) as client:
+                await client.post(oauth_cli.SERVER_URL)
+            session_entries.append(True)
+            yield FakeSession()
+
+        async def rejected(command):
+            return await oauth_cli.run_command(
+                command,
+                store=store,
+                session_factory=session_factory,
+            )
+
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with redirect_stdout(stdout), redirect_stderr(stderr):
+            status = oauth_cli.main(argv=["refresh-proof"], command_runner=rejected)
+
+        self.assertEqual(status, 1)
+        self.assertEqual(json.loads(stdout.getvalue())["outcome"], "oauth_bootstrap_required")
+        self.assertEqual(network_hosts, ["auth.example"])
+        self.assertEqual(session_entries, [])
+        self.assertIsNone(store.versioned_state)
+        self.assertEqual(stderr.getvalue(), "")
+        self.assertNotIn(secret, stdout.getvalue() + stderr.getvalue())
+
     def test_registration_failure_is_attempted_once_without_browser_or_secret_output(self):
         registration_calls = []
         browser_calls = []

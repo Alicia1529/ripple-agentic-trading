@@ -46,6 +46,7 @@ Before any increase beyond the initial $500–1000 per live account:
 ## Recently completed
 
 - On 2026-08-22 Alicia completed the local OAuth wizard: runner-owned interactive bootstrap, sanitized stored-state validation, two fresh-process forced-expiry refreshes, and final browser-free `initialize`/`tools/list` reuse all succeeded. No broker tool was called.
+- The local OAuth failure gate is covered end to end with mock transport: rejected refresh credentials fail closed before MCP session creation, require bootstrap, and emit no credential or response detail.
 - Architecture draft: `PROPOSAL.md`, `docs/ARCHITECTURE.md`, and `docs/DECISIONS.md` written and internally consistent; feasibility remains open.
 - Repo reorganized: `docs/archive/` holds the two original independent draft proposals (Claude's and Codex's) plus the comparison research that synthesized them — superseded, kept for history only.
 - Agent collaboration entry points consolidated: `AGENTS.md` and `CLAUDE.md` are thin indexes into shared docs; `docs/INVARIANTS.md` is the common correctness checklist.
