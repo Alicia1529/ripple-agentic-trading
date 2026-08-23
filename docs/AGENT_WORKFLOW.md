@@ -9,7 +9,7 @@ Branch         = version isolation
 Worktree       = filesystem/work-in-progress isolation
 ```
 
-Give each thread or session one coherent task. Prefer several focused agents over one long-running conversation when the work separates cleanly. For example:
+Give each thread or session one coherent task. Use one agent by default for one small vertical slice. Add agents only when work separates cleanly or an independent review is worth its coordination cost. For example:
 
 ```text
 Thread A — implement OrderPlan persistence
@@ -111,6 +111,8 @@ Alicia inspects the result before the next slice begins
 3. **Alicia checkpoint:** Inspect the exact commit and ask questions until the behavior and implementation are clear. The next slice waits for this checkpoint.
 4. **Reviewer:** Review the exact commit or diff read-only. Report correctness defects separately from optional improvements, with concrete file and line references. Do not modify the implementation during the initial review.
 5. **Fix and close:** The Builder implements only the approved review findings in a new focused commit and reruns the relevant tests. Alicia inspects that follow-up diff before accepting the slice or returning to the Architect for the next one.
+
+This is a risk-scaled menu, not mandatory ceremony for every change. Low-risk slices may go directly to one Builder and Alicia's checkpoint. Before any role starts, define the stage, outcome, timebox, scope, risk budget, acceptance evidence, and expansion trigger from `docs/AI_NATIVE_DELIVERY.md`. Stop research or architecture work at its timebox unless the remaining uncertainty directly blocks the approved outcome.
 
 Run these roles sequentially when they share one working directory. Parallel modifying agents require separate branches and worktrees as described below.
 

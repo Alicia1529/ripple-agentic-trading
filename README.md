@@ -14,6 +14,7 @@ Not financial advice. Read [`PROPOSAL.md`](PROPOSAL.md) for what this is and why
 | [`docs/INVARIANTS.md`](docs/INVARIANTS.md) | Non-negotiable system constraints and review checklist |
 | [`docs/TODO.md`](docs/TODO.md) | Current implementation status |
 | [`docs/RUNBOOK.md`](docs/RUNBOOK.md) | Kill switch, what to do when notified, deploy/debug/recovery |
+| [`docs/AI_NATIVE_DELIVERY.md`](docs/AI_NATIVE_DELIVERY.md) | Reusable delivery rules for aligning scope, speed, quality, and risk |
 | [`docs/AGENT_WORKFLOW.md`](docs/AGENT_WORKFLOW.md) | Multi-agent development workflow and starter role prompts |
 | [`docs/archive/`](docs/archive/) | Superseded early drafts, kept for history only |
 
