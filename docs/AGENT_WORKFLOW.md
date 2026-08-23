@@ -169,8 +169,9 @@ Agents must not depend on another agent's conversation history. Completed work i
 2. Commits and diffs.
 3. `docs/DECISIONS.md` for durable architectural decisions.
 4. `docs/TODO.md` only for genuinely unfinished work.
+5. `docs/AGENT_HANDOFF.md` for compact recent continuity.
 
-Do not maintain append-only conversational `HANDOFF.md` logs. If work is complete, the code, tests, docs, and Git history are the handoff. If work is incomplete, record only the minimum current state needed for another agent to continue in `docs/TODO.md`.
+Every agent reads the handoff rules and latest three entries before work, then appends one timestamped entry at the bottom before handing off. Keep the entry within the file's limit and link to authoritative artifacts instead of copying them. `docs/TODO.md` remains the source for unfinished status; the handoff is only a small recency index.
 
 ```text
 Agent
@@ -178,6 +179,8 @@ Agent
 code / tests / docs
   ↓
 Git
+  ↓
+compact recent handoff
   ↓
 next independent Agent
 ```
