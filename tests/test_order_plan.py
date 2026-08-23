@@ -1,0 +1,128 @@
+import unittest
+
+from ripple.order_plan import OrderPlan
+
+
+class OrderPlanTests(unittest.TestCase):
+    def valid_document(self):
+        return {
+            "order_plan_id": "d44c4279-6d02-4773-a888-f906fb738aae",
+            "decision_time": "2026-08-22T21:05:00-04:00",
+            "account_id": "account_A",
+            "model_config_version": "config_A_v3",
+            "decision_snapshot_id": "10de633f-be1f-4548-944a-76b94296ed5b",
+            "market_snapshot_as_of": "2026-08-22T21:00:00-04:00",
+            "target_portfolio": {"AAPL": "0.15", "cash": "0.85"},
+            "orders": [],
+        }
+
+    def test_plan_is_deeply_immutable_and_contains_no_execution_state(self):
+        document = {
+            "order_plan_id": "d44c4279-6d02-4773-a888-f906fb738aae",
+            "decision_time": "2026-08-22T21:05:00-04:00",
+            "account_id": "account_A",
+            "model_config_version": "config_A_v3",
+            "decision_snapshot_id": "10de633f-be1f-4548-944a-76b94296ed5b",
+            "market_snapshot_as_of": "2026-08-22T21:00:00-04:00",
+            "target_portfolio": {"AAPL": "0.15", "cash": "0.85"},
+            "orders": [
+                {
+                    "order_id": "04bbf1c7-416b-4ca2-b5a6-0e27be980965",
+                    "symbol": "AAPL",
+                    "side": "BUY",
+                    "quantity": "12",
+                    "order_type": "LIMIT",
+                    "limit_price": "227.50",
+                    "price_tolerance_pct": "0.005",
+                    "reference_price_at_decision": "226.40",
+                }
+            ],
+        }
+
+        plan = OrderPlan.from_dict(document)
+        document["target_portfolio"]["AAPL"] = "1.00"
+        document["orders"][0]["quantity"] = "999"
+
+        self.assertEqual(plan.target_portfolio["AAPL"], "0.15")
+        self.assertEqual(plan.orders[0]["quantity"], "12")
+        with self.assertRaises(TypeError):
+            plan.orders[0]["state"] = "filled"
+        self.assertEqual(plan.to_dict()["orders"][0]["quantity"], "12")
+        self.assertNotIn("execution_status", plan.to_dict())
+
+    def test_malformed_or_execution_bearing_plans_fail_closed(self):
+        invalid_documents = []
+
+        execution_bearing = self.valid_document()
+        execution_bearing["execution_status"] = "filled"
+        invalid_documents.append(execution_bearing)
+
+        nested_execution_outcome = self.valid_document()
+        nested_execution_outcome["orders"] = [
+            {
+                "order_id": "04bbf1c7-416b-4ca2-b5a6-0e27be980965",
+                "symbol": "AAPL",
+                "state": "filled",
+                "broker_order_id": "private-broker-order",
+            }
+        ]
+        invalid_documents.append(nested_execution_outcome)
+
+        deeply_nested_execution_outcome = self.valid_document()
+        deeply_nested_execution_outcome["orders"] = [
+            {
+                "order_id": "04bbf1c7-416b-4ca2-b5a6-0e27be980965",
+                "symbol": "AAPL",
+                "result": {"state": "filled"},
+            }
+        ]
+        invalid_documents.append(deeply_nested_execution_outcome)
+
+        out_of_scope_tax_lots = self.valid_document()
+        out_of_scope_tax_lots["orders"] = [
+            {
+                "order_id": "04bbf1c7-416b-4ca2-b5a6-0e27be980965",
+                "symbol": "AAPL",
+                "side": "SELL",
+                "quantity": "12",
+                "order_type": "LIMIT",
+                "limit_price": "227.50",
+                "price_tolerance_pct": "0.005",
+                "reference_price_at_decision": "226.40",
+                "tax_lots": [{"open_lot_id": "out-of-scope", "quantity": "12"}],
+            }
+        ]
+        invalid_documents.append(out_of_scope_tax_lots)
+
+        bad_id = self.valid_document()
+        bad_id["order_plan_id"] = "not-a-uuid"
+        invalid_documents.append(bad_id)
+
+        naive_time = self.valid_document()
+        naive_time["decision_time"] = "2026-08-22T21:05:00"
+        invalid_documents.append(naive_time)
+
+        empty_account = self.valid_document()
+        empty_account["account_id"] = ""
+        invalid_documents.append(empty_account)
+
+        bad_portfolio = self.valid_document()
+        bad_portfolio["target_portfolio"] = []
+        invalid_documents.append(bad_portfolio)
+
+        bad_orders = self.valid_document()
+        bad_orders["orders"] = {"order_id": "not-a-list"}
+        invalid_documents.append(bad_orders)
+
+        non_json_order = self.valid_document()
+        non_json_order["orders"] = [{"symbols": {"AAPL"}}]
+        invalid_documents.append(non_json_order)
+
+        for document in invalid_documents:
+            with self.subTest(document=document):
+                with self.assertRaises(ValueError):
+                    OrderPlan.from_dict(document)
+
+
+if __name__ == "__main__":
+    unittest.main()

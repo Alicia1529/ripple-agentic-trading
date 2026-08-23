@@ -192,6 +192,12 @@ Before contacting the authorization server for a rotating-token refresh, the run
 
 **Why:** An authenticated Codex MCP session proves Robinhood account access but does not give the independent execution runner an appropriate credential lifecycle. The current Python MCP SDK v2 storage interface persists token/client information, but its fresh-process initialization does not restore the absolute expiry or discovered token endpoint. A short-lived scheduler can therefore send an age-unknown stale bearer token, then fall into interactive authorization, or refresh against the wrong endpoint. Persisting and validating the missing restart state behind one deep module keeps this SDK-specific workaround local and testable. Static environment injection remains useful for the disposable access-token probe, but cannot safely preserve rotated refresh tokens in production. A lease and secret-store CAS protect local state but cannot cancel a refresh request already accepted by an external server, so ambiguous rotation needs the same fail-closed treatment as D16's unknown order submission. See `docs/feasibility/mcp-python-oauth-client.md` and `docs/feasibility/github-actions-oauth-secret-store.md`.
 
+## D23 — Persist decision-stage decimal values as strings
+
+**Decision:** `DecisionSnapshot` and `OrderPlan` documents serialize weights, quantities, dollar amounts, prices, and tolerances as base-10 decimal strings, never JSON floating-point numbers or percent-suffixed text. Weights and tolerances use ratios (`"0.15"` means 15%; `"0.005"` means 0.5%). Planned orders use the broker-aligned field name `quantity` rather than the earlier illustrative `qty` abbreviation. Exact scale, range, sum, and order-type conditional validation remains part of the Phase 0 field-level schema work.
+
+**Why:** Financial values must round-trip exactly across Python, JSON, transactional storage, and the broker adapter. Binary floating point can silently change decimal intent, while percent suffixes require context-dependent parsing. Decimal strings preserve the authored value and align with Robinhood's declared quantity and price inputs without coupling the domain document to a Python-only numeric type.
+
 ## Open-source references consulted
 
 - [TauricResearch/TradingAgents](https://github.com/TauricResearch/TradingAgents) — started as an architecture reference, later added as an actual shadow-pool candidate (see D5b).

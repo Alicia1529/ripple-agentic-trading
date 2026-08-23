@@ -76,21 +76,23 @@ decision_snapshot_id: uuid
 market_snapshot_as_of: 2026-08-21T21:00:00-04:00
 
 target_portfolio:
-  AAPL: 15%
-  MSFT: 10%
+  AAPL: "0.15"
+  MSFT: "0.10"
   ...
-  cash: 20%
+  cash: "0.20"
 
 orders:
   - order_id: uuid
     symbol: AAPL
     side: BUY
-    qty: 12
+    quantity: "12"
     order_type: LIMIT
-    limit_price: 227.50              # decision-time price + D3a tolerance band
-    price_tolerance_pct: 0.5%        # used at execution time to detect an excessive gap
-    reference_price_at_decision: 226.40
+    limit_price: "227.50"              # decision-time price + D3a tolerance band
+    price_tolerance_pct: "0.005"       # used at execution time to detect an excessive gap
+    reference_price_at_decision: "226.40"
 ```
+
+The initial deterministic-core `OrderPlan` module enforces the strict top-level fields illustrated above, recursively freezes `target_portfolio` and `orders`, and applies a scalar-value allowlist to every planned-order field. Because arbitrary nested objects are not accepted, execution outcomes cannot be smuggled into the decision document. Tax lots remain out of scope for v1. D23 fixes the persisted numeric representation as base-10 decimal strings; complete semantic validation for weights, prices, quantities, order-type conditionals, and persistence constraints remains later Phase 0 work.
 
 Once generated, the Execution Agent may only: **execute as-is / abort the whole plan / scale down proportionally against available cash / reject specific orders because risk or account state changed**. It may never re-run analyst/PM reasoning or change direction because "its view changed today" — that would be tampering with an already-made decision, which breaks reproducibility, auditability, and attribution.
 
