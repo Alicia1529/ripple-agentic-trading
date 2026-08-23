@@ -5,10 +5,12 @@ import asyncio
 import json
 import logging
 import os
+import re
 import sys
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import Any, AsyncContextManager, Callable, Mapping, Protocol, Sequence
+from urllib.parse import urlparse
 
 
 SERVER_NAME = "robinhood_trading"
@@ -39,9 +41,10 @@ class MalformedProtocolResponse(Exception):
 
 
 class ObservedSession:
-    def __init__(self, session: Any, status_codes: Sequence[int]):
+    def __init__(self, session: Any, status_codes: Sequence[int], challenges: Sequence[str]):
         self._session = session
         self.status_codes = status_codes
+        self.challenges = challenges
 
     async def initialize(self) -> Any:
         return await self._session.initialize()
@@ -77,6 +80,81 @@ def _failure(outcome: str) -> Mapping[str, Any]:
     }
 
 
+def _https_url(value: Any) -> str:
+    if not isinstance(value, str):
+        raise MalformedProtocolResponse
+    parsed = urlparse(value)
+    if parsed.scheme != "https" or not parsed.netloc or parsed.username or parsed.password or parsed.fragment:
+        raise MalformedProtocolResponse
+    return value
+
+
+def _resource_metadata_url(challenges: Sequence[str]) -> str:
+    for challenge in challenges:
+        if not isinstance(challenge, str):
+            continue
+        match = re.search(
+            r'(?:^|,)\s*Bearer\s+[^,]*?resource_metadata="([^"\\]*(?:\\.[^"\\]*)*)"', challenge,
+            re.IGNORECASE,
+        )
+        if match:
+            return _https_url(match.group(1).replace(r'\"', '"'))
+    raise MalformedProtocolResponse
+
+
+def _authorization_metadata_url(issuer: str) -> str:
+    parsed = urlparse(_https_url(issuer))
+    path = parsed.path.strip("/")
+    suffix = "/.well-known/oauth-authorization-server"
+    return f"https://{parsed.netloc}{suffix}{'/' + path if path else ''}"
+
+
+async def discover_oauth_metadata(config: ProbeConfig, challenges: Sequence[str], http_transport: Any = None) -> Mapping[str, Any]:
+    """Read public OAuth metadata only; never starts an authorization flow."""
+    import httpx2
+
+    resource_url = _resource_metadata_url(challenges)
+    async with httpx2.AsyncClient(follow_redirects=False, transport=http_transport) as client:
+        resource_response = await client.get(resource_url)
+        if resource_response.is_redirect or resource_response.status_code != 200:
+            raise MalformedProtocolResponse
+        resource = resource_response.json()
+        if not isinstance(resource, Mapping) or _https_url(resource.get("resource")) != config.url:
+            raise MalformedProtocolResponse
+        servers = resource.get("authorization_servers")
+        if not isinstance(servers, list) or len(servers) != 1:
+            raise MalformedProtocolResponse
+        issuer = _https_url(servers[0])
+        auth_response = await client.get(_authorization_metadata_url(issuer))
+        if auth_response.is_redirect or auth_response.status_code != 200:
+            raise MalformedProtocolResponse
+        metadata = auth_response.json()
+    if not isinstance(metadata, Mapping) or _https_url(metadata.get("issuer")) != issuer:
+        raise MalformedProtocolResponse
+    authorization_endpoint = metadata.get("authorization_endpoint")
+    token_endpoint = metadata.get("token_endpoint")
+    if authorization_endpoint is not None:
+        _https_url(authorization_endpoint)
+    if token_endpoint is not None:
+        _https_url(token_endpoint)
+    if metadata.get("registration_endpoint") is not None:
+        _https_url(metadata["registration_endpoint"])
+        registration = "registration_endpoint"
+    elif metadata.get("client_id_metadata_document_supported") is True:
+        registration = "client_id_metadata"
+    else:
+        registration = "none"
+    return {
+        "authentication": "not_demonstrated",
+        "authorization_endpoint_advertised": authorization_endpoint is not None,
+        "client_registration": registration,
+        "headless_authentication_proven": False,
+        "outcome": "oauth_metadata_discovered",
+        "server": SERVER_NAME,
+        "token_endpoint_advertised": token_endpoint is not None,
+    }
+
+
 def _contains_exception(exc: BaseException, types: Any) -> bool:
     if isinstance(exc, types):
         return True
@@ -95,7 +173,7 @@ def _classify_exception(exc: Exception, status_codes: Sequence[int]) -> str:
     return "connection_or_protocol_failure"
 
 
-async def run_probe(config: ProbeConfig, session_factory: SessionFactory) -> Mapping[str, Any]:
+async def run_probe(config: ProbeConfig, session_factory: SessionFactory, metadata_discoverer=discover_oauth_metadata) -> Mapping[str, Any]:
     session = None
     try:
         async with session_factory(config) as session:
@@ -113,6 +191,11 @@ async def run_probe(config: ProbeConfig, session_factory: SessionFactory) -> Map
                 if not isinstance(name, str) or not name:
                     raise MalformedProtocolResponse
     except Exception as exc:
+        if any(status == 401 for status in getattr(session, "status_codes", ())):
+            try:
+                return await metadata_discoverer(config, getattr(session, "challenges", ()))
+            except Exception:
+                return _failure("oauth_metadata_discovery_failed")
         return _failure(_classify_exception(exc, getattr(session, "status_codes", ())))
 
     return {
@@ -133,9 +216,12 @@ async def mcp_session(config: ProbeConfig, http_transport: Any = None):
     from mcp.client.streamable_http import streamable_http_client
 
     status_codes = []
+    challenges = []
 
     async def record_status(response: Any) -> None:
         status_codes.append(response.status_code)
+        if response.status_code == 401:
+            challenges.extend(response.headers.get_list("www-authenticate"))
 
     async with httpx2.AsyncClient(
         event_hooks={"response": [record_status]},
@@ -148,13 +234,14 @@ async def mcp_session(config: ProbeConfig, http_transport: Any = None):
             terminate_on_close=False,
         ) as (read_stream, write_stream):
             async with ClientSession(read_stream, write_stream) as session:
-                yield ObservedSession(session, status_codes)
+                yield ObservedSession(session, status_codes, challenges)
 
 
 def main(
     environ: Mapping[str, str] = os.environ,
     session_factory: SessionFactory = mcp_session,
     argv: Sequence[str] = (),
+    metadata_discoverer=discover_oauth_metadata,
 ) -> int:
     previous_logging_disable = logging.root.manager.disable
     logging.disable(logging.CRITICAL)
@@ -168,7 +255,7 @@ def main(
                 result = _failure("missing_or_invalid_config")
             else:
                 try:
-                    result = asyncio.run(run_probe(config, session_factory))
+                    result = asyncio.run(run_probe(config, session_factory, metadata_discoverer))
                 except Exception:
                     result = _failure("probe_runtime_failure")
     finally:

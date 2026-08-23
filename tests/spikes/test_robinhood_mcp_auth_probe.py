@@ -3,6 +3,7 @@ import importlib.util
 import json
 import sys
 import unittest
+import asyncio
 from contextlib import asynccontextmanager, redirect_stderr, redirect_stdout
 from pathlib import Path
 
@@ -71,15 +72,47 @@ def session_factory(transport):
     return factory
 
 
-def invoke_main(environ, factory, argv=()):
+def invoke_main(environ, factory, argv=(), metadata_discoverer=probe.discover_oauth_metadata):
     stdout = io.StringIO()
     stderr = io.StringIO()
     with redirect_stdout(stdout), redirect_stderr(stderr):
-        status = probe.main(environ=environ, session_factory=factory, argv=argv)
+        status = probe.main(environ=environ, session_factory=factory, argv=argv, metadata_discoverer=metadata_discoverer)
     return status, stdout.getvalue(), stderr.getvalue()
 
 
 class RobinhoodMcpAuthProbeTests(unittest.TestCase):
+    def test_oauth_metadata_discovery_is_read_only_and_sanitized(self):
+        secret = "metadata-secret-must-not-leak"
+        calls = []
+
+        async def handler(request):
+            calls.append(request)
+            if request.url.path == "/resource":
+                return httpx2.Response(200, json={"resource": probe.EXPECTED_URL, "authorization_servers": ["https://auth.example"]})
+            if request.url.path == "/.well-known/oauth-authorization-server":
+                return httpx2.Response(200, json={"issuer": "https://auth.example", "authorization_endpoint": "https://auth.example/authorize?" + secret, "token_endpoint": "https://auth.example/token", "client_id_metadata_document_supported": True})
+            raise AssertionError(request.url.path)
+
+        result = asyncio.run(probe.discover_oauth_metadata(
+            probe.ProbeConfig(probe.EXPECTED_URL),
+            ['Bearer resource_metadata="https://metadata.example/resource"'],
+            httpx2.MockTransport(handler),
+        ))
+
+        self.assertEqual(result["outcome"], "oauth_metadata_discovered")
+        self.assertTrue(result["authorization_endpoint_advertised"])
+        self.assertTrue(result["token_endpoint_advertised"])
+        self.assertEqual(result["client_registration"], "client_id_metadata")
+        self.assertNotIn(secret, json.dumps(result))
+        self.assertEqual([call.method for call in calls], ["GET", "GET"])
+        self.assertTrue(all("authorization" not in call.headers for call in calls))
+
+    def test_oauth_metadata_discovery_fails_closed(self):
+        for challenge in ([], ['Bearer resource_metadata="http://metadata.example/resource"'], ['Basic abc']):
+            with self.subTest(challenge=challenge):
+                with self.assertRaises(probe.MalformedProtocolResponse):
+                    asyncio.run(probe.discover_oauth_metadata(probe.ProbeConfig(probe.EXPECTED_URL), challenge, httpx2.MockTransport(lambda request: None)))
+
     def test_transport_only_initializes_and_lists_tools_without_delete_or_tool_call(self):
         transport = FakeMcpTransport()
 
@@ -112,13 +145,16 @@ class RobinhoodMcpAuthProbeTests(unittest.TestCase):
 
     def test_authentication_and_interaction_requirements_fail_closed_without_redirects(self):
         for status_code, outcome in (
-            (401, "authentication_required"),
+            (401, "oauth_metadata_discovery_failed"),
             (302, "interactive_authentication_required"),
         ):
             with self.subTest(status_code=status_code):
                 transport = FakeMcpTransport(failure_status=status_code)
 
-                status, stdout, stderr = invoke_main(VALID_ENV, session_factory(transport))
+                async def discovery_failure(_config, _challenges):
+                    raise probe.MalformedProtocolResponse
+
+                status, stdout, stderr = invoke_main(VALID_ENV, session_factory(transport), metadata_discoverer=discovery_failure)
 
                 self.assertEqual(status, 1)
                 self.assertEqual(json.loads(stdout)["outcome"], outcome)
