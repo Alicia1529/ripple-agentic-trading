@@ -93,6 +93,29 @@ def _require_https_url(value: str) -> None:
         raise OAuthBootstrapRequired("Stored OAuth metadata contains an unsafe URL")
 
 
+def validate_oauth_state(state: OAuthState, configured_server_url: str) -> None:
+    """Validate stored models and their server/resource/issuer bindings."""
+    if not isinstance(state.tokens, OAuthToken):
+        raise OAuthBootstrapRequired("Stored OAuth token model is invalid")
+    if not isinstance(state.client_info, OAuthClientInformationFull):
+        raise OAuthBootstrapRequired("Stored OAuth client model is invalid")
+    if not isinstance(state.oauth_metadata, OAuthMetadata):
+        raise OAuthBootstrapRequired("Stored OAuth metadata model is invalid")
+    if state.server_url != configured_server_url or state.resource_url != configured_server_url:
+        raise OAuthBootstrapRequired("OAuth resource binding does not match the configured server")
+    if str(state.oauth_metadata.issuer).rstrip("/") != state.issuer.rstrip("/"):
+        raise OAuthBootstrapRequired("OAuth issuer binding does not match stored metadata")
+    if state.client_info.issuer and state.client_info.issuer.rstrip("/") != state.issuer.rstrip("/"):
+        raise OAuthBootstrapRequired("OAuth client registration is bound to another issuer")
+    if not state.tokens.refresh_token:
+        raise OAuthBootstrapRequired("OAuth refresh token is missing")
+    _require_https_url(state.issuer)
+    _require_https_url(str(state.oauth_metadata.authorization_endpoint))
+    _require_https_url(str(state.oauth_metadata.token_endpoint))
+    if state.oauth_metadata.registration_endpoint is not None:
+        _require_https_url(str(state.oauth_metadata.registration_endpoint))
+
+
 class RestartSafeOAuthClientProvider(OAuthClientProvider):
     """OAuth provider that persists the SDK state omitted across process restarts."""
 
@@ -161,19 +184,7 @@ class RestartSafeOAuthClientProvider(OAuthClientProvider):
         )
 
     def _validate_state(self, state: OAuthState) -> None:
-        if state.server_url != self.context.server_url or state.resource_url != self.context.server_url:
-            raise OAuthBootstrapRequired("OAuth resource binding does not match the configured server")
-        if str(state.oauth_metadata.issuer).rstrip("/") != state.issuer.rstrip("/"):
-            raise OAuthBootstrapRequired("OAuth issuer binding does not match stored metadata")
-        if state.client_info.issuer and state.client_info.issuer.rstrip("/") != state.issuer.rstrip("/"):
-            raise OAuthBootstrapRequired("OAuth client registration is bound to another issuer")
-        if not state.tokens.refresh_token:
-            raise OAuthBootstrapRequired("OAuth refresh token is missing")
-        _require_https_url(state.issuer)
-        _require_https_url(str(state.oauth_metadata.authorization_endpoint))
-        _require_https_url(str(state.oauth_metadata.token_endpoint))
-        if state.oauth_metadata.registration_endpoint is not None:
-            _require_https_url(str(state.oauth_metadata.registration_endpoint))
+        validate_oauth_state(state, self.context.server_url)
 
     def _capture(self) -> OAuthState:
         context = self.context
@@ -262,8 +273,14 @@ class RestartSafeOAuthClientProvider(OAuthClientProvider):
         request: httpx2.Request,
     ) -> AsyncGenerator[httpx2.Request, httpx2.Response]:
         if self._interactive:
-            async for next_request in super().async_auth_flow(request):
-                yield next_request
+            flow = super().async_auth_flow(request)
+            try:
+                next_request = await anext(flow)
+                while True:
+                    response = yield next_request
+                    next_request = await flow.asend(response)
+            except StopAsyncIteration:
+                pass
             return
 
         async with self.context.lock:

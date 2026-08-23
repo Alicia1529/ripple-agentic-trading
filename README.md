@@ -21,9 +21,13 @@ Not financial advice. Read [`PROPOSAL.md`](PROPOSAL.md) for what this is and why
 
 Ripple is designed for independent Codex threads, Claude Code sessions, or other coding agents. Git and the shared project docs carry knowledge and handoffs across temporary sessions; roles belong in task prompts, while concurrent code-writing agents use separate branches and worktrees. See [`docs/AGENT_WORKFLOW.md`](docs/AGENT_WORKFLOW.md).
 
+## Verify local Robinhood MCP OAuth
+
+On macOS, run [`scripts/verify-robinhood-mcp-oauth.sh`](scripts/verify-robinhood-mcp-oauth.sh). The five-stage wizard checks Python 3.12, walks through one browser authorization, runs two forced-expiry refresh proofs in separate headless processes, and finishes with ordinary headless reuse. Every MCP session performs only `initialize` and `tools/list`. Credentials are stored in macOS Keychain; Docker and `.env` secrets are not used. This enables the local proof but does not claim it has been run against Robinhood yet, and the production secret store remains undecided.
+
 ## Status
 
-Architecture draft complete; broker/scheduler feasibility and implementation not started. See `docs/TODO.md`.
+Architecture draft complete; broker/scheduler feasibility is in progress. See `docs/TODO.md`.
 
 ## License
 
