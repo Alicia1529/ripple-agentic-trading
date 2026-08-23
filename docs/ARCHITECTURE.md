@@ -63,6 +63,8 @@ Why two separate runs: execution always happens after the market has opened, so 
 
 Every comparison lane reads the same immutable `DecisionSnapshot`. It contains the allowed market data, news/fundamental inputs from the v1 free/open primary feed (such as Yahoo Finance, Google Finance, and Fidelity's public pages; X is excluded by D19), universe, and as-of timestamps used for that decision. Each lane's exact prompt/config hash, model identifier, runtime version, and tool versions are recorded alongside the snapshot. This controls the evidence available to the models instead of allowing each runtime to fetch a different news corpus and calling the result a controlled A/B test.
 
+The initial deterministic-core module accepts a strict snapshot envelope containing `snapshot_id`, timezone-aware `as_of`, a non-empty unique `universe`, and JSON-only `inputs`. It recursively detaches and freezes the document at creation, rejects unknown envelope fields, and only exports a fresh mutable copy for serialization. Feed-specific schemas inside `inputs`, canonical content hashing, and object-store persistence remain later Phase 0 work; the minimal envelope is not treated as proof that those contracts are complete.
+
 The output of the decision stage is a persisted, **immutable once written** `OrderPlan`:
 
 ```yaml
