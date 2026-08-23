@@ -1,30 +1,40 @@
 # Ripple Trading — Proposal
 
-**Status:** Architecture draft complete; broker and scheduler feasibility not yet verified; implementation not started. This file is the *what and why*; the living technical spec is `docs/ARCHITECTURE.md`, and the record of how each decision was reached is `docs/DECISIONS.md`.
+**Status:** Building a three-day single-account paper MVP, followed by a one-week target for the first live release. Production v1 follows the intentionally lean hosted-routine pattern in D26; the accepted reliability trade-offs are documented rather than silently overclaimed. This file is the *what and why*; the living technical spec is `docs/ARCHITECTURE.md`, and the record of how each decision was reached is `docs/DECISIONS.md`.
 
 ## What this is
 
-A paper-first trading-system experiment built primarily to learn agent-system design and to test whether the system can produce durable, risk-adjusted returns. The target end state is two small Robinhood Agentic accounts running the same 3-analyst + PM pipeline — one powered by Claude, one by OpenAI — after the broker integration and deterministic execution core pass explicit feasibility, paper, and single-account live-canary gates. Alongside them, a controlled shadow pool (starting with a deterministic mean-reversion strategy and SPY/QQQ buy-and-hold) provides evidence about whether the multi-agent approach or model choice adds value over simpler alternatives. A two-account equity-curve difference is evidence, not by itself causal proof of model superiority.
+A deliberately small trading system whose first production release runs one Robinhood Agentic account through two isolated hosted LLM routines: one decides and one executes. The delivery target is a working paper MVP in three development days and live operation within one week. Multi-account model comparison remains a later expansion goal, not a prerequisite for launching the first account.
 
 ## Why
 
 The initial $500–1000 per live account is a deliberately small validation allocation, not a fixed lifetime ceiling or play money. The goals are:
 
-1. Hands-on practice building an "untrusted LLM decision layer + deterministic, code-enforced risk layer" system — the same structural problem as production LLM-safety system design.
+1. Hands-on practice building an LLM decision pipeline with deterministic, inspectable risk calculations and explicit operational trade-offs.
 2. A controlled, auditable comparison against simple baselines, without overstating what a small live sample can prove.
 3. If live results eventually demonstrate stable, attributable profitability after costs and within the risk rules, selectively increase account funding by a manually approved amount. The system never increases funding on its own.
 
-The person running this expects low ongoing maintenance time. The target is therefore **low routine operational load after a stable pilot**, not an unverified promise of zero oversight: reconciliation, health checks, credential-expiry checks, and missed-run detection are automated, while ambiguous broker outcomes and material risk events fail closed and notify a human.
+The person running this expects low ongoing maintenance time. Production v1 therefore delegates Robinhood credential lifecycle to the hosted MCP connection and uses Git-backed JSON/JSONL state. This is simpler but deliberately accepts low-probability duplicate, ambiguous-outcome, prompt/tool-use, and pre-log-crash risks while the account remains at its small validation allocation. Those risks must be reconsidered before adding capital or accounts.
 
 ## Scope at a glance
 
-- **Staged rollout**: broker/scheduler feasibility spike → deterministic core → full paper/shadow run → one-account live canary → two-account live comparison. No live funding happens before the preceding gate passes.
-- **Two-account target state**, same architecture and frozen inputs, different model per account (Account A = Claude, Account B = OpenAI/Codex) — see `docs/DECISIONS.md` D2/D2a and D17.
-- **Decision and execution are separate stages**: signals are generated once daily after market close and persisted as an immutable `OrderPlan`; execution happens the next morning, with outcomes recorded as separate append-only events.
-- **Risk rules live only in code, never in a prompt** — the LLM proposes, code disposes, and the model that reasons about a trade never holds the tool that executes it.
-- **Purpose-built storage boundaries**: a transactional store holds correctness-critical operational state; object storage holds large immutable audit artifacts; Git holds code, configuration, schemas, docs, and sanitized reports — not live execution state.
-- **A controlled shadow pool** for testing new model configs or strategy ideas on paper. Evaluation rules are registered before a candidate starts, and promotion always requires a human decision.
+- **Three-day MVP target**: two hosted routines run one account through frozen input → decision → deterministic risk scripts → dry-run order record → sanitized report.
+- **One-week production target**: connect the isolated Execution Routine to the platform-managed Robinhood MCP, keep `execution.mode` human-owned, and enable live after one reviewed dry-run cycle.
+- **Eight-week capital gate**: after eight continuous live weeks with no unresolved execution or risk defect, the owner may review whether to increase the account allocation. No increase is automatic.
+- **One-account production v1**, with account-scoped records and narrow broker/repository boundaries that preserve a straightforward path to the later two-account target — see `docs/DECISIONS.md` D24.
+- **Decision and execution are separate sessions**: the Decision Routine has no broker write tools; the next-morning Execution Routine may call them but must not redo investment reasoning.
+- **Risk calculations are deterministic scripts**: production v1 relies on the Execution Routine to pass correct inputs and follow their output. It does not claim that the LLM is structurally unable to bypass them.
+- **Minimal hosted state**: a private Git repository carries configuration, per-cycle plans, JSONL logs, and sanitized reports between fresh routine sessions. Broker credentials remain only in the platform-managed MCP connection.
+- **Deferred comparison infrastructure**: additional accounts, model A/B lanes, and a controlled shadow pool are added only after the single-account production path is stable.
 - Explicitly **not** attempting: multi-broker integration, intraday trading, tax-lot optimization, or anything that would reintroduce recurring manual maintenance. See `docs/ARCHITECTURE.md` "Explicitly out of scope for v1" for the full list and reasoning.
+
+## MVP definition
+
+The three-day MVP is deliberately dry-run only. It has one fixed allowlist, one Decision Routine, one Execution Routine, deterministic risk scripts, one per-cycle OrderPlan file, append-only JSONL decision/order logs, and one sanitized report. Its acceptance test is one complete scheduled decision-to-dry-run cycle with no live order placed.
+
+The MVP does not include a dashboard, backtesting framework, cloud deployment, multiple models, multiple accounts, analyst debate, shadow strategies, generic plugins, or production broker writes. Those omissions are scope decisions, not unfinished MVP defects.
+
+The one-week live release adds only the platform-managed Robinhood MCP connection, the human-owned live gate, and exact routine prompts. It does not add a plain executor, custom OAuth lifecycle, transactional database, exactly-once submission, or crash-safe reconciliation.
 
 ## Where to go next
 
@@ -36,4 +46,4 @@ The person running this expects low ongoing maintenance time. The target is ther
 
 ## Boundaries
 
-Claude (in any interface) is responsible for design, code, backtesting tools, and the reporting pipeline; it does not execute trades, hold credentials, or give buy/sell advice on specific securities. Live trading decisions and their consequences belong to the account owner alone.
+The Decision Routine cannot execute trades. The separately configured Execution Routine may place trades through the platform-managed Robinhood MCP after the human enables live mode. The platform, not repository code or the model-visible artifacts, stores the credential. Live trading decisions and their consequences belong to the account owner alone.

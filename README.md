@@ -1,6 +1,6 @@
 # Ripple Trading
 
-A small, real-money trading system built to learn agent-system design: two live Robinhood Agentic accounts running the same multi-agent architecture on different models (Claude vs. OpenAI), plus an open shadow pool of paper candidates that provides the baseline needed to tell whether any of it actually beats doing nothing.
+A small, real-money trading system built to learn agent-system design. The current target is a three-day dry-run MVP and a one-week live release for one Robinhood Agentic account using separate hosted Decision and Execution routines. Risk arithmetic is deterministic; the small-account v1 deliberately accepts the prompt-mediated execution risks recorded in D26.
 
 Not financial advice. Read [`PROPOSAL.md`](PROPOSAL.md) for what this is and why before anything else.
 
@@ -23,11 +23,11 @@ Ripple is designed for independent Codex threads, Claude Code sessions, or other
 
 ## Verify local Robinhood MCP OAuth
 
-On macOS, run [`scripts/verify-robinhood-mcp-oauth.sh`](scripts/verify-robinhood-mcp-oauth.sh). The five-stage wizard checks Python 3.12, walks through one browser authorization, runs two forced-expiry refresh proofs in separate headless processes, and finishes with ordinary headless reuse. Every MCP session performs only `initialize` and `tools/list`. Credentials are stored in macOS Keychain; Docker and `.env` secrets are not used. This runner-owned local proof has completed against Robinhood; it remains distinct from the earlier unauthenticated/access-token probes, and the production secret store remains undecided.
+On macOS, run [`scripts/verify-robinhood-mcp-oauth.sh`](scripts/verify-robinhood-mcp-oauth.sh) only to reproduce the completed local feasibility proof. The five-stage wizard checks Python 3.12, walks through one browser authorization, runs two forced-expiry refresh proofs in separate headless processes, and finishes with ordinary headless reuse. Credentials are stored in macOS Keychain and every MCP session performs only `initialize` and `tools/list`. Production v1 does not use this runner-owned credential path; it uses the hosted platform's managed Robinhood MCP connection per D26.
 
 ## Status
 
-Architecture draft complete; broker/scheduler feasibility is in progress. See `docs/TODO.md`.
+The three-day dry-run MVP and one-week hosted-routine production path are in progress. See `docs/TODO.md`.
 
 ## License
 

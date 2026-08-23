@@ -1,56 +1,61 @@
 # Current status
 
-Living status doc — this reflects the *current* state of in-flight work, not a growing history. When a section is done, either delete it or fold it into a one-line note under "Recently completed"; don't leave finished work cluttering this file. If there's something a future session genuinely needs to pick up mid-task, that unfinished-work state belongs here, in enough detail that the next agent doesn't have to re-derive it from git log or chat history.
+Living status doc. Keep only genuinely unfinished work here.
 
-Status: **PHASE −1 IN PROGRESS.** The architecture draft exists, and local runner-owned Robinhood MCP bootstrap, headless reuse, cross-process refresh, one account binding, and the sanitized order-history read path are verified. The second account binding, idempotency, lifecycle reconciliation, and deployment-runtime feasibility remain unverified.
+Status: **D26 HOSTED MVP IN PROGRESS — THREE-DAY DRY RUN / ONE-WEEK SMALL-ACCOUNT LIVE TARGET.** Production v1 is one Robinhood account, one hosted Decision Routine without broker write tools, one isolated hosted Execution Routine with the platform-managed Robinhood MCP connection, deterministic risk scripts, and credential-free continuity records in a private Git repository. SQLite, a plain executor, self-managed OAuth, exactly-once execution, multi-account support, and shadow strategies are not v1 launch work.
 
-## Phase −1 — feasibility
+## Development day 1 — deterministic core
 
-- Partial: one controlled local Codex Automation run successfully executed the read-only probe with `uv run --no-cache`. The same safe temporary Automation was activated at 2026-08-22 21:43 PDT for its next unchanged daily trigger at 2026-08-23 19:28 PDT, configured about 21 hours 44 minutes in advance; after observing that run, pause it or leave it active for one additional unchanged trigger to test repetition. Cloud Automation, secrets, usage limits, repeated-run reliability, and live DST-boundary behavior remain unverified.
-- Partial: the local runner's sanitized probes found two brokerage accounts, selected exactly one active caller-accessible account, and successfully read a well-formed `get_equity_orders` envelope without disclosing account or order data. A second independent credential/account binding remains unverified. The history schema does not expose placement `ref_id`; live broker deduplication and lifecycle/ambiguous-outcome reconciliation remain unverified.
-- Partial: official deployment-storage research rejects GitHub Actions secrets for rotating OAuth state and identifies AWS Secrets Manager plus Aurora PostgreSQL/S3 as leading synthetic-proof candidates, not selected vendors. Phase 0 must prove exact-version credential pointers, `refresh_started`/`refresh_unknown`, OIDC isolation, eventual-consistency failure behavior, Aurora cost/compatibility, and a secure logical-export path (`docs/feasibility/github-actions-oauth-secret-store.md`, `docs/feasibility/runtime-storage-options.md`).
-- [x] Prove a plain, non-agentic runner can authenticate to Robinhood Trading MCP headlessly and refresh credentials without routine human action (`docs/feasibility/mcp-python-oauth-client.md`)
-- [ ] Prove explicit account selection and two independent Agentic-account bindings
-- [x] Capture the exact review/place/cancel/history schemas, including fractional/dollar-order behavior (`docs/feasibility/robinhood-equity-tool-schemas.md`)
-- [ ] Test whether Robinhood accepts a stable client order id / idempotency key
-- [ ] Prove broker-history reconciliation for accepted, rejected, partial, canceled, and ambiguous outcomes
-- [ ] Verify Claude/Codex scheduling, secret lifecycle, usage assumptions, and timezone behavior
-- [ ] Record every result; revise the architecture before implementation if a correctness-critical assumption fails
+- [ ] Freeze the first strategy's universe, schedule, and minimum input set; do not add a plugin system or generic strategy interface
+- [ ] Implement only the sizing, position-cap, order-count, loss/drawdown, prohibited-product, price-tolerance, and available-cash calculations used by the first run
+- [ ] Make the scripts accept and return strict credential-free JSON with base-10 decimal strings
+- [ ] Add focused fixture tests for allowed, clipped, rejected, stale-price, malformed-input, and `execution.mode != live` cases
+- [ ] Finish only the `OrderPlan` semantic checks needed by those scripts and the hosted routines
 
-## Phase 0 — deterministic core
+## Development day 2 — Decision Routine
 
-- Partial: `DecisionSnapshot`, `OrderPlan`, and `ExecutionEvent` now enforce strict, deeply immutable document envelopes; `ExecutionEvent` has finite kind-specific payloads, downward-only adjustment values, fail-closed unknown facts, and URI plus SHA-256 evidence pointers. Feed-specific inputs, semantic portfolio/order validation, canonical hashing, append-only persistence, event uniqueness/order, transition validation, order-to-plan membership, transactional writes, and unknown-submission blocking remain unfinished.
-- [ ] Choose the smallest transactional and object stores that satisfy D15; document retention, backup/export, unique constraints, conditional writes, and cross-runner leases
-- [ ] Implement immutable `DecisionSnapshot` and `OrderPlan` schemas plus append-only `ExecutionEvent` records
-- [ ] Implement risk engine (position sizing, daily loss breaker, drawdown tiers, wash-sale guard, deterministic exits) as unit-testable code
-- [ ] Implement fake broker, execution state machine, transactional lease, and broker reconciliation
-- [ ] Add adversarial tests proving an LLM-authored instruction cannot bypass the risk engine
-- [ ] Add failure-injection tests: duplicate trigger, crash before submit, crash after broker acceptance, stale data, partial fill, and unresolved broker outcome
-- [ ] Implement timezone-safe scheduling as a trigger only; transactional state decides whether work may proceed
+- [ ] Write the narrow Decision Routine contract: fresh session, approved read-only inputs, no Robinhood write tools, no credential handling
+- [ ] Produce exactly one strict per-cycle OrderPlan file with stable plan/order IDs and `account_id`
+- [ ] Append one compact credential-free JSONL decision record and sanitized human report
+- [ ] Pull before the run; commit and push after the run; report and stop on a Git conflict or failed push
+- [ ] Test the prompt and scripts against fixed fixtures; reject unknown fields, malformed output, and any proposed instrument outside the configured universe
 
-## Phase 1 — paper and shadow
+## Development day 3 — dry-run MVP
 
-- [ ] Run Claude, OpenAI, mean-reversion, and SPY/QQQ lanes from the same frozen DecisionSnapshot
-- [ ] Register every candidate's sample-size, holdout, cost, benchmark, and risk criteria before its evaluation starts
-- [ ] Complete eight continuous weeks without unresolved reconciliation, duplicate cycles, missed-run blind spots, or material risk defects
+- [ ] Write the isolated Execution Routine contract: load only the published plan/config/account facts, never investment news or thesis material
+- [ ] Re-run deterministic checks and permit only execute-as-is, downward scaling, rejection, or whole-plan abort
+- [ ] In `dry_run`, emit the exact proposed Robinhood calls without invoking write tools; append compact JSONL results and a report
+- [ ] Configure exactly one hosted Decision schedule and one hosted Execution schedule with an `America/New_York` time/date self-check
+- [ ] Observe one complete scheduled Day T decision → Day T+1 dry execution; resolve any schedule, repository, schema, or risk-script defect
 
-## Phase 2/3 — live rollout
+MVP is complete when that scheduled dry cycle is understandable from the OrderPlan, script outputs, JSONL records, and report without using broker write tools.
 
-- [ ] Start one-account live canary with a manually approved validation allocation
-- [ ] Verify real credential lifecycle, fills, reconciliation, alerts, kill switch, and recovery before enabling the second account
-- [ ] Start the two-account live comparison only after the canary gate passes
+## Development days 4–7 — one-account live canary
 
-Before any increase beyond the initial $500–1000 per live account:
+- [ ] Connect the platform-managed Robinhood MCP only to the Execution Routine; keep credentials and raw authenticated responses out of Git and logs
+- [ ] Verify one explicit account is selected and confirm the current read/review/place/cancel tool schemas with non-writing or smallest-safe probes
+- [ ] Verify the Decision Routine cannot access broker write tools; if the hosted platform cannot provide that capability separation, do not launch on it
+- [ ] Keep one scheduler per phase, stable IDs, a pre-submit history/log check, and no immediate blind retry after timeout as best-effort guards
+- [ ] Finish the operator report, kill-switch instructions, MCP reconnection steps, Git-conflict response, and manual Robinhood inspection after an ambiguous outcome
+- [ ] Alicia reviews one full dry cycle and explicitly changes the human-owned `execution.mode` from `dry_run` to `live`
+- [ ] Start with the manually approved small validation allocation and monitor the first live cycle
 
-- [ ] Define and document the evidence window, profitability/risk criteria, and approved increase amount for the one-time human capital review required by D14; no automatic scaling
+The accepted D26 risks—wrong tool arguments, duplicate calls, crash-after-submit/before-log, ambiguous timeout, config misuse, prompt injection, and model/prompt drift—do not block this small-account launch. Do not silently claim that v1 prevents them.
 
-## Recently completed
+## Eight-week capital review
 
-- On 2026-08-22 Alicia completed the local OAuth wizard: runner-owned interactive bootstrap, sanitized stored-state validation, two fresh-process forced-expiry refreshes, and final browser-free `initialize`/`tools/list` reuse all succeeded. No broker tool was called.
-- The local OAuth failure gate is covered end to end with mock transport: rejected refresh credentials fail closed before MCP session creation, require bootstrap, and emit no credential or response detail.
-- Official model-usage research established that Claude Pro and ChatGPT Plus are suitable only for monitored feasibility, not a fixed production capacity boundary; actual Ripple prompt usage and any explicit API fallback budget remain to be measured (`docs/feasibility/model-subscription-usage.md`).
-- X is excluded from v1 after official API/terms research found no measured incremental value and unresolved retention/external-LLM policy conflicts; D19 records explicit reconsideration gates (`docs/feasibility/x-api-news-source.md`).
-- Architecture draft: `PROPOSAL.md`, `docs/ARCHITECTURE.md`, and `docs/DECISIONS.md` written and internally consistent; feasibility remains open.
-- Repo reorganized: `docs/archive/` holds the two original independent draft proposals (Claude's and Codex's) plus the comparison research that synthesized them — superseded, kept for history only.
-- Agent collaboration entry points consolidated: `AGENTS.md` and `CLAUDE.md` are thin indexes into shared docs; `docs/INVARIANTS.md` is the common correctness checklist.
-- Multi-agent development workflow documented in `docs/AGENT_WORKFLOW.md`; roles live in prompts, concurrent writers use isolated branches/worktrees, and handoffs flow through Git and shared docs.
+- [ ] Operate the single account for eight continuous weeks and record after-cost performance, drawdown, missed/failed runs, MCP reconnects, Git conflicts, ambiguous outcomes, and any divergence from risk-script output
+- [ ] Before any capital increase, explicitly revisit D26 and decide whether evidence justifies retaining LLM execution or requires a non-LLM executor, transactional submission journal, broker idempotency proof, stronger reconciliation, or other controls
+- [ ] Record any approved architecture change in `docs/DECISIONS.md`, update `docs/ARCHITECTURE.md`, and let Alicia approve the exact funding change; never increase capital automatically
+
+## Later — multi-account expansion
+
+- [ ] Do not add a second account by copying the routine
+- [ ] First complete a durable architecture review covering credential isolation, transactional state, duplicate/ambiguous submissions, per-account risk state, and operational ownership
+- [ ] Then add the smallest second-account seam without changing the proven single-account domain behavior
+
+## Existing evidence, not launch blockers
+
+- Immutable `DecisionSnapshot`, `OrderPlan`, and `ExecutionEvent` value objects exist with focused tests. Transactional append-only persistence and a complete execution state machine are deferred.
+- Local Python MCP bootstrap, fresh-process reuse/refresh, one-account selection, sanitized order-history reads, and a local Codex Automation runtime probe succeeded. This remains a fallback/hardening path, not the production-v1 credential/runtime design.
+- Robinhood review/place/cancel/history schemas are recorded in `docs/feasibility/`; live idempotency and comprehensive outcome reconciliation are unproven and accepted only at the D26 initial-allocation boundary.

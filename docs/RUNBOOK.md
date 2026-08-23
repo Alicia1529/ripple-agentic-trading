@@ -1,43 +1,56 @@
 # Runbook
 
-Operational procedures. This is written ahead of implementation, as part of the spec for what needs to be built — update it as the real system's behavior diverges from what's described here.
+Operational procedures for the D26 single-account hosted v1. Replace placeholders with exact platform controls and commands during implementation.
 
 ## Kill switch
 
-There is no broker-provided instant "flatten everything" capability (see `docs/ARCHITECTURE.md` "Risk layer" for why). The kill switch here means:
+There is no instantaneous broker-side "flatten everything" switch.
 
-1. Flip a config flag (e.g. `execution.mode` for the affected account, or a global flag) — this must be a value only a human ever changes; no code path in either the Decision or Execution stage may write to it.
-2. Next Decision Run: no new OrderPlan is generated for that account.
-3. Next Execution Run: all pending orders for that account are cancelled; no new orders are submitted.
-4. Existing positions are **not** instantly liquidated — they still need normal sell orders to unwind. If an immediate exit is wanted, that's a manual trade placed by the human, not something the system does automatically on kill-switch flip.
+1. Alicia changes the human-owned `execution.mode` to `disabled` in the private repository and pushes it. Neither routine may edit this setting.
+2. Disable both hosted schedules if immediate certainty is needed.
+3. The next Decision Routine produces no new OrderPlan.
+4. The next Execution Routine submits no new orders and may cancel visible pending orders.
+5. Existing positions are not automatically liquidated. Use ordinary manual broker orders if an immediate exit is required.
 
-## What to do when notified
+Because v1 execution is LLM-mediated, disabling the hosted schedules is the strongest operational stop; the config flag is an additional routine-level guard, not a security boundary.
 
-The system should only ever notify for the events below. If something else is generating notifications, that's itself a bug worth investigating — see "Unexpected notification" at the bottom.
+## Before first live run
 
-| Notification | What it means | What to do |
-|---|---|---|
-| Drawdown tier 1 (−10%) on an account | New positions blocked for that account | Review recent decisions/fills for that account at your own pace; no action required unless something looks wrong |
-| Drawdown tier 2 (−15%) on an account | That account has shut down, needs manual restart | Review what happened before restarting; the other account and the shadow pool are unaffected and kept running |
-| Shadow candidate cleared the graduation gate (D5a) | 8+ weeks, beat both benchmarks, no execution bugs | Decide by hand whether to fund a new live account for it — this is a real financial decision, take the time it needs |
-| "Today's scheduled run didn't happen" | A Decision or Execution Run was skipped or failed | Check the relevant scheduler (Claude Code routine / Codex Automation / GitHub Actions) logs; the missed cycle is not backfilled — the system waits for the next normal cycle |
-| Account state reconciliation mismatch | Positions/cash don't match what was expected | Investigate before the next Execution Run proceeds for that account — this should be rare and worth understanding, not just clearing |
-| Wash-sale block | A buy was blocked because it would trigger a wash sale | No action needed unless you disagree with the block; it's logged for tax records either way |
+- Keep the repository private and confirm plans, JSONL records, reports, prompts, and test fixtures contain no credentials, cookies, account numbers, or raw authenticated responses.
+- Connect Robinhood through the hosted platform's MCP connection. Do not export its tokens into repository secrets or local files.
+- Give the Decision Routine only approved read tools and repository access. It must have no Robinhood place/cancel capability. If the platform cannot enforce that separation, do not run the Decision Routine there.
+- Give only the isolated Execution Routine the narrow Robinhood read/review/place/cancel tools it needs. Do not provide news browsing or investment-reasoning inputs to that routine.
+- Enable exactly one Decision schedule and one Execution schedule. Confirm their repository, branch, timezone, and `America/New_York` self-check.
+- Keep `execution.mode=dry_run` through one complete scheduled Day T decision → Day T+1 execution cycle. Review its plan, script output, exact proposed calls, JSONL records, and report.
+- Alicia alone changes `execution.mode` to `live` for the initial small allocation.
 
-**Unexpected notification** — anything not in the table above, or anything that recurs when it should be rare: treat it as a signal something in the design or implementation is wrong, not routine noise to dismiss.
+## Routine checks
 
-## Deploy
+For each hosted run, verify:
 
-Not yet implemented — this section will describe:
+1. It pulled the expected private branch without a conflict.
+2. The Decision Routine created no more than one plan for the trading date.
+3. The Execution Routine loaded that exact committed plan and the expected account configuration.
+4. Deterministic script output, proposed/actual quantities, Robinhood result IDs, and final status appear in compact credential-free logs.
+5. The run committed and pushed its output. Never force-push to repair a routine conflict.
 
-- First-time setup for each of the three schedulers (Claude Code cloud routine for Account A, Codex cloud Automation for Account B, GitHub Actions for the shadow pool + both accounts' Execution Run).
-- Where credentials live for each (env vars / GitHub Actions secrets / each cloud scheduler's own secret store) — never in the repo.
-- How to point a fresh deployment at a new Robinhood Agentic account without touching the shared pipeline code.
+During the initial canary, Alicia should inspect the first live results directly in Robinhood. The repository is an audit aid, not a transactional source of truth.
 
-## Debug
+## Failure response
 
-Not yet implemented — this section will describe how to replay a specific day's chain from the frozen `DecisionSnapshot`, immutable `OrderPlan`, transactional `ExecutionEvents`, and referenced audit objects; and how to distinguish "the call was wrong" from "the price moved before execution" using the decision/execution timestamps.
+| Situation | Action |
+|---|---|
+| Scheduled run missing or failed | Inspect the hosted task log. Do not backfill a stale decision or order; fix the cause for the next normal cycle. |
+| Robinhood MCP asks for authorization | Stop the run and reconnect interactively through the hosted platform. Never paste credentials into a prompt or Git. |
+| Git pull/push conflict | Keep the run stopped, inspect both histories, and resolve normally. Never force-push over trading records. |
+| Malformed plan, config, script output, quote, or account response | Submit nothing. Preserve a sanitized error record and fix the input or code before the next cycle. |
+| MCP timeout or crash near order placement | Do not immediately rerun. Inspect Robinhood order history and positions manually before the next schedule. Record what is known without claiming the outcome was automatically reconciled. |
+| Unexpected or duplicate order | Disable both schedules, set `execution.mode=disabled`, inspect Robinhood, and correct/cancel manually as appropriate. Preserve the plan and logs for review. |
+| Risk result and placed quantity differ | Disable live execution and treat it as a D26 architecture-review trigger, even if the dollar loss is small. |
+| Material drawdown or behavior outside the configured universe | Disable live execution and review before restarting. |
 
-## Recovery
+## Known limits
 
-Not yet implemented — this section will describe what to do after a crashed or partially-completed Execution Run and how to confirm recovery before the next cycle. Per D16, `submission_started` without `broker_acknowledged` is an unknown outcome: query broker history, append a reconciliation result, and resume only if the outcome is proven. Unresolved ambiguity keeps that account blocked and requires human review; it never triggers a blind resubmission.
+Production v1 intentionally does not implement a transactionally durable submission journal, cross-runner lease, exactly-once guarantee, automatic ambiguous-outcome reconciliation, or non-LLM execution boundary. An LLM can still misread risk output, send the wrong arguments, call a tool twice, misuse configuration, or change behavior after a model/prompt update. D26 accepts those risks only for the initial small allocation and fast launch.
+
+Before any capital increase or second account, review actual incidents and near misses and make a new durable architecture decision. Eight weeks of operation permits that review; it does not automatically approve scaling.
