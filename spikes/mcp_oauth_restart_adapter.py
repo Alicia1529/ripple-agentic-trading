@@ -1,5 +1,6 @@
 """Restart-safe OAuth adapter for short-lived MCP feasibility runners."""
 
+import json
 import time
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from dataclasses import dataclass, field
@@ -28,6 +29,10 @@ class OAuthBootstrapRequired(Exception):
 
 class UnsupportedMcpVersion(Exception):
     """The adapter has not been verified against the installed MCP SDK."""
+
+
+class OAuthRefreshUnavailable(Exception):
+    """Refresh failed without proving that the stored credential is invalid."""
 
 
 @dataclass(frozen=True)
@@ -126,7 +131,13 @@ class RestartSafeOAuthClientProvider(OAuthClientProvider):
             self._initialized = True
             return
 
-        self._restore(stored)
+        try:
+            self._restore(stored)
+        except OAuthBootstrapRequired:
+            if not self._interactive:
+                raise
+            await self._state_store.clear(stored.revision)
+            self._state_revision = None
         self._initialized = True
 
     def _restore(self, stored: VersionedOAuthState) -> None:
@@ -193,16 +204,42 @@ class RestartSafeOAuthClientProvider(OAuthClientProvider):
         )
 
     async def _handle_token_response(self, response: httpx2.Response) -> None:
+        if response.status_code not in (200, 201):
+            await response.aread()
+            raise OAuthBootstrapRequired(
+                f"OAuth token exchange failed with status {response.status_code}"
+            )
         await super()._handle_token_response(response)
         await self._persist()
 
     async def _handle_refresh_response(self, response: httpx2.Response) -> bool:
+        if response.status_code != 200:
+            body = await response.aread()
+            try:
+                payload = json.loads(body)
+                error = payload.get("error") if isinstance(payload, dict) else None
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                error = None
+
+            if error in ("invalid_client", "invalid_grant"):
+                if self._state_revision is not None:
+                    await self._state_store.clear(self._state_revision)
+                    self._state_revision = None
+                self.context.clear_tokens()
+                self._buffer.tokens = None
+                if error == "invalid_client":
+                    self.context.client_info = None
+                    self._buffer.client_info = None
+                if self._interactive:
+                    return False
+                raise OAuthBootstrapRequired("OAuth refresh credential was rejected")
+            raise OAuthRefreshUnavailable(
+                f"OAuth refresh failed with status {response.status_code}"
+            )
+
         refreshed = await super()._handle_refresh_response(response)
-        if not refreshed:
-            if 400 <= response.status_code < 500 and self._state_revision is not None:
-                await self._state_store.clear(self._state_revision)
-                self._state_revision = None
-            raise OAuthBootstrapRequired("OAuth refresh was rejected")
+        if not refreshed:  # pragma: no cover - guarded by the explicit status check above
+            raise OAuthRefreshUnavailable("OAuth refresh response was invalid")
         await self._persist()
         return True
 

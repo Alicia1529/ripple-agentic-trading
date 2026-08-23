@@ -1,5 +1,6 @@
 import asyncio
 import importlib.util
+import logging
 import time
 import unittest
 from pathlib import Path
@@ -152,6 +153,42 @@ class RestartSafeOAuthClientProviderTests(unittest.TestCase):
 
         self.assertEqual(store.saved, [])
 
+    def test_token_exchange_failure_does_not_expose_response_body(self):
+        secret = "authorization-code-or-secret"
+        instance = bootstrap_provider(MemoryStateStore())
+        response = httpx2.Response(400, content=("failure " + secret).encode())
+
+        with self.assertLogs("mcp.client.auth.oauth2", level="ERROR") as captured:
+            try:
+                asyncio.run(instance._handle_token_response(response))
+            except adapter.OAuthBootstrapRequired as raised:
+                caught = raised
+                logging.getLogger("mcp.client.auth.oauth2").exception("OAuth flow error")
+            else:
+                self.fail("expected OAuthBootstrapRequired")
+
+        self.assertNotIn(secret, str(caught))
+        self.assertNotIn(secret, "\n".join(captured.output))
+
+    def test_interactive_bootstrap_clears_invalid_state_with_revision(self):
+        store = MemoryStateStore(
+            stored_state(expires_at=time.time() + 60, server_url="https://wrong.example/mcp")
+        )
+        instance = adapter.RestartSafeOAuthClientProvider(
+            SERVER_URL,
+            OAuthClientMetadata(
+                client_name="Ripple feasibility probe",
+                redirect_uris=["http://127.0.0.1:8765/callback"],
+            ),
+            store,
+            interactive=True,
+        )
+
+        asyncio.run(instance._initialize())
+
+        self.assertEqual(store.cleared, ["1"])
+        self.assertTrue(instance._initialized)
+
     def test_fresh_process_restores_unexpired_token_without_refresh(self):
         store = MemoryStateStore(stored_state(expires_at=time.time() + 3600))
         calls = []
@@ -214,13 +251,16 @@ class RestartSafeOAuthClientProviderTests(unittest.TestCase):
         self.assertEqual([call.url.host for call in calls], ["auth.example", "agent.robinhood.com"])
         self.assertEqual(store.saved[0][1].tokens.refresh_token, "refresh-old")
 
-    def test_refresh_rejection_clears_state_without_calling_resource(self):
+    def test_invalid_grant_clears_state_without_calling_resource(self):
         store = MemoryStateStore(stored_state(expires_at=time.time() - 1))
         calls = []
 
         async def handler(request):
             calls.append(request)
-            return httpx2.Response(400, json={"error": "invalid_grant"})
+            return httpx2.Response(
+                400,
+                json={"error": "invalid_grant", "error_description": "secret-must-be-ignored"},
+            )
 
         with self.assertRaises(adapter.OAuthBootstrapRequired):
             asyncio.run(request_with(provider(store), handler))
@@ -228,17 +268,30 @@ class RestartSafeOAuthClientProviderTests(unittest.TestCase):
         self.assertEqual([call.url.host for call in calls], ["auth.example"])
         self.assertEqual(store.cleared, ["1"])
 
-    def test_refresh_server_error_preserves_state_for_later_retry(self):
-        store = MemoryStateStore(stored_state(expires_at=time.time() - 1))
+    def test_transient_and_ambiguous_refresh_errors_preserve_state(self):
+        cases = [
+            (429, {"error": "temporarily_unavailable"}),
+            (400, {"error": "temporarily_unavailable"}),
+            (408, None),
+            (503, None),
+            (400, "malformed"),
+        ]
+        for status, payload in cases:
+            with self.subTest(status=status, payload=payload):
+                store = MemoryStateStore(stored_state(expires_at=time.time() - 1))
 
-        async def handler(_request):
-            return httpx2.Response(503)
+                async def handler(_request, status=status, payload=payload):
+                    if payload == "malformed":
+                        return httpx2.Response(status, content=b"{")
+                    if payload is not None:
+                        return httpx2.Response(status, json=payload)
+                    return httpx2.Response(status)
 
-        with self.assertRaises(adapter.OAuthBootstrapRequired):
-            asyncio.run(request_with(provider(store), handler))
+                with self.assertRaises(adapter.OAuthRefreshUnavailable):
+                    asyncio.run(request_with(provider(store), handler))
 
-        self.assertEqual(store.cleared, [])
-        self.assertIsNotNone(store.versioned_state)
+                self.assertEqual(store.cleared, [])
+                self.assertIsNotNone(store.versioned_state)
 
     def test_missing_or_mismatched_state_fails_before_network(self):
         cases = [
