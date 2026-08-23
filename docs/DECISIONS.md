@@ -238,6 +238,16 @@ Each lane starts in `dry_run` and has an independent human-owned live gate. Acco
 
 **Why:** The domain records already carry `account_id`, and the existing command boundary already processes one configuration at a time. Reusing that boundary twice adds the requested capability with minimal code and preserves failure isolation. Changing the schema to `accounts[]` or adding a coordinator would create new shared failure modes and abstractions without improving the first two concrete lanes. Account-scoped execution context validation is the one small code change needed to prevent facts from one account being evaluated as another.
 
+## D28 — Deterministic MVP reconciliation and risk corrections
+
+**Decision:** Each `OrderPlan` carries a credential-free decision-time `account_baseline` containing cash and position quantities. It is deliberately separate from the shareable `DecisionSnapshot`. Execution aborts planned orders when the current account does not exactly match that baseline, when any required held/planned-symbol quote is missing or stale, or when the configured account does not match the state-root basename. Public hosted-stage commands also require the real `America/New_York` clock to match the document date and phase window; fixture-only `run-dry-cycle` remains time-independent test evidence.
+
+BUY orders reserve cash cumulatively at their limit prices, which are the worst permitted fills. The MVP plan schema therefore accepts only positive share-quantity `LIMIT`, `regular_hours`, `gfd` orders. Stop-loss and take-profit checks are deterministic risk authority, not new investment reasoning: they may produce a stable-ID, full-position, regular-hours market SELL even when no planned order exists, and they supersede a same-symbol planned order. Missing or stale data suppresses these exits too because the system cannot size them safely.
+
+A tier-two drawdown creates an immutable account-lane lock at `risk/drawdown_tier2.lock.json`. Later BUYs remain blocked even after equity recovers. Only a human may remove that file after reviewing the account and deciding to restart; deterministic risk exits remain available while locked.
+
+**Why:** The earlier implementation evaluated BUYs independently against the same cash, used the current quote instead of the maximum limit fill for sizing, emitted threshold alerts without an exit, and had no persisted manual-restart state or decision-to-execution account reconciliation. Those behaviors could overspend, fail a documented safety action, or execute a stale plan. The correction stays within the two concrete lane boundary and adds no database, broker loop, account framework, or investment logic.
+
 ## Open-source references consulted
 
 - [TauricResearch/TradingAgents](https://github.com/TauricResearch/TradingAgents) — started as an architecture reference, later added as an actual shadow-pool candidate (see D5b).

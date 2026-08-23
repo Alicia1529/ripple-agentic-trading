@@ -49,8 +49,9 @@ For each hosted run, verify:
 1. It pulled the expected private branch without a conflict.
 2. The Decision Routine created no more than one plan for its account and trading date.
 3. The Execution Routine loaded that exact committed plan, matching execution-context `account_id`, and expected account configuration.
-4. Deterministic script output, proposed/actual quantities, Robinhood result IDs, and final status appear in compact credential-free logs.
-5. The run committed and pushed its output. Never force-push to repair a routine conflict.
+4. The state-root basename matches `account_id`, current cash/positions match the plan baseline, and all held/planned-symbol quotes are present and fresh.
+5. Deterministic script output, proposed/actual quantities, Robinhood result IDs, and final status appear in compact credential-free logs.
+6. The run committed and pushed its output. Never force-push to repair a routine conflict.
 
 During the initial canary, Alicia should inspect the first live results directly in Robinhood. The repository is an audit aid, not a transactional source of truth.
 
@@ -66,6 +67,15 @@ During the initial canary, Alicia should inspect the first live results directly
 | Unexpected or duplicate order | Disable both schedules, set `execution.mode=disabled`, inspect Robinhood, and correct/cancel manually as appropriate. Preserve the plan and logs for review. |
 | Risk result and placed quantity differ | Disable live execution and treat it as a D26 architecture-review trigger, even if the dollar loss is small. |
 | Material drawdown or behavior outside the configured universe | Disable live execution and review before restarting. |
+
+## Tier-two drawdown restart
+
+When a lane reaches tier-two drawdown, the script creates `<state-root>/risk/drawdown_tier2.lock.json`. Equity recovery does not clear it and routines must not modify it.
+
+1. Keep new entries disabled and inspect the broker account, pending orders, recent fills, reports, and the triggering execution result.
+2. Resolve any account discrepancy or ambiguous outcome. If the cause is unexplained, keep the lock and disable the lane's schedules.
+3. Alicia decides whether restarting new entries is acceptable. If so, delete only that lane's exact lock file in a reviewed repository change and commit it. Never delete another lane's lock.
+4. Run a fresh scheduled dry cycle before restoring live mode. Risk-reducing exits remain permitted while the lock exists.
 
 ## Known limits
 

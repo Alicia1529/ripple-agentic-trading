@@ -14,7 +14,7 @@ The initial $500–1000 per live account is a deliberately small validation allo
 2. A controlled, auditable comparison against simple baselines, without overstating what a small live sample can prove.
 3. If live results eventually demonstrate stable, attributable profitability after costs and within the risk rules, selectively increase account funding by a manually approved amount. The system never increases funding on its own.
 
-The person running this expects low ongoing maintenance time. Production v1 therefore delegates Robinhood credential lifecycle to the hosted MCP connection and uses Git-backed JSON/JSONL state. This is simpler but deliberately accepts low-probability duplicate, ambiguous-outcome, prompt/tool-use, and pre-log-crash risks while the account remains at its small validation allocation. Those risks must be reconsidered before adding capital or accounts.
+The person running this expects low ongoing maintenance time. Production v1 therefore delegates Robinhood credential lifecycle to the hosted MCP connection and uses Git-backed JSON/JSONL state. This is simpler but deliberately accepts low-probability duplicate, ambiguous-outcome, prompt/tool-use, and pre-log-crash risks while the account remains at its small validation allocation. Those risks must be reconsidered before adding capital or a third account.
 
 ## Scope at a glance
 
@@ -32,7 +32,7 @@ The person running this expects low ongoing maintenance time. Production v1 ther
 
 The MVP is deliberately dry-run only. Each account lane has one fixed allowlist, one Decision Routine, one Execution Routine, deterministic risk scripts, one per-cycle OrderPlan file, account-scoped JSONL decision/order logs, and one sanitized report. Its repository acceptance test runs both lanes into separate state roots and proves that a plan cannot execute against the other account's configuration. Hosted acceptance still requires complete scheduled decision-to-dry-run cycles with no live order placed.
 
-The MVP does not include a dashboard, backtesting framework, cloud deployment, multiple models, multiple accounts, analyst debate, shadow strategies, generic plugins, or production broker writes. Those omissions are scope decisions, not unfinished MVP defects.
+The MVP does not include a dashboard, backtesting framework, cloud deployment, model-comparison orchestration, more than two accounts, analyst debate, shadow strategies, generic plugins, or production broker writes. Those omissions are scope decisions, not unfinished MVP defects.
 
 The one-week live release adds only the platform-managed Robinhood MCP connection, the human-owned live gate, and exact routine prompts. It does not add a plain executor, custom OAuth lifecycle, transactional database, exactly-once submission, or crash-safe reconciliation.
 

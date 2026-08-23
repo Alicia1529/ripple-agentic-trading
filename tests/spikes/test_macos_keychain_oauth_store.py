@@ -143,6 +143,18 @@ class MacOSKeychainOAuthStateStoreTests(unittest.TestCase):
 
         self.assertNotIn(secret, str(raised.exception))
 
+    def test_non_finite_expiry_fails_closed(self):
+        state = store_module._state_to_dict(oauth_state())
+        state["access_token_expires_at"] = float("inf")
+        self.backend.set_password(
+            store_module.KEYCHAIN_SERVICE,
+            store_module.KEYCHAIN_ACCOUNT,
+            json.dumps({"format": store_module.RECORD_FORMAT, "revision": 1, "state": state}),
+        )
+
+        with self.assertRaises(store_module.OAuthStateStoreCorrupt):
+            asyncio.run(self.store.load())
+
     def test_backend_failures_are_sanitized(self):
         failing_store = store_module.MacOSKeychainOAuthStateStore(
             backend=FailingSecretBackend(),

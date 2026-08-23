@@ -2,7 +2,7 @@
 
 Living status doc. Keep only genuinely unfinished work here.
 
-Status: **TWO-ACCOUNT LOCAL DRY-RUN MVP IMPLEMENTED; HOSTED SCHEDULED CYCLES PENDING.** Account A and Account B run the same strict decision/risk CLI independently with separate configurations and state roots. Execution context, plan, configuration, logs, and reports carry matching `account_id`; cross-account evaluation fails closed. SQLite, a plain executor, self-managed OAuth, exactly-once execution, a batch account coordinator, third-account support, and shadow strategies are not v1 launch work.
+Status: **TWO-ACCOUNT LOCAL DRY-RUN MVP IMPLEMENTED; HOSTED SCHEDULED CYCLES PENDING.** Account A and Account B run the same strict decision/risk CLI independently with separate configurations and account-named state roots. Execution reconciles its decision-time account baseline, fails the cycle on required-data uncertainty, reserves aggregate BUY cash at worst-case limit prices, produces deterministic position Risk Exits, and persists the tier-two restart lock. SQLite, a plain executor, self-managed OAuth, exactly-once execution, a batch account coordinator, third-account support, and shadow strategies are not v1 launch work.
 
 ## Development day 1 — deterministic core
 
@@ -40,7 +40,7 @@ Repository MVP acceptance is complete. Hosted acceptance is complete per lane wh
 - [ ] Verify each connection selects its intended account and confirm the current read/review/place/cancel tool schemas with non-writing or smallest-safe probes
 - [ ] Verify both Decision Routines cannot access broker write tools; if the hosted platform cannot provide that capability separation, do not launch the affected lane on it
 - [ ] Keep one scheduler per phase, stable IDs, a pre-submit history/log check, and no immediate blind retry after timeout as best-effort guards
-- [ ] Finish the operator report, kill-switch instructions, MCP reconnection steps, Git-conflict response, and manual Robinhood inspection after an ambiguous outcome
+- [x] Finish the operator report, kill-switch instructions, MCP reconnection steps, Git-conflict response, tier-two restart procedure, and manual Robinhood inspection after an ambiguous outcome
 - [ ] Alicia reviews each lane's full dry cycle and explicitly changes that lane's human-owned `execution.mode` from `dry_run` to `live`
 - [ ] Start each account with its manually approved small validation allocation and monitor its first live cycle; activation may be staggered
 

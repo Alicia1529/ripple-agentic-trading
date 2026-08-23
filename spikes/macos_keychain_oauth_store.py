@@ -4,6 +4,7 @@ import asyncio
 import fcntl
 import hashlib
 import json
+import math
 import os
 import platform
 import pwd
@@ -104,7 +105,11 @@ def _state_from_dict(payload: object) -> OAuthState:
         if not isinstance(payload[name], str) or not payload[name]:
             raise ValueError
     expires_at = payload["access_token_expires_at"]
-    if expires_at is not None and (isinstance(expires_at, bool) or not isinstance(expires_at, (int, float))):
+    if expires_at is not None and (
+        isinstance(expires_at, bool)
+        or not isinstance(expires_at, (int, float))
+        or not math.isfinite(expires_at)
+    ):
         raise ValueError
     return OAuthState(
         server_url=payload["server_url"],

@@ -68,6 +68,11 @@ model_config_version: config_A_v3              # for reproducibility
 decision_snapshot_id: uuid
 market_snapshot_as_of: 2026-08-21T21:00:00-04:00
 
+account_baseline:                              # credential-free reconciliation fact
+  cash: "850.00"
+  positions:
+    AAPL: "1.5"
+
 target_portfolio:
   AAPL: "0.15"
   MSFT: "0.10"
@@ -83,11 +88,13 @@ orders:
     limit_price: "227.50"              # decision-time price + D3a tolerance band
     price_tolerance_pct: "0.005"       # used at execution time to detect an excessive gap
     reference_price_at_decision: "226.40"
+    market_hours: regular_hours
+    time_in_force: gfd
 ```
 
-The initial deterministic-core `OrderPlan` module enforces the strict top-level fields illustrated above, recursively freezes `target_portfolio` and `orders`, and applies a scalar-value allowlist to every planned-order field. Because arbitrary nested objects are not accepted, execution outcomes cannot be smuggled into the decision document. Tax lots remain out of scope for v1. D23 fixes the persisted numeric representation as base-10 decimal strings; complete semantic validation for weights, prices, quantities, order-type conditionals, and persistence constraints remains later Phase 0 work.
+The deterministic-core `OrderPlan` module enforces the strict top-level fields illustrated above, recursively freezes `account_baseline`, `target_portfolio`, and `orders`, and accepts only positive share-quantity `LIMIT`, `regular_hours`, `gfd` orders. The baseline is captured separately from the shareable market `DecisionSnapshot`. Because arbitrary nested objects are not accepted, execution outcomes cannot be smuggled into the decision document. Tax lots remain out of scope for v1. D23 fixes persisted numbers as base-10 decimal strings.
 
-Once generated, the Execution Routine is instructed to do only four things: **execute as-is / abort the whole plan / scale down proportionally against available cash / reject specific orders because risk or account state changed**. It must not re-run investment reasoning or change direction because its view changed. In v1 this is enforced by session isolation, tool scoping, strict files, and deterministic scripts—not by a non-LLM process boundary. D26 records that limitation.
+Once generated, the Execution Routine is instructed to do only four things: **execute as-is / abort the whole plan / scale down against deterministic limits / reject specific orders because risk or account state changed**. A configured stop-loss/take-profit may additionally emit a deterministic full-position market SELL Risk Exit for an existing holding; this is risk authority, not investment reasoning. The routine must not otherwise change direction or invent a trade. In v1 this is enforced by session isolation, tool scoping, strict files, and deterministic scripts—not by a non-LLM process boundary. D26 records that limitation.
 
 Execution results do not mutate the plan. V1 appends compact JSONL records that preserve the original and actual quantities and any applied rule. The existing `ExecutionEvent` value object remains a useful schema for later hardening, but production v1 does not claim transactional append-only persistence, complete transition validation, or crash-safe submission state.
 
@@ -98,7 +105,7 @@ The initial `ExecutionEvent` value object has a strict seven-field envelope, fin
 
 If a plan is aborted, the system waits for the next normal decision run — it never catches up or re-submits a stale plan.
 
-**Production-v1 trade-off:** execution is an LLM session. The Decision Routine must not have broker write tools; the separately scheduled Execution Routine may have the narrow Robinhood review/place/cancel tools. Deterministic scripts calculate constraints, but the routine still interprets their output and constructs the tool call. Wrong arguments, duplicate calls, ambiguous timeouts, crash-before-log windows, config misuse, prompt injection, and model/prompt drift are accepted for the initial small allocation. They are not acceptable by default for increased capital or multiple accounts.
+**Production-v1 trade-off:** execution is an LLM session. The Decision Routine must not have broker write tools; the separately scheduled Execution Routine may have the narrow Robinhood review/place/cancel tools. Deterministic scripts calculate constraints, but the routine still interprets their output and constructs the tool call. Wrong arguments, duplicate calls, ambiguous timeouts, crash-before-log windows, config misuse, prompt injection, and model/prompt drift are accepted for the two initial small allocations. They are not acceptable by default for increased capital or an additional account.
 
 ### Production-v1 storage responsibilities
 
@@ -119,11 +126,13 @@ The Execution Routine's job before placing an order is checking "does last night
 |---|---|---|
 | Account state reconciliation | Current positions/cash don't match what the OrderPlan assumed | Abort the plan, log the discrepancy, notify (rare event) |
 | Price tolerance | Open price vs. `reference_price_at_decision` exceeds `price_tolerance_pct` | Abort that order — no chasing the price, no re-reasoning, wait for the next decision run |
-| Available cash / buying power | Insufficient to execute the full order | Scale down proportionally or abort the excess, log it |
+| Available cash / buying power | Aggregate BUY cost at worst-case limit fills exceeds cash | Reserve cash in plan order and scale down or reject the excess, then log it |
 | Risk layer re-check | Re-run today's account equity through the risk rules (e.g. overnight equity change pushes an order past the 20% position cap) | Clip or reject, same logic as the risk layer itself |
 | Data freshness | Current quotes/account state unavailable (API failure etc.) | No trade, log and notify, wait for the next cycle |
 
 **Existing-position stop-loss/take-profit recheck, independent of the day's OrderPlan:** every Execution Run also re-evaluates stop-loss/take-profit conditions on *all currently held positions* in that account, regardless of whether there's a new decision today or how compelling a new thesis sounds. Any triggered stop-loss/take-profit fires immediately per the risk layer rules. (See `docs/DECISIONS.md` D13 — this closes a gap found while reviewing FriesTrader.)
+
+Tier-two drawdown writes an account-scoped `risk/drawdown_tier2.lock.json`. New BUYs stay blocked across later cycles until a human reviews the account and removes the lock; recovery in equity does not silently restart entries. Risk-reducing exits remain available.
 
 ### Idempotency
 
@@ -244,7 +253,7 @@ For production v1, D26 supersedes the former eight-week pre-live gate and D25 ru
 
 Production v1 delegates OAuth storage, refresh, and reconnection to the hosted platform's Robinhood MCP connection. Ripple neither reads nor persists token material. If the platform reports that authorization is missing or expired, the run stops and Alicia reconnects it interactively in the platform. The completed local Python/Keychain OAuth work remains feasibility evidence and a possible future non-LLM executor path, not launch-critical code.
 
-The hosted scheduler starts a fresh session for each run. The routine checks `America/New_York` time and the intended trading date before acting. Exactly one Decision schedule and one Execution schedule may be enabled. Git history and stable plan IDs reduce accidental repeats, but there is no cross-runner transactional lease in v1.
+The hosted scheduler starts a fresh session for each run. The command checks the real `America/New_York` time and intended document date before acting. Exactly one Decision schedule and one Execution schedule may be enabled per account lane. Git history and stable plan IDs reduce accidental repeats, but there is no cross-runner transactional lease in v1.
 
 Repository Python commands target Python 3.12, selected by the root `.python-version` file. Hosted routines run scripts through the repository's declared environment; current Codex Automation probes use `uv run --no-cache` where required by that sandbox.
 
@@ -273,7 +282,7 @@ When broker responses expose them, trading costs, fills, and result IDs are copi
 | Can the selected hosted routine expose the Robinhood MCP connection reliably in scheduled fresh sessions? | Interactive/local probes proved the MCP schemas and account reads; hosted scheduled write-path behavior has not yet been observed | Must be proven with a complete scheduled dry run and the smallest safe live connection probes |
 | Can two Robinhood Agentic accounts each bind an independent hosted MCP connection? | Robinhood allows multiple self-directed investing accounts, but the account-to-agent relationship isn't documented | Must be verified before Account B live activation; it does not block two-account repository dry-run support or Account A operation |
 | Does live Robinhood behavior honor explicit account selection and the declared fractional/dollar-order shapes? | The current review/place/cancel/history schemas require `account_number`; review/place declare share-or-dollar inputs and regular-hours market-only fractional support up to six decimals. No live eligibility or routing test has run. | Small validation accounts and account isolation depend on this |
-| What is the real token/context footprint and rejection rate for the one production-v1 decision call? | Official vendor docs confirm variable shared subscription allowances and metered automation paths; no fixed capacity is promised. The actual Ripple prompt does not exist yet to measure | Determines the explicit API fallback budget and whether monitored subscription runs are operationally sufficient |
+| What is the real token/context footprint and rejection rate for the one production-v1 decision call? | Official vendor docs confirm variable shared subscription allowances and metered automation paths; no fixed capacity is promised. The checked-in routine contract exists, but its hosted usage has not been measured. | Determines the explicit API fallback budget and whether monitored subscription runs are operationally sufficient |
 | Do Claude Code's / Codex's cloud scheduling features natively support IANA timezones, or only UTC/browser-local time? | No official documentation found either way | Doesn't block the design — the poll-and-self-check pattern (D10a) is correct regardless of the answer, this only affects how the scheduler itself gets configured |
 | Does Robinhood Agentic honor its declared client idempotency key across retries and ambiguous outcomes? | The current `place_equity_order` schema advertises an optional UUID `ref_id`; no live deduplication test has run | Deferred under D26 for the small-account launch; must be revisited before capital or account expansion |
 

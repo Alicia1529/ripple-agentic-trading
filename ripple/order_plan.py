@@ -22,6 +22,7 @@ _REQUIRED_FIELDS = {
     "model_config_version",
     "decision_snapshot_id",
     "market_snapshot_as_of",
+    "account_baseline",
     "target_portfolio",
     "orders",
 }
@@ -33,22 +34,17 @@ _REQUIRED_ORDER_FIELDS = {
     "reference_price_at_decision",
     "side",
     "symbol",
-}
-
-_OPTIONAL_ORDER_FIELDS = {
-    "dollar_amount",
+    "quantity",
     "limit_price",
     "market_hours",
-    "quantity",
-    "stop_price",
     "time_in_force",
 }
 
+_OPTIONAL_ORDER_FIELDS: set[str] = set()
+
 _DECIMAL_ORDER_FIELDS = {
     "quantity",
-    "dollar_amount",
     "limit_price",
-    "stop_price",
     "price_tolerance_pct",
     "reference_price_at_decision",
 }
@@ -59,9 +55,6 @@ def _validate_planned_order(order: Mapping[str, Any]) -> None:
     fields = set(order)
     if not _REQUIRED_ORDER_FIELDS <= fields or not fields <= _REQUIRED_ORDER_FIELDS | _OPTIONAL_ORDER_FIELDS:
         raise ValueError("planned order fields do not match the schema")
-    if ("quantity" in order) == ("dollar_amount" in order):
-        raise ValueError("planned order requires exactly one sizing field")
-
     require_canonical_uuid(order["order_id"], "order_id")
     scalar_fields = fields - {"order_id"}
     for field in scalar_fields:
@@ -71,30 +64,40 @@ def _validate_planned_order(order: Mapping[str, Any]) -> None:
         raise ValueError("symbol must be an uppercase equity symbol")
     if order["side"] not in {"BUY", "SELL"}:
         raise ValueError("side must be BUY or SELL")
-    if order["order_type"] not in {"LIMIT", "MARKET"}:
-        raise ValueError("order_type must be LIMIT or MARKET")
-    if order["order_type"] == "LIMIT" and "limit_price" not in order:
-        raise ValueError("LIMIT orders require limit_price")
-    if order["order_type"] == "MARKET" and "limit_price" in order:
-        raise ValueError("MARKET orders must not have limit_price")
-    if "dollar_amount" in order and order["order_type"] != "MARKET":
-        raise ValueError("dollar_amount is valid only for MARKET orders")
-    if "stop_price" in order:
-        raise ValueError("stop orders are outside the MVP OrderPlan schema")
-    if "market_hours" in order and order["market_hours"] != "regular_hours":
+    if order["order_type"] != "LIMIT":
+        raise ValueError("MVP OrderPlan orders must be LIMIT")
+    if order["market_hours"] != "regular_hours":
         raise ValueError("MVP orders require regular_hours")
-    if "time_in_force" in order and order["time_in_force"] != "gfd":
+    if order["time_in_force"] != "gfd":
         raise ValueError("MVP orders require gfd")
     for field in fields & _DECIMAL_ORDER_FIELDS:
         if Decimal(order[field]) <= 0:
             raise ValueError(f"{field} must be greater than zero")
     if Decimal(order["price_tolerance_pct"]) > Decimal("0.10"):
         raise ValueError("price_tolerance_pct must not exceed 0.10")
-    if order["order_type"] == "LIMIT":
-        reference_price = Decimal(order["reference_price_at_decision"])
-        limit_move = abs(Decimal(order["limit_price"]) - reference_price) / reference_price
-        if limit_move > Decimal(order["price_tolerance_pct"]):
-            raise ValueError("limit_price must be inside price_tolerance_pct")
+    reference_price = Decimal(order["reference_price_at_decision"])
+    limit_move = abs(Decimal(order["limit_price"]) - reference_price) / reference_price
+    if limit_move > Decimal(order["price_tolerance_pct"]):
+        raise ValueError("limit_price must be inside price_tolerance_pct")
+
+
+def _validate_account_baseline(value: Any) -> Mapping[str, Any]:
+    if not isinstance(value, Mapping) or set(value) != {"cash", "positions"}:
+        raise ValueError("account_baseline fields do not match the schema")
+    cash = require_decimal_string(value["cash"], "account_baseline cash")
+    if Decimal(cash) < 0:
+        raise ValueError("account_baseline cash must be non-negative")
+    positions = value["positions"]
+    if not isinstance(positions, Mapping):
+        raise ValueError("account_baseline positions must be an object")
+    for symbol, quantity in positions.items():
+        if not isinstance(symbol, str) or not _SYMBOL.fullmatch(symbol):
+            raise ValueError("account_baseline position symbols must be uppercase equities")
+        quantity = require_decimal_string(quantity, "account_baseline position quantity")
+        if Decimal(quantity) <= 0:
+            raise ValueError("account_baseline position quantities must be positive")
+    validate_json(value)
+    return value
 
 
 @dataclass(frozen=True, init=False)
@@ -105,6 +108,7 @@ class OrderPlan:
     model_config_version: str
     decision_snapshot_id: str
     market_snapshot_as_of: str
+    account_baseline: Mapping[str, Any]
     target_portfolio: Mapping[str, Any]
     orders: tuple[Mapping[str, Any], ...]
 
@@ -132,6 +136,7 @@ class OrderPlan:
         )
         if snapshot_at > decision_at:
             raise ValueError("market_snapshot_as_of must not be after decision_time")
+        account_baseline = _validate_account_baseline(document["account_baseline"])
         target_portfolio = document["target_portfolio"]
         orders = document["orders"]
         if not isinstance(target_portfolio, Mapping):
@@ -166,6 +171,7 @@ class OrderPlan:
         plan = object.__new__(cls)
         for field, value in values.items():
             object.__setattr__(plan, field, value)
+        object.__setattr__(plan, "account_baseline", freeze_json(account_baseline))
         object.__setattr__(plan, "target_portfolio", freeze_json(target_portfolio))
         object.__setattr__(plan, "orders", freeze_json(orders))
         return plan
@@ -178,6 +184,7 @@ class OrderPlan:
             "model_config_version": self.model_config_version,
             "decision_snapshot_id": self.decision_snapshot_id,
             "market_snapshot_as_of": self.market_snapshot_as_of,
+            "account_baseline": thaw_json(self.account_baseline),
             "target_portfolio": thaw_json(self.target_portfolio),
             "orders": thaw_json(self.orders),
         }

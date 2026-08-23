@@ -29,6 +29,10 @@
       }
     }
   },
+  "account_baseline": {
+    "cash": "720",
+    "positions": {}
+  },
   "decision": {
     "decision_time": "2026-08-24T21:00:00-04:00",
     "model_config_version": "mvp_fixture_b_v1",

@@ -13,6 +13,7 @@ class RiskEvaluationTests(unittest.TestCase):
             "model_config_version": "mvp_v1",
             "decision_snapshot_id": "10de633f-be1f-4548-944a-76b94296ed5b",
             "market_snapshot_as_of": "2026-08-24T20:55:00-04:00",
+            "account_baseline": {"cash": "500", "positions": {}},
             "target_portfolio": {"AAPL": "0.15", "cash": "0.85"},
             "orders": [{
                 "order_id": "04bbf1c7-416b-4ca2-b5a6-0e27be980965",
@@ -97,55 +98,80 @@ class RiskEvaluationTests(unittest.TestCase):
         self.assertEqual(result["actions"][0]["reason_code"], "max_position")
         self.assertEqual(
             result["actions"][0]["actual_sizing"],
-            {"field": "quantity", "value": "1.995012"},
+            {"field": "quantity", "value": "1.980198"},
         )
-        self.assertEqual(result["actions"][0]["broker_order"]["quantity"], "1.995012")
+        self.assertEqual(result["actions"][0]["broker_order"]["quantity"], "1.980198")
+
+    def test_multiple_buys_reserve_cash_at_their_worst_case_fill_price(self):
+        plan = self.plan()
+        plan["target_portfolio"] = {"AAPL": "0.1", "MSFT": "0.1", "cash": "0.8"}
+        second = dict(plan["orders"][0])
+        second["order_id"] = "8e8e6f96-2948-4b91-9675-11a029968ae1"
+        second["symbol"] = "MSFT"
+        plan["orders"] = [plan["orders"][0], second]
+        plan["orders"][0]["quantity"] = "1"
+        second["quantity"] = "1"
+        plan["account_baseline"]["cash"] = "150"
+        context = self.context()
+        context["account"]["cash"] = "150"
+        context["quotes"]["MSFT"] = {
+            "price": "100.25", "as_of": "2026-08-25T09:34:00-04:00",
+        }
+
+        result = evaluate_plan(plan, context, self.rules())
+
+        self.assertEqual(result["status"], "partial")
+        self.assertEqual(result["actions"][0]["actual_sizing"]["value"], "1")
+        self.assertEqual(result["actions"][1]["reason_code"], "available_cash")
+        self.assertEqual(result["actions"][1]["actual_sizing"]["value"], "0.485148")
 
     def test_execution_guards_reject_without_broker_arguments(self):
         cases = []
 
         disabled_rules = self.rules()
         disabled_rules["execution"]["mode"] = "disabled"
-        cases.append((self.context(), disabled_rules, "execution_disabled"))
+        cases.append((self.plan(), self.context(), disabled_rules, "execution_disabled", "rejected"))
 
         stale = self.context()
         stale["quotes"]["AAPL"]["as_of"] = "2026-08-25T09:00:00-04:00"
-        cases.append((stale, self.rules(), "stale_quote"))
+        cases.append((self.plan(), stale, self.rules(), "stale_quote", "aborted"))
 
         gap = self.context()
         gap["quotes"]["AAPL"]["price"] = "102"
-        cases.append((gap, self.rules(), "price_outside_tolerance"))
+        cases.append((self.plan(), gap, self.rules(), "price_outside_tolerance", "rejected"))
 
         daily_loss = self.context()
         daily_loss["account"]["daily_pnl"] = "-50"
-        cases.append((daily_loss, self.rules(), "daily_loss"))
+        cases.append((self.plan(), daily_loss, self.rules(), "daily_loss", "rejected"))
 
         drawdown = self.context()
         drawdown["account"]["equity"] = "900"
-        cases.append((drawdown, self.rules(), "drawdown_tier1"))
+        cases.append((self.plan(), drawdown, self.rules(), "drawdown_tier1", "rejected"))
 
         order_limit = self.context()
         order_limit["account"]["new_positions_today"] = 3
-        cases.append((order_limit, self.rules(), "max_new_positions"))
+        cases.append((self.plan(), order_limit, self.rules(), "max_new_positions", "rejected"))
 
         wash_sale = self.context()
         wash_sale["account"]["loss_sales"] = [{
             "symbol": "AAPL", "sold_at": "2026-08-01T10:00:00-04:00",
         }]
-        cases.append((wash_sale, self.rules(), "wash_sale"))
+        cases.append((self.plan(), wash_sale, self.rules(), "wash_sale", "rejected"))
 
         missing_quote = self.context()
         del missing_quote["quotes"]["AAPL"]
-        cases.append((missing_quote, self.rules(), "missing_quote"))
+        cases.append((self.plan(), missing_quote, self.rules(), "missing_quote", "aborted"))
 
         no_cash = self.context()
         no_cash["account"]["cash"] = "0"
-        cases.append((no_cash, self.rules(), "available_cash"))
+        no_cash_plan = self.plan()
+        no_cash_plan["account_baseline"]["cash"] = "0"
+        cases.append((no_cash_plan, no_cash, self.rules(), "available_cash", "rejected"))
 
-        for context, rules, reason_code in cases:
+        for plan, context, rules, reason_code, status in cases:
             with self.subTest(reason_code=reason_code):
-                result = evaluate_plan(deepcopy(self.plan()), context, rules)
-                self.assertEqual(result["status"], "rejected")
+                result = evaluate_plan(deepcopy(plan), context, rules)
+                self.assertEqual(result["status"], status)
                 self.assertEqual(result["actions"][0]["allowed"], False)
                 self.assertEqual(result["actions"][0]["reason_code"], reason_code)
                 self.assertIsNone(result["actions"][0]["actual_sizing"])
@@ -160,6 +186,7 @@ class RiskEvaluationTests(unittest.TestCase):
         context["account"]["positions"] = {
             "AAPL": {"quantity": "1", "average_cost": "90"},
         }
+        plan["account_baseline"]["positions"] = {"AAPL": "1"}
 
         result = evaluate_plan(plan, context, self.rules())
 
@@ -168,13 +195,17 @@ class RiskEvaluationTests(unittest.TestCase):
         self.assertEqual(result["actions"][0]["actual_sizing"]["value"], "1")
         self.assertEqual(result["actions"][0]["broker_order"]["quantity"], "1")
 
-    def test_existing_position_thresholds_are_reported_without_inventing_orders(self):
+    def test_existing_position_thresholds_generate_deterministic_risk_exits(self):
+        plan = self.plan()
+        plan["orders"] = []
+        plan["target_portfolio"] = {"cash": "1"}
+        plan["account_baseline"]["positions"] = {"AAPL": "1"}
         context = self.context()
         context["account"]["positions"] = {
             "AAPL": {"quantity": "1", "average_cost": "120"},
         }
 
-        result = evaluate_plan(self.plan(), context, self.rules())
+        result = evaluate_plan(plan, context, self.rules())
 
         self.assertEqual(result["position_alerts"], [{
             "symbol": "AAPL",
@@ -183,6 +214,62 @@ class RiskEvaluationTests(unittest.TestCase):
             "average_cost": "120",
         }])
         self.assertEqual(len(result["actions"]), 1)
+        action = result["actions"][0]
+        self.assertEqual(action["reason_code"], "stop_loss")
+        self.assertEqual(action["broker_order"]["side"], "sell")
+        self.assertEqual(action["broker_order"]["type"], "market")
+        self.assertEqual(action["broker_order"]["quantity"], "1")
+
+    def test_stale_quote_aborts_all_planned_orders(self):
+        plan = self.plan()
+        plan["target_portfolio"] = {"AAPL": "0.1", "MSFT": "0.1", "cash": "0.8"}
+        second = dict(plan["orders"][0])
+        second["order_id"] = "8e8e6f96-2948-4b91-9675-11a029968ae1"
+        second["symbol"] = "MSFT"
+        plan["orders"].append(second)
+        context = self.context()
+        context["quotes"]["AAPL"]["as_of"] = "2026-08-25T09:00:00-04:00"
+        context["quotes"]["MSFT"] = {
+            "price": "100.25", "as_of": "2026-08-25T09:34:00-04:00",
+        }
+
+        result = evaluate_plan(plan, context, self.rules())
+
+        self.assertEqual(result["status"], "aborted")
+        self.assertTrue(all(not action["allowed"] for action in result["actions"]))
+        self.assertTrue(all(action["broker_order"] is None for action in result["actions"]))
+
+    def test_account_state_mismatch_aborts_plan(self):
+        context = self.context()
+        context["account"]["cash"] = "499"
+
+        result = evaluate_plan(self.plan(), context, self.rules())
+
+        self.assertEqual(result["status"], "aborted")
+        self.assertEqual(result["actions"][0]["reason_code"], "account_state_mismatch")
+
+    def test_account_baseline_compares_decimal_values_not_string_formatting(self):
+        plan = self.plan()
+        plan["account_baseline"] = {"cash": "500.00", "positions": {"AAPL": "1.0"}}
+        plan["orders"] = []
+        plan["target_portfolio"] = {"cash": "1"}
+        context = self.context()
+        context["account"]["cash"] = "500"
+        context["account"]["positions"] = {
+            "AAPL": {"quantity": "1.00", "average_cost": "100.25"},
+        }
+
+        result = evaluate_plan(plan, context, self.rules())
+
+        self.assertIsNone(result["abort_reason"])
+
+    def test_tier_two_drawdown_requires_manual_restart_after_recovery(self):
+        result = evaluate_plan(
+            self.plan(), self.context(), self.rules(), new_entries_locked=True,
+        )
+
+        self.assertEqual(result["actions"][0]["reason_code"], "drawdown_restart_required")
+        self.assertTrue(result["manual_restart_required"])
 
     def test_unknown_or_non_json_risk_inputs_fail_closed(self):
         cases = []

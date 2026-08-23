@@ -28,7 +28,7 @@ On macOS, run [`scripts/verify-robinhood-mcp-oauth.sh`](scripts/verify-robinhood
 
 ## Status
 
-The fixture-backed dry-run MVP is implemented for Account A and Account B. Each lane validates a strict decision, publishes one immutable-per-cycle snapshot and OrderPlan, re-runs deterministic execution risk checks, and produces credential-free JSON/JSONL records plus a human report beneath its own state root. Real hosted scheduled cycles are still operational acceptance gates; see `docs/TODO.md`.
+The fixture-backed dry-run MVP is implemented for Account A and Account B. Each lane validates a strict decision, publishes one immutable-per-cycle snapshot and OrderPlan with a credential-free account baseline, re-runs deterministic execution risk checks, and produces credential-free JSON/JSONL records plus a human report beneath its own account-named state root. Execution fails closed on stale/missing quotes or baseline mismatch, reserves aggregate BUY cash at limit prices, emits deterministic stop-loss/take-profit exits, and persists a tier-two manual-restart lock. Real hosted scheduled cycles are still operational acceptance gates; see `docs/TODO.md`.
 
 ## Run the dry-run MVP
 

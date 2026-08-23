@@ -12,6 +12,7 @@ class OrderPlanTests(unittest.TestCase):
             "model_config_version": "config_A_v3",
             "decision_snapshot_id": "10de633f-be1f-4548-944a-76b94296ed5b",
             "market_snapshot_as_of": "2026-08-22T21:00:00-04:00",
+            "account_baseline": {"cash": "850", "positions": {}},
             "target_portfolio": {"AAPL": "0.15", "cash": "0.85"},
             "orders": [],
         }
@@ -24,6 +25,7 @@ class OrderPlanTests(unittest.TestCase):
             "model_config_version": "config_A_v3",
             "decision_snapshot_id": "10de633f-be1f-4548-944a-76b94296ed5b",
             "market_snapshot_as_of": "2026-08-22T21:00:00-04:00",
+            "account_baseline": {"cash": "850", "positions": {}},
             "target_portfolio": {"AAPL": "0.15", "cash": "0.85"},
             "orders": [
                 {
@@ -35,6 +37,8 @@ class OrderPlanTests(unittest.TestCase):
                     "limit_price": "227.50",
                     "price_tolerance_pct": "0.005",
                     "reference_price_at_decision": "226.40",
+                    "market_hours": "regular_hours",
+                    "time_in_force": "gfd",
                 }
             ],
         }
@@ -89,6 +93,8 @@ class OrderPlanTests(unittest.TestCase):
                 "limit_price": "227.50",
                 "price_tolerance_pct": "0.005",
                 "reference_price_at_decision": "226.40",
+                "market_hours": "regular_hours",
+                "time_in_force": "gfd",
                 "tax_lots": [{"open_lot_id": "out-of-scope", "quantity": "12"}],
             }
         ]
@@ -150,6 +156,8 @@ class OrderPlanTests(unittest.TestCase):
             "limit_price": "101.00",
             "price_tolerance_pct": "0.01",
             "reference_price_at_decision": "100.00",
+            "market_hours": "regular_hours",
+            "time_in_force": "gfd",
         }
         invalid_documents = []
 
@@ -182,6 +190,31 @@ class OrderPlanTests(unittest.TestCase):
         duplicate_order = self.valid_document()
         duplicate_order["orders"] = [valid_order, dict(valid_order)]
         invalid_documents.append(duplicate_order)
+
+        for mutation in (
+            {"order_type": "MARKET", "limit_price": None},
+            {"market_hours": None},
+            {"time_in_force": None},
+            {"quantity": None, "dollar_amount": "100"},
+        ):
+            document = self.valid_document()
+            order = dict(valid_order)
+            for field, value in mutation.items():
+                if value is None:
+                    order.pop(field, None)
+                else:
+                    order[field] = value
+            document["orders"] = [order]
+            invalid_documents.append(document)
+
+        for baseline in (
+            {"cash": "850"},
+            {"cash": "not-decimal", "positions": {}},
+            {"cash": "850", "positions": {"AAPL": "0"}},
+        ):
+            document = self.valid_document()
+            document["account_baseline"] = baseline
+            invalid_documents.append(document)
 
         for document in invalid_documents:
             with self.subTest(document=document):

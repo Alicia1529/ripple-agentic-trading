@@ -37,7 +37,7 @@ Never put an account number, credential, cookie, token, or raw authenticated res
    - use `LIMIT`, `regular_hours`, and `gfd` orders with positive share quantities;
    - use the completed close as `reference_price_at_decision` and keep the limit within the stated `price_tolerance_pct`;
    - an empty order list is valid when evidence is weak.
-5. Write one temporary JSON input outside the repository with exactly `snapshot` and `decision`, matching `fixtures/mvp/dry_cycle.json` except that it contains current facts. Do not include `order_id`; the command generates stable IDs.
+5. Write one temporary JSON input outside the repository with exactly `snapshot`, `account_baseline`, and `decision`, matching `fixtures/mvp/dry_cycle.json` except that it contains current facts. `account_baseline` contains only `cash` and a symbol-to-quantity `positions` object; it must describe the same assigned account at decision time. Do not include `order_id`; the command generates stable IDs.
 6. Publish it with the assigned configuration and state root. For Account A:
 
    ```bash

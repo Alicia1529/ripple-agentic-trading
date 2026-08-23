@@ -1,4 +1,4 @@
 # Requires Python >=3.10.
 mcp==2.0.0
-httpx2>=2.5,<3
+httpx2==2.5.0
 keyring==25.7.0

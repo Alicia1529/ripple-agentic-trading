@@ -3,6 +3,7 @@
 from datetime import datetime, timedelta
 from decimal import Decimal, ROUND_DOWN
 from typing import Any, Mapping
+from uuid import NAMESPACE_URL, uuid5
 
 from ._immutable_json import validate_json
 from ._validation import require_decimal_string, require_nonempty_string
@@ -55,6 +56,48 @@ def _rejected_action(order: Mapping[str, Any], reason_code: str) -> dict[str, An
         "actual_sizing": None,
         "broker_order": None,
     }
+
+
+def _risk_exit_action(
+    plan: OrderPlan,
+    symbol: str,
+    quantity: str,
+    reason_code: str,
+) -> dict[str, Any]:
+    order_id = str(uuid5(
+        NAMESPACE_URL,
+        f"ripple:risk-exit:{plan.order_plan_id}:{symbol}:{reason_code}",
+    ))
+    return {
+        "order_id": order_id,
+        "allowed": True,
+        "reason_code": reason_code,
+        "original_sizing": {"field": "quantity", "value": quantity},
+        "actual_sizing": {"field": "quantity", "value": quantity},
+        "broker_order": {
+            "side": "sell",
+            "symbol": symbol,
+            "type": "market",
+            "quantity": quantity,
+            "market_hours": "regular_hours",
+            "time_in_force": "gfd",
+            "ref_id": order_id,
+        },
+    }
+
+
+def _account_baseline_matches(plan: OrderPlan, account: Mapping[str, Any]) -> bool:
+    if Decimal(plan.account_baseline["cash"]) != Decimal(account["cash"]):
+        return False
+    current_positions = {
+        symbol: Decimal(position["quantity"])
+        for symbol, position in account["positions"].items()
+    }
+    baseline_positions = {
+        symbol: Decimal(quantity)
+        for symbol, quantity in plan.account_baseline["positions"].items()
+    }
+    return baseline_positions == current_positions
 
 
 def _positive_decimal(value: Any, field: str, *, allow_zero: bool = False) -> Decimal:
@@ -152,8 +195,12 @@ def evaluate_plan(
     plan_document: Mapping[str, Any],
     execution_context: Mapping[str, Any],
     rules: Mapping[str, Any],
+    *,
+    new_entries_locked: bool = False,
 ) -> dict[str, Any]:
     """Return credential-free execution actions for one plan."""
+    if not isinstance(new_entries_locked, bool):
+        raise ValueError("new_entries_locked must be a boolean")
     _validate_inputs(execution_context, rules)
     plan = OrderPlan.from_dict(plan_document)
     if plan.account_id != rules.get("account_id"):
@@ -173,12 +220,54 @@ def evaluate_plan(
     daily_pnl = Decimal(account["daily_pnl"])
     risk_rules = rules["risk"]
     drawdown = (high_water_mark - equity) / high_water_mark
+    tier_two_triggered = drawdown >= Decimal(risk_rules["drawdown_tier2_pct"])
+    manual_restart_required = new_entries_locked or tier_two_triggered
 
-    position_alerts = []
-    for symbol, position in account["positions"].items():
+    if mode == "disabled":
+        actions = [_rejected_action(order, "execution_disabled") for order in plan.orders]
+        return {
+            "order_plan_id": plan.order_plan_id,
+            "account_id": plan.account_id,
+            "mode": mode,
+            "status": "rejected",
+            "abort_reason": None,
+            "manual_restart_required": manual_restart_required,
+            "actions": actions,
+            "position_alerts": [],
+        }
+
+    required_symbols = set(account["positions"]) | {order["symbol"] for order in plan.orders}
+    data_abort_reason = None
+    for symbol in sorted(required_symbols):
         quote = quotes.get(symbol)
         if not isinstance(quote, Mapping):
-            raise ValueError(f"missing quote for held position {symbol}")
+            data_abort_reason = "missing_quote"
+            break
+        quote_age = execution_time - _timestamp(quote["as_of"])
+        if quote_age < timedelta(0) or quote_age > timedelta(
+            minutes=risk_rules["max_quote_age_minutes"]
+        ):
+            data_abort_reason = "stale_quote"
+            break
+    if data_abort_reason is not None:
+        return {
+            "order_plan_id": plan.order_plan_id,
+            "account_id": plan.account_id,
+            "mode": mode,
+            "status": "aborted",
+            "abort_reason": data_abort_reason,
+            "manual_restart_required": manual_restart_required,
+            "actions": [
+                _rejected_action(order, data_abort_reason) for order in plan.orders
+            ],
+            "position_alerts": [],
+        }
+
+    position_alerts = []
+    risk_exit_actions = []
+    risk_exit_symbols = set()
+    for symbol, position in account["positions"].items():
+        quote = quotes[symbol]
         current_price = Decimal(quote["price"])
         average_cost = Decimal(position["average_cost"])
         return_pct = (current_price - average_cost) / average_cost
@@ -194,28 +283,29 @@ def evaluate_plan(
                 "current_price": quote["price"],
                 "average_cost": position["average_cost"],
             })
+            risk_exit_actions.append(_risk_exit_action(
+                plan, symbol, position["quantity"], kind,
+            ))
+            risk_exit_symbols.add(symbol)
 
-    actions = []
+    plan_abort_reason = (
+        None if _account_baseline_matches(plan, account) else "account_state_mismatch"
+    )
+    actions = list(risk_exit_actions)
     new_positions_reserved = account["new_positions_today"]
+    cash_remaining = Decimal(account["cash"])
     for order in plan.orders:
         symbol = order["symbol"]
         if symbol not in universe:
             raise ValueError("planned order symbol is outside the universe")
-        if mode == "disabled":
-            actions.append(_rejected_action(order, "execution_disabled"))
+        if symbol in risk_exit_symbols:
+            actions.append(_rejected_action(order, "risk_exit_superseded_plan_order"))
             continue
-        quote = quotes.get(symbol)
-        if not isinstance(quote, Mapping):
-            actions.append(_rejected_action(order, "missing_quote"))
+        if plan_abort_reason is not None:
+            actions.append(_rejected_action(order, plan_abort_reason))
             continue
+        quote = quotes[symbol]
         current_price = Decimal(quote["price"])
-        quote_time = _timestamp(quote["as_of"])
-        quote_age = execution_time - quote_time
-        if quote_age < timedelta(0) or quote_age > timedelta(
-            minutes=risk_rules["max_quote_age_minutes"]
-        ):
-            actions.append(_rejected_action(order, "stale_quote"))
-            continue
         reference_price = Decimal(order["reference_price_at_decision"])
         price_move = abs(current_price - reference_price) / reference_price
         if price_move > Decimal(order["price_tolerance_pct"]):
@@ -224,7 +314,10 @@ def evaluate_plan(
         if order["side"] == "BUY" and daily_pnl <= -(equity * Decimal(risk_rules["daily_loss_pct"])):
             actions.append(_rejected_action(order, "daily_loss"))
             continue
-        if order["side"] == "BUY" and drawdown >= Decimal(risk_rules["drawdown_tier2_pct"]):
+        if order["side"] == "BUY" and new_entries_locked:
+            actions.append(_rejected_action(order, "drawdown_restart_required"))
+            continue
+        if order["side"] == "BUY" and tier_two_triggered:
             actions.append(_rejected_action(order, "drawdown_tier2"))
             continue
         if order["side"] == "BUY" and drawdown >= Decimal(risk_rules["drawdown_tier1_pct"]):
@@ -253,8 +346,8 @@ def evaluate_plan(
                 actions.append(_rejected_action(order, "wash_sale"))
                 continue
 
-        sizing_field = "quantity" if "quantity" in order else "dollar_amount"
-        sizing_value = order[sizing_field]
+        sizing_field = "quantity"
+        sizing_value = order["quantity"]
         actual_value = sizing_value
         reason_code = "allowed"
 
@@ -266,45 +359,28 @@ def evaluate_plan(
                 rules["risk"]["max_position_pct"]
             )
             position_room = max(Decimal("0"), max_position_value - current_value)
-            cash_room = Decimal(account["cash"])
+            cash_room = cash_remaining
             allowed_notional = min(position_room, cash_room)
-            requested_notional = (
-                Decimal(sizing_value) * current_price
-                if sizing_field == "quantity"
-                else Decimal(sizing_value)
-            )
+            sizing_price = Decimal(order["limit_price"])
+            requested_notional = Decimal(sizing_value) * sizing_price
             if requested_notional > allowed_notional:
                 reason_code = "max_position" if position_room <= cash_room else "available_cash"
-                if sizing_field == "quantity":
-                    clipped = (allowed_notional / current_price).quantize(
-                        Decimal("0.000001"), rounding=ROUND_DOWN
-                    )
-                else:
-                    clipped = allowed_notional.quantize(Decimal("0.01"), rounding=ROUND_DOWN)
+                clipped = (allowed_notional / sizing_price).quantize(
+                    Decimal("0.000001"), rounding=ROUND_DOWN
+                )
                 if clipped <= 0:
                     actions.append(_rejected_action(order, reason_code))
                     continue
                 actual_value = _format_decimal(clipped)
         else:
             position_quantity = Decimal(positions.get(symbol, {}).get("quantity", "0"))
-            requested_quantity = (
-                Decimal(sizing_value)
-                if sizing_field == "quantity"
-                else Decimal(sizing_value) / current_price
-            )
+            requested_quantity = Decimal(sizing_value)
             if position_quantity <= 0:
                 actions.append(_rejected_action(order, "insufficient_position"))
                 continue
             if requested_quantity > position_quantity:
                 reason_code = "position_quantity"
-                if sizing_field == "quantity":
-                    actual_value = _format_decimal(position_quantity)
-                else:
-                    actual_value = _format_decimal(
-                        (position_quantity * current_price).quantize(
-                            Decimal("0.01"), rounding=ROUND_DOWN
-                        )
-                    )
+                actual_value = _format_decimal(position_quantity)
         broker_order = {
             "side": order["side"].lower(),
             "symbol": symbol,
@@ -323,6 +399,8 @@ def evaluate_plan(
             "actual_sizing": {"field": sizing_field, "value": actual_value},
             "broker_order": broker_order,
         })
+        if order["side"] == "BUY":
+            cash_remaining -= Decimal(actual_value) * Decimal(order["limit_price"])
         if order["side"] == "BUY" and is_new_position:
             new_positions_reserved += 1
 
@@ -335,11 +413,14 @@ def evaluate_plan(
         status = "rejected"
     else:
         status = "partial"
+    status = "aborted" if plan_abort_reason and not risk_exit_actions else status
     return {
         "order_plan_id": plan.order_plan_id,
         "account_id": plan.account_id,
         "mode": mode,
         "status": status,
+        "abort_reason": plan_abort_reason,
+        "manual_restart_required": manual_restart_required,
         "actions": actions,
         "position_alerts": position_alerts,
     }

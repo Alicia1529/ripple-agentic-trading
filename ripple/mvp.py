@@ -1,24 +1,26 @@
 """Commands for the fixture-backed Decision and Execution Routines."""
 
 import argparse
-from datetime import datetime
+from datetime import date, datetime, time, timezone
 from decimal import Decimal
 import json
 from pathlib import Path
 import sys
 from typing import Any, Mapping
 from uuid import NAMESPACE_URL, uuid5
+from zoneinfo import ZoneInfo
 
 from .decision_snapshot import DecisionSnapshot
 from .order_plan import OrderPlan
 from .risk import evaluate_plan
 
 
-_CYCLE_FIELDS = {"snapshot", "decision", "execution_context"}
-_DECISION_INPUT_FIELDS = {"snapshot", "decision"}
+_CYCLE_FIELDS = {"snapshot", "account_baseline", "decision", "execution_context"}
+_DECISION_INPUT_FIELDS = {"snapshot", "account_baseline", "decision"}
 _DECISION_FIELDS = {
     "decision_time", "model_config_version", "target_portfolio", "orders",
 }
+_NEW_YORK = ZoneInfo("America/New_York")
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -45,7 +47,60 @@ def _date(value: str) -> str:
     parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     if parsed.utcoffset() is None:
         raise ValueError("timestamps must include a timezone offset")
-    return parsed.date().isoformat()
+    return parsed.astimezone(_NEW_YORK).date().isoformat()
+
+
+def _new_york_time(value: str) -> datetime:
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.utcoffset() is None:
+        raise ValueError("timestamps must include a timezone offset")
+    return parsed.astimezone(_NEW_YORK)
+
+
+def _next_weekday(value: date) -> date:
+    candidate = value
+    while True:
+        candidate = candidate.fromordinal(candidate.toordinal() + 1)
+        if candidate.weekday() < 5:
+            return candidate
+
+
+def _validate_state_root(output: Path, config: Mapping[str, Any]) -> None:
+    account_id = config.get("account_id")
+    if not isinstance(account_id, str) or output.name != account_id:
+        raise ValueError("state root must end with the configured account_id")
+
+
+def _validate_decision_timing(decision_time: str, snapshot_time: str) -> None:
+    decision_at = _new_york_time(decision_time)
+    snapshot_at = _new_york_time(snapshot_time)
+    if decision_at.weekday() >= 5 or not time(20, 55) <= decision_at.time() <= time(21, 15):
+        raise ValueError("decision time is outside the allowed America/New_York window")
+    if snapshot_at.date() != decision_at.date():
+        raise ValueError("snapshot and decision must use the same New York date")
+
+
+def _validate_execution_timing(decision_time: str, execution_time: str) -> None:
+    decision_at = _new_york_time(decision_time)
+    execution_at = _new_york_time(execution_time)
+    if execution_at.date() != _next_weekday(decision_at.date()):
+        raise ValueError("execution must occur on the next weekday after the decision")
+    if not time(9, 30) <= execution_at.time() <= time(9, 50):
+        raise ValueError("execution time is outside the allowed America/New_York window")
+
+
+def _validate_runtime_clock(now: datetime, expected_time: str, phase: str) -> None:
+    if now.utcoffset() is None:
+        raise ValueError("runtime clock must include a timezone offset")
+    actual = now.astimezone(_NEW_YORK)
+    expected = _new_york_time(expected_time)
+    window = (time(20, 55), time(21, 15)) if phase == "decision" else (
+        time(9, 30), time(9, 50)
+    )
+    if actual.weekday() >= 5 or actual.date() != expected.date():
+        raise ValueError(f"{phase} runtime date does not match America/New_York now")
+    if not window[0] <= actual.time() <= window[1]:
+        raise ValueError(f"{phase} runtime is outside the America/New_York window")
 
 
 def _build_plan(decision_input: Mapping[str, Any], config: Mapping[str, Any]) -> OrderPlan:
@@ -64,6 +119,9 @@ def _build_plan(decision_input: Mapping[str, Any], config: Mapping[str, Any]) ->
         raise ValueError("decision fields do not match the schema")
     if snapshot.universe != tuple(config["universe"]):
         raise ValueError("snapshot universe does not match configuration")
+    account_baseline = decision_input["account_baseline"]
+    if not isinstance(account_baseline, Mapping):
+        raise ValueError("decision input must include account_baseline")
     if not isinstance(decision["target_portfolio"], Mapping):
         raise ValueError("target_portfolio must be an object")
     target_symbols = set(decision["target_portfolio"]) - {"cash"}
@@ -80,6 +138,7 @@ def _build_plan(decision_input: Mapping[str, Any], config: Mapping[str, Any]) ->
         raise ValueError("decision orders must be a list")
 
     decision_time = decision["decision_time"]
+    _validate_decision_timing(decision_time, snapshot.as_of)
     plan_id = str(uuid5(NAMESPACE_URL, f"ripple:{config['account_id']}:{_date(decision_time)}"))
     orders = []
     for index, proposed_order in enumerate(decision["orders"]):
@@ -98,6 +157,7 @@ def _build_plan(decision_input: Mapping[str, Any], config: Mapping[str, Any]) ->
         "model_config_version": decision["model_config_version"],
         "decision_snapshot_id": snapshot.snapshot_id,
         "market_snapshot_as_of": snapshot.as_of,
+        "account_baseline": account_baseline,
         "target_portfolio": decision["target_portfolio"],
         "orders": orders,
     })
@@ -108,6 +168,7 @@ def _publish_decision(
     decision_input: Mapping[str, Any],
     output: Path,
 ) -> OrderPlan:
+    _validate_state_root(output, config)
     plan = _build_plan(decision_input, config)
     decision_date = _date(plan.decision_time)
     _write_new_json(
@@ -164,20 +225,21 @@ def _execute_dry_run(
     execution_context: Mapping[str, Any],
     output: Path,
 ) -> dict[str, Any]:
-    decision_date = datetime.fromisoformat(
-        plan.decision_time.replace("Z", "+00:00")
-    ).date()
-    execution_date_value = datetime.fromisoformat(
-        execution_context["as_of"].replace("Z", "+00:00")
-    ).date()
-    date_gap = (execution_date_value - decision_date).days
-    if date_gap < 1:
-        raise ValueError("execution must occur on a later trading date")
-    if date_gap > 4:
-        raise ValueError("published plan is stale")
-    result = evaluate_plan(plan.to_dict(), execution_context, config)
+    _validate_state_root(output, config)
+    _validate_execution_timing(plan.decision_time, execution_context["as_of"])
+    latch_path = output / "risk" / "drawdown_tier2.lock.json"
+    result = evaluate_plan(
+        plan.to_dict(), execution_context, config,
+        new_entries_locked=latch_path.is_file(),
+    )
     if result["mode"] != "dry_run":
         raise ValueError("execute-dry-run requires execution.mode=dry_run")
+    if result["manual_restart_required"] and not latch_path.exists():
+        _write_new_json(latch_path, {
+            "account_id": plan.account_id,
+            "triggered_at": execution_context["as_of"],
+            "reason_code": "drawdown_tier2",
+        })
     execution_date = _date(execution_context["as_of"])
     _write_new_json(
         output / "executions" / execution_date / "dry_run.json",
@@ -201,8 +263,21 @@ def _execute_dry_run(
     return result
 
 
-def publish_decision(config_path: Path, input_path: Path, output: Path) -> OrderPlan:
-    return _publish_decision(_read_json(config_path), _read_json(input_path), output)
+def publish_decision(
+    config_path: Path,
+    input_path: Path,
+    output: Path,
+    *,
+    now: datetime | None = None,
+) -> OrderPlan:
+    decision_input = _read_json(input_path)
+    decision = decision_input.get("decision")
+    if not isinstance(decision, Mapping) or not isinstance(decision.get("decision_time"), str):
+        raise ValueError("decision input is missing decision_time")
+    _validate_runtime_clock(
+        now or datetime.now(timezone.utc), decision["decision_time"], "decision",
+    )
+    return _publish_decision(_read_json(config_path), decision_input, output)
 
 
 def execute_dry_run(
@@ -210,11 +285,20 @@ def execute_dry_run(
     plan_path: Path,
     context_path: Path,
     output: Path,
+    *,
+    now: datetime | None = None,
 ) -> dict[str, Any]:
+    execution_context = _read_json(context_path)
+    execution_time = execution_context.get("as_of")
+    if not isinstance(execution_time, str):
+        raise ValueError("execution context is missing as_of")
+    _validate_runtime_clock(
+        now or datetime.now(timezone.utc), execution_time, "execution",
+    )
     return _execute_dry_run(
         _read_json(config_path),
         OrderPlan.from_dict(_read_json(plan_path)),
-        _read_json(context_path),
+        execution_context,
         output,
     )
 
