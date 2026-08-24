@@ -1,0 +1,30 @@
+{
+  "account_baseline": {
+    "cash": "1000",
+    "positions": {}
+  },
+  "account_id": "account_A",
+  "decision_snapshot_id": "43f9536b-af0d-5553-a381-135f66cfd60d",
+  "decision_time": "2026-08-24T03:56:32-04:00",
+  "market_snapshot_as_of": "2026-08-24T03:56:32-04:00",
+  "model_config_version": "growth_momentum_v1_mvp1",
+  "order_plan_id": "4864366e-d11c-55d0-aad3-212619043215",
+  "orders": [
+    {
+      "limit_price": "355.09",
+      "market_hours": "regular_hours",
+      "order_id": "5b4f1d3b-4dbf-5ba5-8654-08d0c7844aac",
+      "order_type": "LIMIT",
+      "price_tolerance_pct": "0.01",
+      "quantity": "0.281618",
+      "reference_price_at_decision": "351.58",
+      "side": "BUY",
+      "symbol": "JPM",
+      "time_in_force": "gfd"
+    }
+  ],
+  "target_portfolio": {
+    "JPM": "0.10",
+    "cash": "0.90"
+  }
+}

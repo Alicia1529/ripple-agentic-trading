@@ -1,0 +1,86 @@
+{
+  "as_of": "2026-08-24T03:56:32-04:00",
+  "inputs": {
+    "benchmark": {
+      "as_of": "2026-08-21T16:00:00-04:00",
+      "return_60d": "-0.021948",
+      "source_uri": "https://robinhood.com/stocks/QQQ",
+      "symbol": "QQQ"
+    },
+    "candidates": [
+      {
+        "as_of": "2026-08-21T16:00:00-04:00",
+        "business_quality_pass": true,
+        "business_quality_reason": "JPMorgan's 2Q26 primary release reported managed revenue up 27%, net income of $21.2B ($16.9B excluding significant items), and record revenue in every business line: https://www.jpmorganchase.com/content/dam/jpmc/jpmorgan-chase-and-co/investor-relations/documents/quarterly-earnings/2026/2nd-quarter/6cded9fd-a164-4e6c-8cff-377357cf105c.pdf",
+        "close": "351.58",
+        "earnings_status": "confirmed",
+        "next_earnings_date": "2026-10-13",
+        "return_60d": "0.174753",
+        "sma50": "343.9414",
+        "source_uri": "https://robinhood.com/stocks/JPM",
+        "symbol": "JPM"
+      },
+      {
+        "as_of": "2026-08-21T16:00:00-04:00",
+        "business_quality_pass": true,
+        "business_quality_reason": "Microsoft's FY26 Q4 primary release reported revenue up 18%, operating income up 18%, net income up 31%, and Microsoft Cloud revenue up 27%: https://news.microsoft.com/source/2026/07/29/microsoft-cloud-and-ai-strength-fuels-fourth-quarter-results-4/",
+        "close": "483.24",
+        "earnings_status": "estimated",
+        "next_earnings_date": "2026-10-28",
+        "return_60d": "0.171008",
+        "sma50": "419.8446",
+        "source_uri": "https://robinhood.com/stocks/MSFT",
+        "symbol": "MSFT"
+      },
+      {
+        "as_of": "2026-08-21T16:00:00-04:00",
+        "business_quality_pass": true,
+        "business_quality_reason": "Lilly's Q2 2026 primary release reported revenue up 48%, reported net income up 25%, and volume-led growth across Mounjaro and Zepbound: https://investor.lilly.com/news-releases/news-release-details/lilly-reports-second-quarter-2026-financial-results-raises-full",
+        "close": "1255.40",
+        "earnings_status": "confirmed",
+        "next_earnings_date": "2026-10-29",
+        "return_60d": "0.159273",
+        "sma50": "1179.5826",
+        "source_uri": "https://robinhood.com/stocks/LLY",
+        "symbol": "LLY"
+      }
+    ],
+    "facts_sha256": "97764617c9b21e828f4166a1aa048ef59ef032ad59466b7c2ab6a3d2bb2944d4",
+    "market_gate": {
+      "as_of": "2026-08-21T16:00:00-04:00",
+      "close": "765.72",
+      "sma50": "751.7496",
+      "source_uri": "https://robinhood.com/stocks/SPY",
+      "symbol": "SPY"
+    },
+    "outcome": {
+      "reason": "BUY_TOP_RELATIVE_STRENGTH",
+      "result": "BUY_ONLY",
+      "selected_symbol": "JPM"
+    },
+    "strategy": {
+      "id": "growth_momentum_v1",
+      "version": "mvp1"
+    }
+  },
+  "snapshot_id": "43f9536b-af0d-5553-a381-135f66cfd60d",
+  "universe": [
+    "AAPL",
+    "MSFT",
+    "NVDA",
+    "AMZN",
+    "GOOGL",
+    "META",
+    "TSLA",
+    "AVGO",
+    "JPM",
+    "V",
+    "XOM",
+    "UNH",
+    "COST",
+    "HD",
+    "LLY",
+    "SPY",
+    "QQQ"
+  ]
+}
