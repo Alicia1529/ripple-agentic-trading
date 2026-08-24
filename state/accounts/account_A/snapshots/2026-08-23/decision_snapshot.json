@@ -1,0 +1,224 @@
+{
+  "as_of": "2026-08-23T21:00:00-04:00",
+  "inputs": {
+    "benchmark": {
+      "as_of": "2026-08-21T16:00:00-04:00",
+      "return_60d": "-0.021948",
+      "source_uri": "https://robinhood.com/stocks/QQQ",
+      "symbol": "QQQ"
+    },
+    "business_quality": {
+      "JPM": {
+        "as_of": "2026-08-23T21:00:00-04:00",
+        "pass": true,
+        "reason": "2Q26 managed revenue rose 27%; net income was $21.2B ($16.9B excluding significant items), with record revenue in every business line.",
+        "source_uri": "https://www.jpmorganchase.com/content/dam/jpmc/jpmorgan-chase-and-co/investor-relations/documents/quarterly-earnings/2026/2nd-quarter/6cded9fd-a164-4e6c-8cff-377357cf105c.pdf"
+      },
+      "LLY": {
+        "as_of": "2026-08-23T21:00:00-04:00",
+        "pass": true,
+        "reason": "Q2 2026 revenue rose 48%, reported net income rose 25%, and growth was led by Mounjaro and Zepbound volume.",
+        "source_uri": "https://investor.lilly.com/news-releases/news-release-details/lilly-reports-second-quarter-2026-financial-results-raises-full"
+      },
+      "MSFT": {
+        "as_of": "2026-08-23T21:00:00-04:00",
+        "pass": true,
+        "reason": "FY26 Q4 revenue rose 18%, operating income rose 18%, net income rose 31%, and Microsoft Cloud revenue rose 27%.",
+        "source_uri": "https://news.microsoft.com/source/2026/07/29/microsoft-cloud-and-ai-strength-fuels-fourth-quarter-results-4/"
+      }
+    },
+    "market_gate": {
+      "as_of": "2026-08-21T16:00:00-04:00",
+      "close": "765.72",
+      "pass": true,
+      "sma50": "751.7496",
+      "source_uri": "https://robinhood.com/stocks/SPY",
+      "symbol": "SPY"
+    },
+    "outcome": {
+      "reason": "Top passing 60-session return after business-quality review.",
+      "result": "BUY_ONLY",
+      "selected_symbol": "JPM"
+    },
+    "ranked_passing_symbols": [
+      "JPM",
+      "MSFT",
+      "LLY",
+      "V",
+      "XOM"
+    ],
+    "strategy": "growth_momentum_v1",
+    "symbols": {
+      "AAPL": {
+        "as_of": "2026-08-21T16:00:00-04:00",
+        "close": "309.35",
+        "earnings_status": "estimated",
+        "next_earnings_date": "2026-10-29",
+        "return_60d": "-0.004825",
+        "screen_pass": false,
+        "sma50": "310.2080",
+        "source_uri": "https://robinhood.com/stocks/AAPL"
+      },
+      "AMZN": {
+        "as_of": "2026-08-21T16:00:00-04:00",
+        "close": "258.63",
+        "earnings_status": "estimated",
+        "next_earnings_date": "2026-10-29",
+        "return_60d": "-0.048630",
+        "screen_pass": false,
+        "sma50": "249.7288",
+        "source_uri": "https://robinhood.com/stocks/AMZN"
+      },
+      "AVGO": {
+        "as_of": "2026-08-21T16:00:00-04:00",
+        "close": "368.45",
+        "earnings_status": "confirmed",
+        "next_earnings_date": "2026-09-02",
+        "return_60d": "-0.126606",
+        "screen_pass": false,
+        "sma50": "388.5026",
+        "source_uri": "https://robinhood.com/stocks/AVGO"
+      },
+      "COST": {
+        "as_of": "2026-08-21T16:00:00-04:00",
+        "close": "947.74",
+        "earnings_status": "confirmed",
+        "next_earnings_date": "2026-09-24",
+        "return_60d": "-0.055744",
+        "screen_pass": false,
+        "sma50": "948.2221",
+        "source_uri": "https://robinhood.com/stocks/COST"
+      },
+      "GOOGL": {
+        "as_of": "2026-08-21T16:00:00-04:00",
+        "close": "344.82",
+        "earnings_status": "estimated",
+        "next_earnings_date": "2026-10-28",
+        "return_60d": "-0.113186",
+        "screen_pass": false,
+        "sma50": "351.7692",
+        "source_uri": "https://robinhood.com/stocks/GOOGL"
+      },
+      "HD": {
+        "as_of": "2026-08-21T16:00:00-04:00",
+        "close": "335.61",
+        "earnings_status": "confirmed",
+        "next_earnings_date": "2026-11-17",
+        "return_60d": "0.055875",
+        "screen_pass": false,
+        "sma50": "340.0770",
+        "source_uri": "https://robinhood.com/stocks/HD"
+      },
+      "JPM": {
+        "as_of": "2026-08-21T16:00:00-04:00",
+        "close": "351.58",
+        "earnings_status": "confirmed",
+        "next_earnings_date": "2026-10-13",
+        "return_60d": "0.174753",
+        "screen_pass": true,
+        "sma50": "343.9414",
+        "source_uri": "https://robinhood.com/stocks/JPM"
+      },
+      "LLY": {
+        "as_of": "2026-08-21T16:00:00-04:00",
+        "close": "1255.40",
+        "earnings_status": "confirmed",
+        "next_earnings_date": "2026-10-29",
+        "return_60d": "0.159273",
+        "screen_pass": true,
+        "sma50": "1179.5826",
+        "source_uri": "https://robinhood.com/stocks/LLY"
+      },
+      "META": {
+        "as_of": "2026-08-21T16:00:00-04:00",
+        "close": "549.90",
+        "earnings_status": "estimated",
+        "next_earnings_date": "2026-10-28",
+        "return_60d": "-0.134363",
+        "screen_pass": false,
+        "sma50": "592.9912",
+        "source_uri": "https://robinhood.com/stocks/META"
+      },
+      "MSFT": {
+        "as_of": "2026-08-21T16:00:00-04:00",
+        "close": "483.24",
+        "earnings_status": "estimated",
+        "next_earnings_date": "2026-10-28",
+        "return_60d": "0.171008",
+        "screen_pass": true,
+        "sma50": "419.8446",
+        "source_uri": "https://robinhood.com/stocks/MSFT"
+      },
+      "NVDA": {
+        "as_of": "2026-08-21T16:00:00-04:00",
+        "close": "214.72",
+        "earnings_status": "confirmed",
+        "next_earnings_date": "2026-08-26",
+        "return_60d": "0.009972",
+        "screen_pass": false,
+        "sma50": "207.5770",
+        "source_uri": "https://robinhood.com/stocks/NVDA"
+      },
+      "TSLA": {
+        "as_of": "2026-08-21T16:00:00-04:00",
+        "close": "362.86",
+        "earnings_status": "estimated",
+        "next_earnings_date": "2026-10-21",
+        "return_60d": "-0.175992",
+        "screen_pass": false,
+        "sma50": "365.8576",
+        "source_uri": "https://robinhood.com/stocks/TSLA"
+      },
+      "UNH": {
+        "as_of": "2026-08-21T16:00:00-04:00",
+        "close": "390.11",
+        "earnings_status": "estimated",
+        "next_earnings_date": "2026-10-27",
+        "return_60d": "0.015885",
+        "screen_pass": false,
+        "sma50": "413.7924",
+        "source_uri": "https://robinhood.com/stocks/UNH"
+      },
+      "V": {
+        "as_of": "2026-08-21T16:00:00-04:00",
+        "close": "371.04",
+        "earnings_status": "estimated",
+        "next_earnings_date": "2026-10-27",
+        "return_60d": "0.132566",
+        "screen_pass": true,
+        "sma50": "352.7500",
+        "source_uri": "https://robinhood.com/stocks/V"
+      },
+      "XOM": {
+        "as_of": "2026-08-21T16:00:00-04:00",
+        "close": "165.11",
+        "earnings_status": "estimated",
+        "next_earnings_date": "2026-10-30",
+        "return_60d": "0.116362",
+        "screen_pass": true,
+        "sma50": "148.9650",
+        "source_uri": "https://robinhood.com/stocks/XOM"
+      }
+    }
+  },
+  "snapshot_id": "29983d65-78c5-478e-b17a-a28fc827e9f3",
+  "universe": [
+    "AAPL",
+    "MSFT",
+    "NVDA",
+    "AMZN",
+    "GOOGL",
+    "META",
+    "TSLA",
+    "AVGO",
+    "JPM",
+    "V",
+    "XOM",
+    "UNH",
+    "COST",
+    "HD",
+    "LLY",
+    "SPY",
+    "QQQ"
+  ]
+}
