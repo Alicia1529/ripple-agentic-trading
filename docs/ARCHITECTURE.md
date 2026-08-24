@@ -34,7 +34,7 @@ Production v1 runs this timeline independently for each configured account lane.
              the day's decision is made, rather than analyzing a still-incomplete picture
 9:00 PM ET   Account A Decision Run, Sunday–Thursday:
              It does:
-             1. Start a fresh Decision Routine without broker write tools
+             1. Start a fresh Decision Routine contractually restricted to read calls
              2. Gather the allowed inputs and produce a target portfolio
              3. Run deterministic risk and sizing scripts
              4. Write one immutable-per-cycle OrderPlan file
@@ -106,9 +106,9 @@ The initial `ExecutionEvent` value object has a strict seven-field envelope, fin
 
 If a plan is aborted, the system waits for the next normal decision run — it never catches up or re-submits a stale plan.
 
-`publish-decision --manual-run` permits an Alicia-initiated Account A Decision outside the scheduled window in either `dry_run` or `live`; the Decision session still has no broker write capability. `execute-dry-run --manual-run` permits the immediate dry-run rehearsal and records `run_kind=manual`. Once the reviewed live MCP call loop exists and Alicia enables `live`, she may also start that same live Execution Routine manually outside its window. Manual and scheduled execution share one duplicate guard: the first successful execution for a plan wins, and every later trigger stops instead of overwriting the record or submitting the plan again.
+`publish-decision --manual-run` permits an Alicia-initiated Account A Decision outside the scheduled window in either `dry_run` or `live`; the Decision Routine still has no authority to call broker write tools. `execute-dry-run --manual-run` permits the immediate dry-run rehearsal and records `run_kind=manual`. Once the reviewed live MCP call loop exists and Alicia enables `live`, she may also start that same live Execution Routine manually outside its window. Manual and scheduled execution share one duplicate guard: the first successful execution for a plan wins, and every later trigger stops instead of overwriting the record or submitting the plan again.
 
-**Production-v1 trade-off:** execution is an LLM session. The Decision Routine must not have broker write tools; the separately scheduled Execution Routine may have the narrow Robinhood review/place/cancel tools. Deterministic scripts calculate constraints, but the routine still interprets their output and constructs the tool call. Wrong arguments, duplicate calls, ambiguous timeouts, crash-before-log windows, config misuse, prompt injection, and model/prompt drift are accepted for the two initial small allocations. They are not acceptable by default for increased capital or an additional account.
+**Production-v1 trade-off:** both stages are LLM sessions. The current hosted Account A Decision session exposes Robinhood write tools because the platform connection is not configurable per tool; D31 accepts a prompt-only prohibition for the initial small allocation. It may call only the required read operations and must never review, place, cancel, or alter an order. The separately scheduled Execution Routine may intentionally use those narrow write operations. Deterministic scripts calculate constraints, but the routines still interpret their outputs. Wrong tool use, incorrect arguments, duplicate calls, ambiguous timeouts, crash-before-log windows, config misuse, prompt injection, and model/prompt drift are accepted at this exposure. They are not acceptable by default for increased capital or an additional account.
 
 ### Production-v1 storage responsibilities
 
@@ -311,4 +311,4 @@ Resolve hosted MCP availability, explicit account selection, and declared order 
 
 ## Boundaries
 
-The hosted Decision Routine produces the proposed trade plan but has no broker write capability. The hosted Execution Routine may place trades through the platform-managed Robinhood MCP connection after deterministic scripts and mode checks. It must not receive news or thesis material or invent a trade outside the published OrderPlan. Alicia owns the live-mode decision, funding, and consequences. Credentials remain only in the platform connection—never in Git, prompts, plans, reports, or logs.
+The hosted Decision Routine produces the proposed trade plan and is forbidden from using the broker write capabilities visible in its Account A session. The hosted Execution Routine may place trades through the platform-managed Robinhood MCP connection after deterministic scripts and mode checks. It must not receive news or thesis material or invent a trade outside the published OrderPlan. Alicia owns the live-mode decision, funding, and consequences. Credentials remain only in the platform connection—never in Git, prompts, plans, reports, or logs.

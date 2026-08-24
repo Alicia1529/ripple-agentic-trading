@@ -264,6 +264,14 @@ Manual and scheduled live triggers are not last-write-wins because a later repos
 
 **Why:** Manual operation is useful for launch and recovery, but trigger source must not change risk validation or authorize a second execution. Reusing the same routine keeps the interface small. First-success ownership matches irreversible broker behavior and preserves immutable plan/execution evidence; “last write wins” would describe file state while concealing potentially duplicated real orders.
 
+## D31 — Account A Decision uses prompt-only write prohibition
+
+**Decision:** The hosted Account A Decision session may expose Robinhood review/place/cancel capabilities. Their presence no longer stops the Decision cycle. The Decision Routine may use only the minimum read-only account, portfolio, position, quote, and order-history operations required to construct its snapshot and baseline; it must never call a modifying broker operation. This supersedes D26's Account A requirement that only the Execution Routine receives order tools and revises invariant 1 from capability absence to strict Decision-stage non-use.
+
+Any Decision-stage write call is an operational incident: stop the cycle, disable the Account A lane, inspect Robinhood, and review before restarting. This is a prompt/tool-use rule, not a platform-enforced security boundary. It is accepted only for Account A's initial small allocation and must be revisited before increasing capital. Account B capability policy remains separate work.
+
+**Why:** The first real Account A Automation run proved that the hosted session inherits broker write tools and stopped before pull, state generation, commit, push, or broker activity. The platform configuration available to this project does not provide the required per-task tool filtering. Alicia explicitly chose the smaller prompt-only contract to keep the MVP moving at limited exposure rather than introduce another credential/runtime path.
+
 ## Open-source references consulted
 
 - [TauricResearch/TradingAgents](https://github.com/TauricResearch/TradingAgents) — started as an architecture reference, later added as an actual shadow-pool candidate (see D5b).

@@ -34,3 +34,11 @@ Before handing off, append one entry with local timestamp, outcome, evidence, ne
 - Duplicate rule: first successful manual/scheduled execution wins; later triggers stop and never overwrite or resubmit.
 - Evidence: manual live Decision and manual-versus-scheduled execution ownership have focused tests.
 - Next: implement and verify the reviewed Account A live MCP call loop before any live Run now.
+
+## 2026-08-23 22:12 PDT — Account A prompt-only Decision isolation
+
+- Evidence: the first real Decision Automation exposed Robinhood write tools and stopped before repository or broker changes.
+- Decision: D31 accepts prompt-only non-use for Account A's initial small allocation; visible write tools no longer stop Decision.
+- Contract: Decision may call only required reads; any review/place/cancel call is an incident requiring lane disable and Robinhood inspection.
+- Automation: current prompt explicitly supersedes the old failure conclusion retained in automation memory.
+- Verification: core suite passes 39 tests; `compileall` and `git diff --check` pass.

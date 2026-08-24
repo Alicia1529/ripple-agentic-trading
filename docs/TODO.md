@@ -27,10 +27,11 @@ Status: **TWO-ACCOUNT LOCAL DRY-RUN MVP IMPLEMENTED; HOSTED SCHEDULED CYCLES PEN
 - [x] In `dry_run`, emit credential-free proposed Robinhood arguments without invoking write tools; append compact JSONL results and a report
 - [x] Configure Account A's one hosted Decision schedule and one hosted Execution schedule with an `America/New_York` time/date self-check
 - [x] Add Account B's concrete config, fixture, account-scoped state contract, and cross-account rejection test without adding a coordinator
-- [ ] Verify Account A's Decision environment excludes broker write capability and observe its complete scheduled Day T decision → Day T+1 dry execution
+- [x] Observe Account A's hosted Decision capability: its session exposes broker writes; D31 accepts prompt-only non-use for the initial allocation
+- [ ] Observe Account A's complete scheduled Day T decision → Day T+1 dry execution
 - [ ] Bind Account B's hosted MCP connection to the intended broker account, configure its two schedules, and observe its complete scheduled dry cycle
 
-Account A's Sunday–Thursday Decision and Monday–Friday Execution dry-run Codex schedules are active and the completed temporary scheduler probe is paused. An explicit manual run can publish a Decision in either configured mode; the current execution command remains dry-run only. Manual live Execution is an approved trigger for the still-unimplemented reviewed MCP call loop, not evidence that the call loop exists. Account A's first scheduled Decision run must still prove that the environment excludes broker write capability; if it cannot, it stops by contract. Account B schedule work remains separate.
+Account A's Sunday–Thursday Decision and Monday–Friday Execution dry-run Codex schedules are active and the completed temporary scheduler probe is paused. The first manual Decision attempt proved that the hosted session exposes Robinhood write tools and stopped without repository or broker changes. D31 now accepts prompt-only non-use for the initial Account A allocation, so the next manual or scheduled Decision may continue while calling only required read operations. An explicit manual run can publish a Decision in either configured mode; the current execution command remains dry-run only. Manual live Execution is an approved trigger for the still-unimplemented reviewed MCP call loop, not evidence that the call loop exists. Account B schedule work remains separate.
 
 Repository MVP acceptance is complete. Hosted acceptance is complete per lane when its scheduled dry cycle is understandable from the account-scoped OrderPlan, script outputs, JSONL records, and report without using broker write tools.
 
@@ -38,7 +39,7 @@ Repository MVP acceptance is complete. Hosted acceptance is complete per lane wh
 
 - [ ] Connect a separately bound platform-managed Robinhood MCP to each account's Execution Routine; keep credentials, account numbers, and raw authenticated responses out of Git and logs
 - [ ] Verify each connection selects its intended account and confirm the current read/review/place/cancel tool schemas with non-writing or smallest-safe probes
-- [ ] Verify both Decision Routines cannot access broker write tools; if the hosted platform cannot provide that capability separation, do not launch the affected lane on it
+- [x] Record Account A's lack of per-tool hosted isolation and Alicia's D31 acceptance of prompt-only write prohibition for the initial small allocation
 - [ ] Keep one scheduler per phase, stable IDs, a pre-submit history/log check, and no immediate blind retry after timeout as best-effort guards
 - [x] Finish the operator report, kill-switch instructions, MCP reconnection steps, Git-conflict response, tier-two restart procedure, and manual Robinhood inspection after an ambiguous outcome
 - [ ] Alicia reviews each lane's full dry cycle and explicitly changes that lane's human-owned `execution.mode` from `dry_run` to `live`

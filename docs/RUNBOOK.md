@@ -40,7 +40,7 @@ Because v1 execution is LLM-mediated, disabling the hosted schedules is the stro
 
 - Keep the repository private and confirm plans, JSONL records, reports, prompts, and test fixtures contain no credentials, cookies, account numbers, or raw authenticated responses.
 - Bind one hosted Robinhood MCP connection to each account lane. Prove that each connection selects the intended account; do not export account numbers or tokens into repository secrets or local files.
-- Give the Decision Routine only approved read tools and repository access. It must have no Robinhood place/cancel capability. If the platform cannot enforce that separation, do not run the Decision Routine there.
+- In the Account A Decision prompt, allow only the minimum Robinhood reads needed for account state and quotes. The hosted session exposes write tools, but the routine must never call review/place/cancel or any other modifying operation. If a Decision run does call one, disable the lane and inspect Robinhood before continuing.
 - Give only the isolated Execution Routine the narrow Robinhood read/review/place/cancel tools it needs. Do not provide news browsing or investment-reasoning inputs to that routine.
 - Enable exactly one Decision schedule and one Execution schedule per account following `routines/SCHEDULE.md`. Confirm their assigned config, state root, broker connection, repository, branch, timezone, and `America/New_York` self-check.
 - Keep each lane's `execution.mode=dry_run` through its complete scheduled Day T decision → Day T+1 execution cycle. Review its plan, script output, exact proposed calls, JSONL records, and report.
