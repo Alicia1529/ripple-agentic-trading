@@ -1,0 +1,1 @@
+{"account_id":"account_A","action_count":1,"kind":"dry_run_completed","occurred_at":"2026-08-24T09:39:42-04:00","order_plan_id":"eb2f3543-0241-5eca-9b97-567c0b77ce0e","result_uri":"executions/2026-08-24/dry_run.json","run_kind":"scheduled","status":"rejected"}

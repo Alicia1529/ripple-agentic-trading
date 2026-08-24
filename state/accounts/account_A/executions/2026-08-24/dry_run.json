@@ -1,0 +1,22 @@
+{
+  "abort_reason": null,
+  "account_id": "account_A",
+  "actions": [
+    {
+      "actual_sizing": null,
+      "allowed": false,
+      "broker_order": null,
+      "order_id": "86fca105-35ed-51eb-b820-f5e347921c7b",
+      "original_sizing": {
+        "field": "quantity",
+        "value": "0.281618"
+      },
+      "reason_code": "price_outside_tolerance"
+    }
+  ],
+  "manual_restart_required": false,
+  "mode": "dry_run",
+  "order_plan_id": "eb2f3543-0241-5eca-9b97-567c0b77ce0e",
+  "position_alerts": [],
+  "status": "rejected"
+}
