@@ -240,7 +240,7 @@ class MvpDryCycleTests(unittest.TestCase):
                     "--config", str(config),
                     "--input", str(decision_input),
                     "--output", str(output),
-                    "--manual-dry-run",
+                    "--manual-run",
                 ],
                 cwd=ROOT, text=True, capture_output=True, check=False,
             )
@@ -253,7 +253,7 @@ class MvpDryCycleTests(unittest.TestCase):
                     "--plan", str(plan_path),
                     "--context", str(context_input),
                     "--output", str(output),
-                    "--manual-dry-run",
+                    "--manual-run",
                 ],
                 cwd=ROOT, text=True, capture_output=True, check=False,
             )
@@ -264,7 +264,7 @@ class MvpDryCycleTests(unittest.TestCase):
             self.assertEqual(decision_log["run_kind"], "manual")
             self.assertEqual(execution_log["run_kind"], "manual")
 
-    def test_manual_run_is_rejected_for_live_mode(self):
+    def test_manual_decision_is_allowed_for_live_mode(self):
         fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
         config = json.loads((ROOT / "config" / "mvp.json").read_text())
         config["execution"]["mode"] = "live"
@@ -281,10 +281,58 @@ class MvpDryCycleTests(unittest.TestCase):
             }))
             from ripple.mvp import publish_decision
 
-            with self.assertRaisesRegex(ValueError, "manual runs require execution.mode=dry_run"):
-                publish_decision(
-                    config_path, input_path, root / "account_A", manual=True,
+            plan = publish_decision(
+                config_path, input_path, root / "account_A", manual=True,
+            )
+            self.assertEqual(plan.account_id, "account_A")
+            self.assertEqual(
+                json.loads(
+                    (root / "account_A" / "logs" / "decisions.jsonl").read_text()
+                )["run_kind"],
+                "manual",
+            )
+
+    def test_first_execution_record_wins_between_manual_and_scheduled_runs(self):
+        fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
+        config_path = ROOT / "config" / "mvp.json"
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            output = root / "account_A"
+            decision_input = root / "decision.json"
+            context_input = root / "context.json"
+            decision_input.write_text(json.dumps({
+                "snapshot": fixture["snapshot"],
+                "account_baseline": fixture["account_baseline"],
+                "decision": fixture["decision"],
+            }))
+            context_input.write_text(json.dumps(fixture["execution_context"]))
+            from ripple.mvp import execute_dry_run, publish_decision
+
+            publish_decision(
+                config_path,
+                decision_input,
+                output,
+                now=datetime.fromisoformat(fixture["decision"]["decision_time"]),
+            )
+            plan_path = output / "plans" / "2026-08-24" / "order_plan.json"
+            execute_dry_run(
+                config_path, plan_path, context_input, output, manual=True,
+            )
+
+            with self.assertRaises(FileExistsError):
+                execute_dry_run(
+                    config_path,
+                    plan_path,
+                    context_input,
+                    output,
+                    now=datetime.fromisoformat(fixture["execution_context"]["as_of"]),
                 )
+            execution_log = output / "logs" / "executions.jsonl"
+            self.assertEqual(len(execution_log.read_text().splitlines()), 1)
+            self.assertEqual(
+                json.loads(execution_log.read_text())["run_kind"], "manual",
+            )
 
     def test_new_york_trading_date_is_used_for_utc_documents(self):
         fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())

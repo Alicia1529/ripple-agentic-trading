@@ -20,7 +20,9 @@ uv run --no-cache python -m ripple.mvp run-dry-cycle \
 
 The two hosted stages use `publish-decision` and `execute-dry-run` exactly as documented in `routines/DECISION.md` and `routines/EXECUTION.md`. Their credential-free continuity output belongs under `state/`. A second command for the same cycle fails instead of overwriting it.
 
-To rehearse the two hosted stages immediately, Alicia may explicitly start each routine with **Run now** while its lane remains `dry_run`. Outside the normal window, the routine adds `--manual-dry-run` to the documented command. Run Decision first and Execution second with an execution-context `as_of` later than the plan's `decision_time`. Confirm both JSONL records say `run_kind=manual`. This path never authorizes broker writes and does not replace the required observed scheduled cycle.
+To rehearse the two hosted stages immediately, Alicia may explicitly start each routine with **Run now** while Account A remains `dry_run`. Outside the normal window, the routine adds `--manual-run` to the documented command. Run Decision first and Execution second with an execution-context `as_of` later than the plan's `decision_time`. Confirm both JSONL records say `run_kind=manual`. This path never authorizes broker writes and does not replace the required observed scheduled cycle.
+
+After the reviewed live MCP call loop exists and Alicia enables Account A, **Run now** may also trigger that same live routine outside the window. Before any review/place call, inspect committed execution records and broker history. If either shows the plan/order already succeeded, stop. The first successful manual or scheduled execution wins; never overwrite its record or submit the plan again. An ambiguous outcome is not success or failure evidence and must be inspected manually before any future run.
 
 ## Kill switch
 

@@ -16,7 +16,7 @@ Each schedule is assigned exactly one lane. The existing schedule defaults to Ac
 Stop without publishing a plan when any of these is true:
 
 - the assigned configuration has `execution.mode=disabled`;
-- local time is outside the intended Sunday–Thursday 8:55–9:15 PM `America/New_York` window, unless Alicia explicitly initiated **Run now** for a manual dry run;
+- local time is outside the intended Sunday–Thursday 8:55–9:15 PM `America/New_York` window, unless Alicia explicitly initiated **Run now**;
 - the repository is dirty, `git pull --ff-only` fails, or today's plan already exists;
 - required market/account data is missing, stale, malformed, or inconsistent;
 - any broker write tool is available in this session. Report the capability error instead of using it.
@@ -49,7 +49,7 @@ Never put an account number, credential, cookie, token, or raw authenticated res
 
    For Account B, replace the config with `config/mvp-account-b.json` and output with `state/accounts/account_B`.
 
-   For an explicit Alicia-initiated **Run now** outside the scheduled window, first confirm the assigned configuration says `dry_run`, then add `--manual-dry-run`. Never add it to a scheduled in-window run or a live lane. The resulting record is labeled manual and does not count as scheduled acceptance.
+   For an explicit Alicia-initiated **Run now** outside the scheduled window, add `--manual-run`. This is allowed when the assigned configuration says either `dry_run` or `live`; the Decision Routine still has no broker write authority. The resulting record is labeled manual and does not count as scheduled acceptance.
 
 7. Run the core tests. Review the new snapshot, plan, and one JSONL line for credentials and account numbers. Commit only the new credential-free `state/` files with subject `Decision: publish YYYY-MM-DD plan`, then push normally. Never force-push.
 

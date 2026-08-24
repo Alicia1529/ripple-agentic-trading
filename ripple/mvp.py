@@ -263,6 +263,10 @@ def _execute_dry_run(
         execution_context["as_of"],
         enforce_schedule=run_kind != "manual",
     )
+    execution_date = _date(execution_context["as_of"])
+    execution_path = output / "executions" / execution_date / "dry_run.json"
+    if execution_path.exists():
+        raise FileExistsError(17, "File exists", execution_path)
     latch_path = output / "risk" / "drawdown_tier2.lock.json"
     result = evaluate_plan(
         plan.to_dict(), execution_context, config,
@@ -276,11 +280,7 @@ def _execute_dry_run(
             "triggered_at": execution_context["as_of"],
             "reason_code": "drawdown_tier2",
         })
-    execution_date = _date(execution_context["as_of"])
-    _write_new_json(
-        output / "executions" / execution_date / "dry_run.json",
-        result,
-    )
+    _write_new_json(execution_path, result)
     _append_jsonl(output / "logs" / "executions.jsonl", {
         "kind": "dry_run_completed",
         "account_id": plan.account_id,
@@ -309,8 +309,6 @@ def publish_decision(
     manual: bool = False,
 ) -> OrderPlan:
     config = _read_json(config_path)
-    if manual and config.get("execution", {}).get("mode") != "dry_run":
-        raise ValueError("manual runs require execution.mode=dry_run")
     decision_input = _read_json(input_path)
     decision = decision_input.get("decision")
     if not isinstance(decision, Mapping) or not isinstance(decision.get("decision_time"), str):
@@ -372,14 +370,14 @@ def _parser() -> argparse.ArgumentParser:
     publish.add_argument("--config", type=Path, required=True)
     publish.add_argument("--input", type=Path, required=True)
     publish.add_argument("--output", type=Path, required=True)
-    publish.add_argument("--manual-dry-run", action="store_true")
+    publish.add_argument("--manual-run", action="store_true")
 
     execute = subparsers.add_parser("execute-dry-run")
     execute.add_argument("--config", type=Path, required=True)
     execute.add_argument("--plan", type=Path, required=True)
     execute.add_argument("--context", type=Path, required=True)
     execute.add_argument("--output", type=Path, required=True)
-    execute.add_argument("--manual-dry-run", action="store_true")
+    execute.add_argument("--manual-run", action="store_true")
 
     cycle = subparsers.add_parser("run-dry-cycle")
     cycle.add_argument("--config", type=Path, required=True)
@@ -394,14 +392,14 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "publish-decision":
             plan = publish_decision(
                 args.config, args.input, args.output,
-                manual=args.manual_dry_run,
+                manual=args.manual_run,
             )
             print(f"decision published: {plan.order_plan_id}")
             return 0
         if args.command == "execute-dry-run":
             result = execute_dry_run(
                 args.config, args.plan, args.context, args.output,
-                manual=args.manual_dry_run,
+                manual=args.manual_run,
             )
         else:
             result = run_dry_cycle(args.config, args.fixture, args.output)

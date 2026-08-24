@@ -26,3 +26,11 @@ Before handing off, append one entry with local timestamp, outcome, evidence, ne
 - Automation: Account A Decision schedule and both Run now prompts were updated in Codex; live timing guards remain closed.
 - Evidence: core suite passes 38 tests; `compileall` and `git diff --check` pass.
 - Next: Alicia may Run now Decision then Execution, or wait for the next scheduled dry cycle.
+
+## 2026-08-23 21:47 PDT — Account A manual trigger correction
+
+- Outcome: limited D29 cadence work to Account A and renamed its explicit override to `--manual-run`.
+- Live policy: manual live is approved once the existing MCP call-loop TODO is implemented; it reuses the scheduled routine and risk checks.
+- Duplicate rule: first successful manual/scheduled execution wins; later triggers stop and never overwrite or resubmit.
+- Evidence: manual live Decision and manual-versus-scheduled execution ownership have focused tests.
+- Next: implement and verify the reviewed Account A live MCP call loop before any live Run now.

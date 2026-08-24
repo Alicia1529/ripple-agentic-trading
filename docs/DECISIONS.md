@@ -256,6 +256,14 @@ For operator rehearsal, the two public stage commands accept an explicit `--manu
 
 **Why:** The former weekday-evening cadence made Monday depend on a Friday-night plan and therefore ignored weekend information. Sunday evening is the closest planned decision point before Monday's open. A narrow dry-run-only override lets Alicia exercise the hosted stages on demand without weakening the live timing contract or adding another runner, schedule type, or configuration system.
 
+## D30 — Account A manual live trigger and first-success ownership
+
+**Decision:** D29's Sunday–Thursday cadence change applies to Account A only; Account B scheduling is left to its separate implementation work. An Alicia-initiated Account A Decision may run outside its scheduled window in either `dry_run` or `live` through `publish-decision --manual-run`. Dry execution uses `execute-dry-run --manual-run`. Once the reviewed live MCP call loop is implemented and Alicia enables Account A, the same live Execution Routine may also be started manually outside its scheduled window.
+
+Manual and scheduled live triggers are not last-write-wins because a later repository write cannot undo an earlier broker order. They share best-effort duplicate checks against committed execution records and broker history. The first successful execution for a plan wins; every later trigger stops before broker writes and never overwrites the successful record. An ambiguous MCP outcome remains neither safe success nor safe failure evidence and requires manual Robinhood inspection under D26.
+
+**Why:** Manual operation is useful for launch and recovery, but trigger source must not change risk validation or authorize a second execution. Reusing the same routine keeps the interface small. First-success ownership matches irreversible broker behavior and preserves immutable plan/execution evidence; “last write wins” would describe file state while concealing potentially duplicated real orders.
+
 ## Open-source references consulted
 
 - [TauricResearch/TradingAgents](https://github.com/TauricResearch/TradingAgents) — started as an architecture reference, later added as an actual shadow-pool candidate (see D5b).

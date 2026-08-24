@@ -32,7 +32,7 @@ Production v1 runs this timeline independently for each configured account lane.
 4:00–9:00    Wait — earnings and other market-moving news often come out after the close
              (sometimes hours after), so the gap gives that information time to land before
              the day's decision is made, rather than analyzing a still-incomplete picture
-9:00–9:10 PM ET   Decision Runs, Sunday–Thursday (Account A, then Account B):
+9:00 PM ET   Account A Decision Run, Sunday–Thursday:
              It does:
              1. Start a fresh Decision Routine without broker write tools
              2. Gather the allowed inputs and produce a target portfolio
@@ -42,7 +42,7 @@ Production v1 runs this timeline independently for each configured account lane.
 
 Overnight    No trading. The persisted OrderPlan is not touched.
 
-~9:35–9:45 AM ET  Execution Runs, Monday–Friday (Account A, then Account B):
+~9:35 AM ET  Account A Execution Run, Monday–Friday:
 next weekday 1. Pull and load the prior evening's published OrderPlan
              2. Read current positions, cash, price, mode, and risk configuration
              3. Run deterministic revalidation scripts
@@ -51,7 +51,7 @@ next weekday 1. Pull and load the prior evening's published OrderPlan
              6. Append compact JSONL results and push them to the private repository
 ```
 
-Why separate decision and execution runs: execution happens after the market opens, while the decision uses the latest completed market session plus facts available by the prior evening. Monday's plan is made Sunday evening so it includes weekend information instead of freezing the plan on Friday. Starting ~9:35 rather than exactly 9:30 avoids the most volatile opening minutes. Account B runs ten minutes after Account A to avoid ordinary Git push collisions without introducing a coordinator. Fresh isolated sessions also keep news and thesis material out of sessions that own broker write tools. This is a capability and prompt boundary, not a code-enforced security boundary.
+Why separate decision and execution runs: execution happens after the market opens, while the decision uses the latest completed market session plus facts available by the prior evening. Monday's plan is made Sunday evening so it includes weekend information instead of freezing the plan on Friday. Starting ~9:35 rather than exactly 9:30 avoids the most volatile opening minutes. Fresh isolated sessions also keep news and thesis material out of sessions that own broker write tools. This is a capability and prompt boundary, not a code-enforced security boundary.
 
 ### DecisionSnapshot, OrderPlan, and execution state
 
@@ -106,7 +106,7 @@ The initial `ExecutionEvent` value object has a strict seven-field envelope, fin
 
 If a plan is aborted, the system waits for the next normal decision run — it never catches up or re-submits a stale plan.
 
-For operator validation only, `publish-decision` and `execute-dry-run` accept an explicit `--manual-dry-run` flag. It permits an immediate Decision → Execution rehearsal outside the production calendar/window, records `run_kind=manual`, and is rejected unless the lane is configured `dry_run`. It never authorizes broker writes and does not count as scheduled-cycle acceptance. Scheduled runs and every live run retain the normal time guards.
+`publish-decision --manual-run` permits an Alicia-initiated Account A Decision outside the scheduled window in either `dry_run` or `live`; the Decision session still has no broker write capability. `execute-dry-run --manual-run` permits the immediate dry-run rehearsal and records `run_kind=manual`. Once the reviewed live MCP call loop exists and Alicia enables `live`, she may also start that same live Execution Routine manually outside its window. Manual and scheduled execution share one duplicate guard: the first successful execution for a plan wins, and every later trigger stops instead of overwriting the record or submitting the plan again.
 
 **Production-v1 trade-off:** execution is an LLM session. The Decision Routine must not have broker write tools; the separately scheduled Execution Routine may have the narrow Robinhood review/place/cancel tools. Deterministic scripts calculate constraints, but the routine still interprets their output and constructs the tool call. Wrong arguments, duplicate calls, ambiguous timeouts, crash-before-log windows, config misuse, prompt injection, and model/prompt drift are accepted for the two initial small allocations. They are not acceptable by default for increased capital or an additional account.
 
