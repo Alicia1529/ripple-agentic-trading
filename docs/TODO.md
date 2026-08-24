@@ -30,7 +30,7 @@ Status: **TWO-ACCOUNT LOCAL DRY-RUN MVP IMPLEMENTED; HOSTED SCHEDULED CYCLES PEN
 - [ ] Verify Account A's Decision environment excludes broker write capability and observe its complete scheduled Day T decision → Day T+1 dry execution
 - [ ] Bind Account B's hosted MCP connection to the intended broker account, configure its two schedules, and observe its complete scheduled dry cycle
 
-Account A's two dry-run Codex schedules are active and the completed temporary scheduler probe is paused. Its first scheduled Decision run must still prove that the environment excludes broker write capability; if it cannot, it stops by contract. Account B schedules are not enabled until its separate broker connection/account binding is verified.
+Account A's Sunday–Thursday Decision and Monday–Friday Execution dry-run Codex schedules are active and the completed temporary scheduler probe is paused. An explicit manual dry-run can rehearse both stages immediately but does not satisfy hosted scheduled acceptance. Account A's first scheduled Decision run must still prove that the environment excludes broker write capability; if it cannot, it stops by contract. Account B schedules are not enabled until its separate broker connection/account binding is verified.
 
 Repository MVP acceptance is complete. Hosted acceptance is complete per lane when its scheduled dry cycle is understandable from the account-scoped OrderPlan, script outputs, JSONL records, and report without using broker write tools.
 

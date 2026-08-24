@@ -71,18 +71,35 @@ def _validate_state_root(output: Path, config: Mapping[str, Any]) -> None:
         raise ValueError("state root must end with the configured account_id")
 
 
-def _validate_decision_timing(decision_time: str, snapshot_time: str) -> None:
+def _validate_decision_timing(
+    decision_time: str,
+    snapshot_time: str,
+    *,
+    enforce_schedule: bool = True,
+) -> None:
     decision_at = _new_york_time(decision_time)
     snapshot_at = _new_york_time(snapshot_time)
-    if decision_at.weekday() >= 5 or not time(20, 55) <= decision_at.time() <= time(21, 15):
+    if enforce_schedule and (
+        decision_at.weekday() not in {0, 1, 2, 3, 6}
+        or not time(20, 55) <= decision_at.time() <= time(21, 15)
+    ):
         raise ValueError("decision time is outside the allowed America/New_York window")
-    if snapshot_at.date() != decision_at.date():
+    if enforce_schedule and snapshot_at.date() != decision_at.date():
         raise ValueError("snapshot and decision must use the same New York date")
 
 
-def _validate_execution_timing(decision_time: str, execution_time: str) -> None:
+def _validate_execution_timing(
+    decision_time: str,
+    execution_time: str,
+    *,
+    enforce_schedule: bool = True,
+) -> None:
     decision_at = _new_york_time(decision_time)
     execution_at = _new_york_time(execution_time)
+    if not enforce_schedule:
+        if execution_at <= decision_at:
+            raise ValueError("manual execution must occur after the decision")
+        return
     if execution_at.date() != _next_weekday(decision_at.date()):
         raise ValueError("execution must occur on the next weekday after the decision")
     if not time(9, 30) <= execution_at.time() <= time(9, 50):
@@ -97,13 +114,19 @@ def _validate_runtime_clock(now: datetime, expected_time: str, phase: str) -> No
     window = (time(20, 55), time(21, 15)) if phase == "decision" else (
         time(9, 30), time(9, 50)
     )
-    if actual.weekday() >= 5 or actual.date() != expected.date():
+    allowed_days = {0, 1, 2, 3, 6} if phase == "decision" else {0, 1, 2, 3, 4}
+    if actual.weekday() not in allowed_days or actual.date() != expected.date():
         raise ValueError(f"{phase} runtime date does not match America/New_York now")
     if not window[0] <= actual.time() <= window[1]:
         raise ValueError(f"{phase} runtime is outside the America/New_York window")
 
 
-def _build_plan(decision_input: Mapping[str, Any], config: Mapping[str, Any]) -> OrderPlan:
+def _build_plan(
+    decision_input: Mapping[str, Any],
+    config: Mapping[str, Any],
+    *,
+    enforce_schedule: bool = True,
+) -> OrderPlan:
     if set(config) != {"account_id", "execution", "universe", "risk"}:
         raise ValueError("configuration fields do not match the schema")
     mode = config["execution"].get("mode") if isinstance(config["execution"], Mapping) else None
@@ -138,7 +161,9 @@ def _build_plan(decision_input: Mapping[str, Any], config: Mapping[str, Any]) ->
         raise ValueError("decision orders must be a list")
 
     decision_time = decision["decision_time"]
-    _validate_decision_timing(decision_time, snapshot.as_of)
+    _validate_decision_timing(
+        decision_time, snapshot.as_of, enforce_schedule=enforce_schedule,
+    )
     plan_id = str(uuid5(NAMESPACE_URL, f"ripple:{config['account_id']}:{_date(decision_time)}"))
     orders = []
     for index, proposed_order in enumerate(decision["orders"]):
@@ -167,9 +192,13 @@ def _publish_decision(
     config: Mapping[str, Any],
     decision_input: Mapping[str, Any],
     output: Path,
+    *,
+    run_kind: str = "fixture",
 ) -> OrderPlan:
     _validate_state_root(output, config)
-    plan = _build_plan(decision_input, config)
+    plan = _build_plan(
+        decision_input, config, enforce_schedule=run_kind != "manual",
+    )
     decision_date = _date(plan.decision_time)
     _write_new_json(
         output / "snapshots" / decision_date / "decision_snapshot.json",
@@ -187,6 +216,7 @@ def _publish_decision(
         "decision_time": plan.decision_time,
         "order_count": len(plan.orders),
         "plan_uri": f"plans/{decision_date}/order_plan.json",
+        "run_kind": run_kind,
     })
     return plan
 
@@ -224,9 +254,15 @@ def _execute_dry_run(
     plan: OrderPlan,
     execution_context: Mapping[str, Any],
     output: Path,
+    *,
+    run_kind: str = "fixture",
 ) -> dict[str, Any]:
     _validate_state_root(output, config)
-    _validate_execution_timing(plan.decision_time, execution_context["as_of"])
+    _validate_execution_timing(
+        plan.decision_time,
+        execution_context["as_of"],
+        enforce_schedule=run_kind != "manual",
+    )
     latch_path = output / "risk" / "drawdown_tier2.lock.json"
     result = evaluate_plan(
         plan.to_dict(), execution_context, config,
@@ -253,6 +289,7 @@ def _execute_dry_run(
         "status": result["status"],
         "action_count": len(result["actions"]),
         "result_uri": f"executions/{execution_date}/dry_run.json",
+        "run_kind": run_kind,
     })
     _write_report(
         output / "reports" / f"{execution_date}.md",
@@ -269,15 +306,23 @@ def publish_decision(
     output: Path,
     *,
     now: datetime | None = None,
+    manual: bool = False,
 ) -> OrderPlan:
+    config = _read_json(config_path)
+    if manual and config.get("execution", {}).get("mode") != "dry_run":
+        raise ValueError("manual runs require execution.mode=dry_run")
     decision_input = _read_json(input_path)
     decision = decision_input.get("decision")
     if not isinstance(decision, Mapping) or not isinstance(decision.get("decision_time"), str):
         raise ValueError("decision input is missing decision_time")
-    _validate_runtime_clock(
-        now or datetime.now(timezone.utc), decision["decision_time"], "decision",
+    if not manual:
+        _validate_runtime_clock(
+            now or datetime.now(timezone.utc), decision["decision_time"], "decision",
+        )
+    return _publish_decision(
+        config, decision_input, output,
+        run_kind="manual" if manual else "scheduled",
     )
-    return _publish_decision(_read_json(config_path), decision_input, output)
 
 
 def execute_dry_run(
@@ -287,19 +332,25 @@ def execute_dry_run(
     output: Path,
     *,
     now: datetime | None = None,
+    manual: bool = False,
 ) -> dict[str, Any]:
+    config = _read_json(config_path)
+    if manual and config.get("execution", {}).get("mode") != "dry_run":
+        raise ValueError("manual runs require execution.mode=dry_run")
     execution_context = _read_json(context_path)
     execution_time = execution_context.get("as_of")
     if not isinstance(execution_time, str):
         raise ValueError("execution context is missing as_of")
-    _validate_runtime_clock(
-        now or datetime.now(timezone.utc), execution_time, "execution",
-    )
+    if not manual:
+        _validate_runtime_clock(
+            now or datetime.now(timezone.utc), execution_time, "execution",
+        )
     return _execute_dry_run(
-        _read_json(config_path),
+        config,
         OrderPlan.from_dict(_read_json(plan_path)),
         execution_context,
         output,
+        run_kind="manual" if manual else "scheduled",
     )
 
 
@@ -321,12 +372,14 @@ def _parser() -> argparse.ArgumentParser:
     publish.add_argument("--config", type=Path, required=True)
     publish.add_argument("--input", type=Path, required=True)
     publish.add_argument("--output", type=Path, required=True)
+    publish.add_argument("--manual-dry-run", action="store_true")
 
     execute = subparsers.add_parser("execute-dry-run")
     execute.add_argument("--config", type=Path, required=True)
     execute.add_argument("--plan", type=Path, required=True)
     execute.add_argument("--context", type=Path, required=True)
     execute.add_argument("--output", type=Path, required=True)
+    execute.add_argument("--manual-dry-run", action="store_true")
 
     cycle = subparsers.add_parser("run-dry-cycle")
     cycle.add_argument("--config", type=Path, required=True)
@@ -339,12 +392,16 @@ def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
         if args.command == "publish-decision":
-            plan = publish_decision(args.config, args.input, args.output)
+            plan = publish_decision(
+                args.config, args.input, args.output,
+                manual=args.manual_dry_run,
+            )
             print(f"decision published: {plan.order_plan_id}")
             return 0
         if args.command == "execute-dry-run":
             result = execute_dry_run(
                 args.config, args.plan, args.context, args.output,
+                manual=args.manual_dry_run,
             )
         else:
             result = run_dry_cycle(args.config, args.fixture, args.output)

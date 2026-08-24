@@ -248,6 +248,14 @@ A tier-two drawdown creates an immutable account-lane lock at `risk/drawdown_tie
 
 **Why:** The earlier implementation evaluated BUYs independently against the same cash, used the current quote instead of the maximum limit fill for sizing, emitted threshold alerts without an exit, and had no persisted manual-restart state or decision-to-execution account reconciliation. Those behaviors could overspend, fail a documented safety action, or execute a stale plan. The correction stays within the two concrete lane boundary and adds no database, broker loop, account framework, or investment logic.
 
+## D29 — Prior-evening cadence and explicit manual dry-run
+
+**Decision:** Scheduled Decision Routines run Sunday through Thursday evening and scheduled Execution Routines run Monday through Friday morning. A Sunday Decision uses the latest completed Friday close plus facts available through Sunday evening, then targets Monday morning. Friday and Saturday Decisions are invalid so each Monday has one canonical prior-evening plan. Missed scheduled cycles remain unfilled and are never backfilled.
+
+For operator rehearsal, the two public stage commands accept an explicit `--manual-dry-run` flag. It bypasses the scheduled weekday/window relationship only when `execution.mode=dry_run`, requires manual execution to occur after its decision, labels both records `run_kind=manual`, and never authorizes broker writes. Manual evidence does not satisfy scheduled-cycle acceptance. The flag is rejected for a live lane; scheduled and live paths retain their time guards.
+
+**Why:** The former weekday-evening cadence made Monday depend on a Friday-night plan and therefore ignored weekend information. Sunday evening is the closest planned decision point before Monday's open. A narrow dry-run-only override lets Alicia exercise the hosted stages on demand without weakening the live timing contract or adding another runner, schedule type, or configuration system.
+
 ## Open-source references consulted
 
 - [TauricResearch/TradingAgents](https://github.com/TauricResearch/TradingAgents) — started as an architecture reference, later added as an actual shadow-pool candidate (see D5b).

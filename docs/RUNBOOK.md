@@ -20,6 +20,8 @@ uv run --no-cache python -m ripple.mvp run-dry-cycle \
 
 The two hosted stages use `publish-decision` and `execute-dry-run` exactly as documented in `routines/DECISION.md` and `routines/EXECUTION.md`. Their credential-free continuity output belongs under `state/`. A second command for the same cycle fails instead of overwriting it.
 
+To rehearse the two hosted stages immediately, Alicia may explicitly start each routine with **Run now** while its lane remains `dry_run`. Outside the normal window, the routine adds `--manual-dry-run` to the documented command. Run Decision first and Execution second with an execution-context `as_of` later than the plan's `decision_time`. Confirm both JSONL records say `run_kind=manual`. This path never authorizes broker writes and does not replace the required observed scheduled cycle.
+
 ## Kill switch
 
 There is no instantaneous broker-side "flatten everything" switch.

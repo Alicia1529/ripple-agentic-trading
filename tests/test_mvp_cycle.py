@@ -155,6 +155,137 @@ class MvpDryCycleTests(unittest.TestCase):
             )
             self.assertTrue((output / "executions" / "2026-08-25" / "dry_run.json").is_file())
 
+    def test_sunday_decision_executes_monday(self):
+        fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
+        fixture["snapshot"]["as_of"] = "2026-08-23T20:55:00-04:00"
+        fixture["decision"]["decision_time"] = "2026-08-23T21:00:00-04:00"
+        fixture["execution_context"]["as_of"] = "2026-08-24T09:35:00-04:00"
+        for quote in fixture["execution_context"]["quotes"].values():
+            quote["as_of"] = "2026-08-24T09:34:00-04:00"
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            output = root / "account_A"
+            decision_input = root / "decision.json"
+            context_input = root / "context.json"
+            decision_input.write_text(json.dumps({
+                "snapshot": fixture["snapshot"],
+                "account_baseline": fixture["account_baseline"],
+                "decision": fixture["decision"],
+            }))
+            context_input.write_text(json.dumps(fixture["execution_context"]))
+            from ripple.mvp import execute_dry_run, publish_decision
+
+            publish_decision(
+                ROOT / "config" / "mvp.json",
+                decision_input,
+                output,
+                now=datetime.fromisoformat(fixture["decision"]["decision_time"]),
+            )
+            plan_path = output / "plans" / "2026-08-23" / "order_plan.json"
+            execute_dry_run(
+                ROOT / "config" / "mvp.json",
+                plan_path,
+                context_input,
+                output,
+                now=datetime.fromisoformat(fixture["execution_context"]["as_of"]),
+            )
+            self.assertTrue(
+                (output / "executions" / "2026-08-24" / "dry_run.json").is_file()
+            )
+
+    def test_friday_and_saturday_decisions_are_rejected(self):
+        fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
+        config = json.loads((ROOT / "config" / "mvp.json").read_text())
+        from ripple.mvp import _build_plan
+
+        for decision_time in (
+            "2026-08-21T21:00:00-04:00",
+            "2026-08-22T21:00:00-04:00",
+        ):
+            decision_input = {
+                "snapshot": json.loads(json.dumps(fixture["snapshot"])),
+                "account_baseline": fixture["account_baseline"],
+                "decision": json.loads(json.dumps(fixture["decision"])),
+            }
+            decision_input["snapshot"]["as_of"] = decision_time
+            decision_input["decision"]["decision_time"] = decision_time
+            with self.subTest(decision_time=decision_time):
+                with self.assertRaisesRegex(ValueError, "decision time"):
+                    _build_plan(decision_input, config)
+
+    def test_manual_dry_run_can_execute_immediately_outside_schedule(self):
+        fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
+        fixture["snapshot"]["as_of"] = "2026-08-23T23:59:00-04:00"
+        fixture["decision"]["decision_time"] = "2026-08-24T00:00:00-04:00"
+        fixture["execution_context"]["as_of"] = "2026-08-24T00:05:00-04:00"
+        for quote in fixture["execution_context"]["quotes"].values():
+            quote["as_of"] = "2026-08-24T00:04:00-04:00"
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            output = root / "account_A"
+            decision_input = root / "decision.json"
+            context_input = root / "context.json"
+            decision_input.write_text(json.dumps({
+                "snapshot": fixture["snapshot"],
+                "account_baseline": fixture["account_baseline"],
+                "decision": fixture["decision"],
+            }))
+            context_input.write_text(json.dumps(fixture["execution_context"]))
+            config = ROOT / "config" / "mvp.json"
+            publish = subprocess.run(
+                [
+                    "python3.12", "-m", "ripple.mvp", "publish-decision",
+                    "--config", str(config),
+                    "--input", str(decision_input),
+                    "--output", str(output),
+                    "--manual-dry-run",
+                ],
+                cwd=ROOT, text=True, capture_output=True, check=False,
+            )
+            self.assertEqual(publish.returncode, 0, publish.stderr)
+            plan_path = output / "plans" / "2026-08-24" / "order_plan.json"
+            execute = subprocess.run(
+                [
+                    "python3.12", "-m", "ripple.mvp", "execute-dry-run",
+                    "--config", str(config),
+                    "--plan", str(plan_path),
+                    "--context", str(context_input),
+                    "--output", str(output),
+                    "--manual-dry-run",
+                ],
+                cwd=ROOT, text=True, capture_output=True, check=False,
+            )
+            self.assertEqual(execute.returncode, 0, execute.stderr)
+
+            decision_log = json.loads((output / "logs" / "decisions.jsonl").read_text())
+            execution_log = json.loads((output / "logs" / "executions.jsonl").read_text())
+            self.assertEqual(decision_log["run_kind"], "manual")
+            self.assertEqual(execution_log["run_kind"], "manual")
+
+    def test_manual_run_is_rejected_for_live_mode(self):
+        fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
+        config = json.loads((ROOT / "config" / "mvp.json").read_text())
+        config["execution"]["mode"] = "live"
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            config_path = root / "live.json"
+            input_path = root / "decision.json"
+            config_path.write_text(json.dumps(config))
+            input_path.write_text(json.dumps({
+                "snapshot": fixture["snapshot"],
+                "account_baseline": fixture["account_baseline"],
+                "decision": fixture["decision"],
+            }))
+            from ripple.mvp import publish_decision
+
+            with self.assertRaisesRegex(ValueError, "manual runs require execution.mode=dry_run"):
+                publish_decision(
+                    config_path, input_path, root / "account_A", manual=True,
+                )
+
     def test_new_york_trading_date_is_used_for_utc_documents(self):
         fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
         fixture["snapshot"]["as_of"] = "2026-08-25T00:55:00Z"

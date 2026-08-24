@@ -18,7 +18,7 @@ Each lane starts in `dry_run`. While its assigned configuration says `dry_run`, 
 Stop without a broker write when any of these is true:
 
 - mode is `disabled`, missing, malformed, or not the mode expected by the command;
-- local time is outside the intended 9:30–9:50 AM `America/New_York` window;
+- local time is outside the intended Monday–Friday 9:30–9:50 AM `America/New_York` window, unless Alicia explicitly initiated **Run now** for a manual dry run;
 - the repository is dirty, `git pull --ff-only` fails, or no unexecuted prior trading-day plan exists;
 - account, position, loss-sale, or quote data is missing, stale, malformed, or inconsistent;
 - the risk command aborts the whole plan; a specific rejected order does not authorize submitting it but does not suppress other script-allowed actions;
@@ -48,6 +48,8 @@ Never place a symbol, side, order type, or upward quantity that is absent from t
    ```
 
    For Account B, replace the config with `config/mvp-account-b.json`, the plan root with `state/accounts/account_B`, and the output with `state/accounts/account_B`.
+
+   For an explicit Alicia-initiated **Run now** outside the scheduled window, first confirm the assigned configuration says `dry_run`, then add `--manual-dry-run`. The execution context must be later than the selected plan's decision time. Never add the flag to a scheduled in-window run or a live lane; manual evidence does not count as scheduled acceptance.
 
 6. Inspect `<state-root>/executions/<date>/dry_run.json`. Its `broker_order` values are proposed arguments without the private `account_number`. Submit only actions with `allowed=true`, exactly as emitted; this includes a script-produced Risk Exit. If `abort_reason` is set, do not submit planned orders. Do not call a write tool in dry-run mode.
 7. Run the core tests. Review the new execution JSON, JSONL line, and report for credentials and account numbers. Commit only the new credential-free `state/` files with subject `Execution: dry-run YYYY-MM-DD plan`, then push normally. Never force-push.

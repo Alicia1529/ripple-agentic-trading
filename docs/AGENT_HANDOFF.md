@@ -18,3 +18,11 @@ Before handing off, append one entry with local timestamp, outcome, evidence, ne
 - Contract: every agent reads only the rules and latest three entries, then appends one entry before handoff.
 - Context bound: each entry is at most 100 words and five bullets; authoritative detail stays in code, decisions, and TODO.
 - Next: future agents append at the bottom using local time.
+
+## 2026-08-23 21:23 PDT — Sunday cadence and manual rehearsal
+
+- Outcome: changed Decision cadence to Sunday–Thursday so Sunday plans target Monday; Execution remains Monday–Friday.
+- Manual path: explicit `--manual-dry-run` permits immediate staged rehearsal only in `dry_run` and records `run_kind=manual`.
+- Automation: Account A Decision schedule and both Run now prompts were updated in Codex; live timing guards remain closed.
+- Evidence: core suite passes 38 tests; `compileall` and `git diff --check` pass.
+- Next: Alicia may Run now Decision then Execution, or wait for the next scheduled dry cycle.
