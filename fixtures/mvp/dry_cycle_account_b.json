@@ -50,7 +50,8 @@
         "price_tolerance_pct": "0.01",
         "reference_price_at_decision": "100.00",
         "market_hours": "regular_hours",
-        "time_in_force": "gfd"
+        "time_in_force": "gfd",
+        "buy_reason": "AAPL is the selected eligible strategy candidate."
       }
     ]
   },

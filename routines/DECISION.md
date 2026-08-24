@@ -28,7 +28,7 @@ Robinhood calls in this routine are limited to the minimum read-only account, po
 1. Read `AGENTS.md` and its required documents. Run `git pull --ff-only` and confirm the working tree is clean.
 2. Read only the assigned configuration. Use exactly its `account_id`, fixed universe, mode, and risk limits.
 3. For Account A, read `strategies/growth_momentum_v1.md` completely and follow it. Gather sanitized current cash and positions, then collect the required facts for every eligible symbol in the configured universe. Do not choose a small candidate subset before applying the strategy's screening rules.
-4. Use `fixtures/mvp/dry_cycle.json` only as the exact JSON shape. Write one credential-free temporary input containing exactly `snapshot`, `account_baseline`, and `decision` to `/tmp/ripple-decision-input.json`. The snapshot records the sourced facts used; the decision contains the resulting target portfolio and zero or more proposed orders. Missing required evidence produces a valid no-trade plan rather than a guess.
+4. Use `fixtures/mvp/dry_cycle.json` only as the exact JSON shape. Write one credential-free temporary input containing exactly `snapshot`, `account_baseline`, and `decision` to `/tmp/ripple-decision-input.json`. The snapshot records the sourced facts used; the decision contains the resulting target portfolio and zero or more proposed orders. Every BUY order includes a concise `buy_reason` copied from the decision-stage evidence; Execution must display it verbatim and never invent a new reason. Missing required evidence produces a valid no-trade plan rather than a guess.
 5. Publish it with the existing generic command:
 
    ```bash

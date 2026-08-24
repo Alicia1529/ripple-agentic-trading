@@ -50,7 +50,8 @@ without the other.
 Preserve held positions in `target_portfolio`, set a full sale to `"0"`, add a
 new buy at `"0.10"`, and put the remainder in `cash`; all weights must sum to
 exactly `"1"`. Orders are positive-share `LIMIT`, `regular_hours`, `gfd` orders.
-Use the completed close as `reference_price_at_decision`; a BUY limit may be at
+Every BUY order records a concise `buy_reason` grounded in the selected candidate's
+decision-stage evidence. Use the completed close as `reference_price_at_decision`; a BUY limit may be at
 most 1% above it and a SELL limit at most 1% below it.
 
 The LLM gathers the facts and applies this policy. Checked-in code validates the

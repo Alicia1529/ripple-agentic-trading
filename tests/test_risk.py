@@ -26,6 +26,7 @@ class RiskEvaluationTests(unittest.TestCase):
                 "reference_price_at_decision": "100.00",
                 "market_hours": "regular_hours",
                 "time_in_force": "gfd",
+                "buy_reason": "Strongest eligible momentum candidate.",
             }],
         }
 
@@ -72,7 +73,12 @@ class RiskEvaluationTests(unittest.TestCase):
         self.assertEqual(result["mode"], "dry_run")
         self.assertEqual(result["actions"], [{
             "order_id": "04bbf1c7-416b-4ca2-b5a6-0e27be980965",
+            "symbol": "AAPL",
+            "side": "BUY",
+            "desired_buy_price": "101.00",
+            "buy_reason": "Strongest eligible momentum candidate.",
             "allowed": True,
+            "abort_reason": None,
             "reason_code": "allowed",
             "original_sizing": {"field": "quantity", "value": "1.5"},
             "actual_sizing": {"field": "quantity", "value": "1.5"},
@@ -174,6 +180,16 @@ class RiskEvaluationTests(unittest.TestCase):
                 self.assertEqual(result["status"], status)
                 self.assertEqual(result["actions"][0]["allowed"], False)
                 self.assertEqual(result["actions"][0]["reason_code"], reason_code)
+                self.assertEqual(result["actions"][0]["symbol"], "AAPL")
+                self.assertEqual(result["actions"][0]["side"], "BUY")
+                self.assertEqual(result["actions"][0]["desired_buy_price"], "101.00")
+                self.assertEqual(
+                    result["actions"][0]["buy_reason"],
+                    "Strongest eligible momentum candidate.",
+                )
+                self.assertEqual(
+                    result["actions"][0]["abort_reason"]["code"], reason_code,
+                )
                 self.assertIsNone(result["actions"][0]["actual_sizing"])
                 self.assertIsNone(result["actions"][0]["broker_order"])
 
@@ -181,6 +197,7 @@ class RiskEvaluationTests(unittest.TestCase):
         plan = self.plan()
         plan["target_portfolio"] = {"AAPL": "0", "cash": "1"}
         plan["orders"][0]["side"] = "SELL"
+        plan["orders"][0].pop("buy_reason")
         plan["orders"][0]["quantity"] = "2"
         context = self.context()
         context["account"]["positions"] = {
@@ -216,6 +233,11 @@ class RiskEvaluationTests(unittest.TestCase):
         self.assertEqual(len(result["actions"]), 1)
         action = result["actions"][0]
         self.assertEqual(action["reason_code"], "stop_loss")
+        self.assertEqual(action["symbol"], "AAPL")
+        self.assertEqual(action["side"], "SELL")
+        self.assertIsNone(action["desired_buy_price"])
+        self.assertIsNone(action["buy_reason"])
+        self.assertIsNone(action["abort_reason"])
         self.assertEqual(action["broker_order"]["side"], "sell")
         self.assertEqual(action["broker_order"]["type"], "market")
         self.assertEqual(action["broker_order"]["quantity"], "1")

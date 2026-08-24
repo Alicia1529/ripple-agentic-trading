@@ -227,13 +227,27 @@ def _write_report(
     execution_context: Mapping[str, Any],
     result: Mapping[str, Any],
 ) -> None:
-    action_lines = [
-        f"- {action['broker_order']['side'].upper()} {action['broker_order']['symbol']} "
-        f"{action['actual_sizing']['value']} ({action['reason_code']})"
-        if action["allowed"] else
-        f"- REJECT {action['order_id']} ({action['reason_code']})"
-        for action in result["actions"]
-    ]
+    action_lines = []
+    for action in result["actions"]:
+        desired_price = action.get("desired_buy_price")
+        buy_reason = action.get("buy_reason")
+        if action["allowed"]:
+            line = (
+                f"- {action['side']} {action['symbol']} "
+                f"{action['actual_sizing']['value']} ({action['reason_code']})"
+            )
+        else:
+            abort = action.get("abort_reason") or {}
+            line = (
+                f"- REJECT {action['side']} {action['symbol']}: "
+                f"{abort.get('message', action['reason_code'])} "
+                f"(`{action['reason_code']}`)"
+            )
+        if desired_price is not None:
+            line += f"\n  - Desired buy price: `${desired_price}`"
+        if buy_reason is not None:
+            line += f"\n  - Buy reason: {buy_reason}"
+        action_lines.append(line)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("x") as report:
         report.write(

@@ -73,3 +73,11 @@ Before handing off, append one entry with local timestamp, outcome, evidence, ne
 - Boundary: the note explicitly distinguishes image text from repository and user instructions.
 - Evidence: source and repository PNG hashes match; Markdown image target exists; `git diff --check` passes.
 - Next: none.
+
+## 2026-08-24 11:21 PDT — Readable execution actions
+
+- Outcome: actions and dry-run reports now name the symbol, side, desired BUY price, decision-stage buy reason, and structured per-action abort reason.
+- Compatibility: existing published plans remain valid and explicitly report when a legacy BUY reason was not recorded.
+- Contract: new BUY plans carry `buy_reason`; Execution displays it verbatim and does not create investment reasoning.
+- Evidence: 39 core tests, `compileall`, fixture dry cycle, and `git diff --check` pass.
+- Boundary: live MCP execution remains unimplemented and `execution.mode` remains unchanged.

@@ -39,6 +39,7 @@ class OrderPlanTests(unittest.TestCase):
                     "reference_price_at_decision": "226.40",
                     "market_hours": "regular_hours",
                     "time_in_force": "gfd",
+                    "buy_reason": "Strongest eligible momentum candidate.",
                 }
             ],
         }
@@ -49,6 +50,10 @@ class OrderPlanTests(unittest.TestCase):
 
         self.assertEqual(plan.target_portfolio["AAPL"], "0.15")
         self.assertEqual(plan.orders[0]["quantity"], "12")
+        self.assertEqual(
+            plan.orders[0]["buy_reason"],
+            "Strongest eligible momentum candidate.",
+        )
         with self.assertRaises(TypeError):
             plan.orders[0]["state"] = "filled"
         self.assertEqual(plan.to_dict()["orders"][0]["quantity"], "12")

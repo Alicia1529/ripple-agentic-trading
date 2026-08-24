@@ -46,11 +46,48 @@ def _timestamp(value: str) -> datetime:
     return parsed
 
 
+_ABORT_MESSAGES = {
+    "execution_disabled": "Execution is disabled for this account.",
+    "missing_quote": "A required current quote is missing.",
+    "stale_quote": "A required current quote is stale.",
+    "account_state_mismatch": "Current cash or positions do not match the decision baseline.",
+    "price_outside_tolerance": "The current price moved beyond the plan's allowed tolerance.",
+    "daily_loss": "The daily loss circuit breaker blocks new purchases.",
+    "drawdown_restart_required": "New purchases require a human restart after tier-two drawdown.",
+    "drawdown_tier2": "Tier-two drawdown blocks new purchases.",
+    "drawdown_tier1": "Tier-one drawdown blocks new purchases.",
+    "max_new_positions": "The account reached its daily new-position limit.",
+    "wash_sale": "The wash-sale guard blocks this purchase.",
+    "max_position": "No quantity fits within the maximum position size.",
+    "available_cash": "No quantity fits within available cash.",
+    "insufficient_position": "The account does not hold enough shares to sell.",
+    "risk_exit_superseded_plan_order": "A deterministic risk exit supersedes this planned order.",
+}
+
+
+def _readable_fields(order: Mapping[str, Any]) -> dict[str, Any]:
+    is_buy = order["side"] == "BUY"
+    return {
+        "symbol": order["symbol"],
+        "side": order["side"],
+        "desired_buy_price": order.get("limit_price") if is_buy else None,
+        "buy_reason": (
+            order.get("buy_reason", "Not recorded in this legacy OrderPlan.")
+            if is_buy else None
+        ),
+    }
+
+
 def _rejected_action(order: Mapping[str, Any], reason_code: str) -> dict[str, Any]:
     sizing_field = "quantity" if "quantity" in order else "dollar_amount"
     return {
         "order_id": order["order_id"],
+        **_readable_fields(order),
         "allowed": False,
+        "abort_reason": {
+            "code": reason_code,
+            "message": _ABORT_MESSAGES.get(reason_code, "The risk engine rejected this order."),
+        },
         "reason_code": reason_code,
         "original_sizing": {"field": sizing_field, "value": order[sizing_field]},
         "actual_sizing": None,
@@ -70,7 +107,12 @@ def _risk_exit_action(
     ))
     return {
         "order_id": order_id,
+        "symbol": symbol,
+        "side": "SELL",
+        "desired_buy_price": None,
+        "buy_reason": None,
         "allowed": True,
+        "abort_reason": None,
         "reason_code": reason_code,
         "original_sizing": {"field": "quantity", "value": quantity},
         "actual_sizing": {"field": "quantity", "value": quantity},
@@ -393,7 +435,9 @@ def evaluate_plan(
         broker_order["ref_id"] = order["order_id"]
         actions.append({
             "order_id": order["order_id"],
+            **_readable_fields(order),
             "allowed": True,
+            "abort_reason": None,
             "reason_code": reason_code,
             "original_sizing": {"field": sizing_field, "value": sizing_value},
             "actual_sizing": {"field": sizing_field, "value": actual_value},

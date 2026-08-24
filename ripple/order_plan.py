@@ -40,7 +40,7 @@ _REQUIRED_ORDER_FIELDS = {
     "time_in_force",
 }
 
-_OPTIONAL_ORDER_FIELDS: set[str] = set()
+_OPTIONAL_ORDER_FIELDS = {"buy_reason"}
 
 _DECIMAL_ORDER_FIELDS = {
     "quantity",
@@ -64,6 +64,8 @@ def _validate_planned_order(order: Mapping[str, Any]) -> None:
         raise ValueError("symbol must be an uppercase equity symbol")
     if order["side"] not in {"BUY", "SELL"}:
         raise ValueError("side must be BUY or SELL")
+    if order["side"] == "SELL" and "buy_reason" in order:
+        raise ValueError("buy_reason is permitted only for BUY orders")
     if order["order_type"] != "LIMIT":
         raise ValueError("MVP OrderPlan orders must be LIMIT")
     if order["market_hours"] != "regular_hours":

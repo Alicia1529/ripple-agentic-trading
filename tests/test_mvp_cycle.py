@@ -103,6 +103,10 @@ class MvpDryCycleTests(unittest.TestCase):
             self.assertEqual(execution["mode"], "dry_run")
             self.assertEqual(execution["status"], "allowed")
             self.assertEqual(execution["actions"][0]["broker_order"]["symbol"], "AAPL")
+            self.assertEqual(execution["actions"][0]["symbol"], "AAPL")
+            self.assertEqual(execution["actions"][0]["side"], "BUY")
+            self.assertEqual(execution["actions"][0]["desired_buy_price"], "101.00")
+            self.assertIn("Buy reason:", report_path.read_text())
             self.assertEqual(len(decision_log.read_text().splitlines()), 1)
             self.assertEqual(len(execution_log.read_text().splitlines()), 1)
             self.assertEqual(
