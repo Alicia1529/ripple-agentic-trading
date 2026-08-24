@@ -50,3 +50,19 @@ Before handing off, append one entry with local timestamp, outcome, evidence, ne
 - Boundary: any existing position stops publication; HOLD/SELL/ROTATE and data-provider infrastructure remain deferred under D32.
 - Evidence: the existing Execution dry-run consumed the generated plan; all 44 core tests, `compileall`, and `git diff --check` pass.
 - Next: run the updated Account A Decision Automation, inspect its plan, then run Monday Execution dry-run.
+
+## 2026-08-24 — Bounded MVP execution policy
+
+- Outcome: added repository-level guardrails against over-execution to `AGENTS.md`.
+- Contract: design, explicit approval, and implementation are separate stages; implementation starts in a new thread and follows only the approved scope.
+- Scope guard: new subsystems or changes spanning more than four production files require approval and a smaller alternative.
+- Reasoning: Low for small scoped implementation; Medium or High for architecture and difficult debugging.
+- Evidence: documentation diff checked with `git diff --check`.
+
+## 2026-08-24 01:46 PDT — Prompt-defined recurring strategy
+
+- Outcome: removed the dedicated growth strategy engine, policy input fixture, and tests; Account A now uses one plain-language strategy with the existing generic Decision publisher.
+- Behavior: full-universe screening and current-position review may produce no trade, one 10% BUY, one full SELL, or both; D33 records the accepted prompt-mediated trade-off.
+- Automation: the active Account A Decision prompt now follows the strategy document and `publish-decision`; its schedule is unchanged.
+- Evidence: 39 core tests, `compileall`, and `git diff --check` pass.
+- Next: observe the next Decision and dry Execution; add strategy code only if live evidence shows the prompt path is insufficient.

@@ -50,24 +50,24 @@ Review both account directories for the frozen snapshot, published plan, executi
 
 The two hosted stages use the same implementation through `publish-decision` and `execute-dry-run`. Their exact contracts and schedule are in [`routines/`](routines/).
 
-For the first real Account A Decision, copy and fill the sourced fact shape in `fixtures/mvp/growth_momentum_input.json`, keep the current copy outside the repository, and run:
+Account A's hosted Decision Routine reads [`strategies/growth_momentum_v1.md`](strategies/growth_momentum_v1.md), gathers the facts, writes a temporary input shaped like `fixtures/mvp/dry_cycle.json`, and publishes it through the existing generic command:
 
 ```bash
-uv run --no-cache python -m ripple.mvp publish-growth-decision \
+uv run --no-cache python -m ripple.mvp publish-decision \
   --config config/mvp.json \
-  --input /tmp/ripple-growth-input.json \
+  --input /tmp/ripple-decision-input.json \
   --output state/accounts/account_A \
   --manual-run
 ```
 
-The command publishes either one fixed 10% BUY or a valid `NO_TRADE` plan. This first strategy slice requires Account A to be empty and never calls a broker.
+The strategy may publish no trade, one fixed 10% BUY, one full SELL, or both. The Decision Routine never calls a broker write tool.
 
 Run the core suite with:
 
 ```bash
 uv run --no-cache python -m unittest \
   tests.test_decision_snapshot tests.test_order_plan tests.test_execution_event \
-  tests.test_risk tests.test_mvp_cycle tests.test_growth_momentum
+  tests.test_risk tests.test_mvp_cycle
 ```
 
 ## License

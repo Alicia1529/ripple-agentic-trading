@@ -11,7 +11,6 @@ from uuid import NAMESPACE_URL, uuid5
 from zoneinfo import ZoneInfo
 
 from .decision_snapshot import DecisionSnapshot
-from .growth_momentum import build_decision_input
 from .order_plan import OrderPlan
 from .risk import evaluate_plan
 
@@ -324,28 +323,6 @@ def publish_decision(
     )
 
 
-def publish_growth_decision(
-    config_path: Path,
-    input_path: Path,
-    output: Path,
-    *,
-    now: datetime | None = None,
-    manual: bool = False,
-) -> OrderPlan:
-    config = _read_json(config_path)
-    facts = _read_json(input_path)
-    decision_input = build_decision_input(facts, config)
-    decision_time = decision_input["decision"]["decision_time"]
-    if not manual:
-        _validate_runtime_clock(
-            now or datetime.now(timezone.utc), decision_time, "decision",
-        )
-    return _publish_decision(
-        config, decision_input, output,
-        run_kind="manual" if manual else "scheduled",
-    )
-
-
 def execute_dry_run(
     config_path: Path,
     plan_path: Path,
@@ -395,12 +372,6 @@ def _parser() -> argparse.ArgumentParser:
     publish.add_argument("--output", type=Path, required=True)
     publish.add_argument("--manual-run", action="store_true")
 
-    growth = subparsers.add_parser("publish-growth-decision")
-    growth.add_argument("--config", type=Path, required=True)
-    growth.add_argument("--input", type=Path, required=True)
-    growth.add_argument("--output", type=Path, required=True)
-    growth.add_argument("--manual-run", action="store_true")
-
     execute = subparsers.add_parser("execute-dry-run")
     execute.add_argument("--config", type=Path, required=True)
     execute.add_argument("--plan", type=Path, required=True)
@@ -424,13 +395,6 @@ def main(argv: list[str] | None = None) -> int:
                 manual=args.manual_run,
             )
             print(f"decision published: {plan.order_plan_id}")
-            return 0
-        if args.command == "publish-growth-decision":
-            plan = publish_growth_decision(
-                args.config, args.input, args.output,
-                manual=args.manual_run,
-            )
-            print(f"growth decision published: {plan.order_plan_id}")
             return 0
         if args.command == "execute-dry-run":
             result = execute_dry_run(

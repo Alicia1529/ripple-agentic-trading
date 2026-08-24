@@ -278,6 +278,14 @@ Any Decision-stage write call is an operational incident: stop the cycle, disabl
 
 **Why:** The fuller policy proposal bundled data-provider work, numeric fundamentals, a thesis ledger, portfolio target semantics, four action modes, a policy framework, and broad publication verification before one real dry cycle had run. The reduced slice preserves its useful strategy shape while fitting the current evidence: public sourced indicators plus a narrow qualitative review can produce one inspectable plan immediately, and the existing Execution dry-run consumes that plan unchanged. Refusing non-empty portfolios avoids inventing target weights or exit reasoning before those semantics are designed from an observed holding.
 
+## D33 — Account A strategy stays prompt-defined for the MVP
+
+**Decision:** Replace D32's strategy-specific Python generator and empty-account stop with one plain-language `growth_momentum_v1` strategy document. The Decision LLM screens the full configured universe, reviews existing positions, and may publish `NO_TRADE`, one new 10% BUY, one full discretionary SELL, or both through the existing generic `publish-decision` command. Existing OrderPlan validation and deterministic execution risk checks remain unchanged. No policy JSON, strategy loader, data-provider subsystem, or plugin framework is added.
+
+For the initial small Account A allocation, Ripple accepts that code does not independently prove exhaustive screening or the economic correctness of the LLM's qualitative HOLD/SELL judgment. Missing required facts still fails closed, and all published plans remain schema-, universe-, position-cap-, and execution-risk validated. This supersedes D32's empty-account runtime boundary while retaining its fixed-universe, long-only, small-position intent.
+
+**Why:** The dedicated generator duplicated the generic publication path and blocked the next cycle as soon as the first BUY existed. A short strategy document produces the needed recurring MVP behavior with less code and fewer moving parts. Observed live operation, not speculative extensibility, will determine whether a deterministic strategy engine is later justified.
+
 ## Open-source references consulted
 
 - [TauricResearch/TradingAgents](https://github.com/TauricResearch/TradingAgents) — started as an architecture reference, later added as an actual shadow-pool candidate (see D5b).
