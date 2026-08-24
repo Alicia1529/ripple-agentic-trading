@@ -272,6 +272,12 @@ Any Decision-stage write call is an operational incident: stop the cycle, disabl
 
 **Why:** The first real Account A Automation run proved that the hosted session inherits broker write tools and stopped before pull, state generation, commit, push, or broker activity. The platform configuration available to this project does not provide the required per-task tool filtering. Alicia explicitly chose the smaller prompt-only contract to keep the MVP moving at limited exposure rather than introduce another credential/runtime path.
 
+## D32 — First Account A strategy is an empty-account growth/momentum vertical slice
+
+**Decision:** Account A begins with one fixed `growth_momentum_v1` policy that publishes either one new 10% position or `NO_TRADE`. Code enforces the SPY-above-SMA50 gate, positive 60-session momentum stronger than QQQ, a two-weekday earnings buffer, at most three sourced candidates, stable relative-strength ranking, and fixed sizing. The LLM contributes one sourced business-quality pass/fail judgment per candidate. The slice requires an empty portfolio and fails closed once a position exists; HOLD, discretionary SELL, ROTATE, raw-bar ingestion, numeric fundamental gates, and configurable strategy infrastructure are deferred.
+
+**Why:** The fuller policy proposal bundled data-provider work, numeric fundamentals, a thesis ledger, portfolio target semantics, four action modes, a policy framework, and broad publication verification before one real dry cycle had run. The reduced slice preserves its useful strategy shape while fitting the current evidence: public sourced indicators plus a narrow qualitative review can produce one inspectable plan immediately, and the existing Execution dry-run consumes that plan unchanged. Refusing non-empty portfolios avoids inventing target weights or exit reasoning before those semantics are designed from an observed holding.
+
 ## Open-source references consulted
 
 - [TauricResearch/TradingAgents](https://github.com/TauricResearch/TradingAgents) — started as an architecture reference, later added as an actual shadow-pool candidate (see D5b).

@@ -42,3 +42,11 @@ Before handing off, append one entry with local timestamp, outcome, evidence, ne
 - Contract: Decision may call only required reads; any review/place/cancel call is an incident requiring lane disable and Robinhood inspection.
 - Automation: current prompt explicitly supersedes the old failure conclusion retained in automation memory.
 - Verification: core suite passes 39 tests; `compileall` and `git diff --check` pass.
+
+## 2026-08-24 00:12 PDT — Minimal Account A growth/momentum Decision
+
+- Outcome: added fixed `growth_momentum_v1` input → Decision publication for empty Account A: one 10% BUY or `NO_TRADE`.
+- Strategy: code enforces SPY/QQQ, momentum, earnings-distance, ranking, and sizing; the LLM provides sourced business-quality pass/fail evidence.
+- Boundary: any existing position stops publication; HOLD/SELL/ROTATE and data-provider infrastructure remain deferred under D32.
+- Evidence: the existing Execution dry-run consumed the generated plan; all 44 core tests, `compileall`, and `git diff --check` pass.
+- Next: run the updated Account A Decision Automation, inspect its plan, then run Monday Execution dry-run.

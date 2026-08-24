@@ -28,10 +28,13 @@ Status: **TWO-ACCOUNT LOCAL DRY-RUN MVP IMPLEMENTED; HOSTED SCHEDULED CYCLES PEN
 - [x] Configure Account A's one hosted Decision schedule and one hosted Execution schedule with an `America/New_York` time/date self-check
 - [x] Add Account B's concrete config, fixture, account-scoped state contract, and cross-account rejection test without adding a coordinator
 - [x] Observe Account A's hosted Decision capability: its session exposes broker writes; D31 accepts prompt-only non-use for the initial allocation
+- [x] Add the minimal empty-account `growth_momentum_v1` generator: SPY/QQQ gates, at most three sourced candidates, one fixed 10% BUY or NO_TRADE
 - [ ] Observe Account A's complete scheduled Day T decision → Day T+1 dry execution
 - [ ] Bind Account B's hosted MCP connection to the intended broker account, configure its two schedules, and observe its complete scheduled dry cycle
 
 Account A's Sunday–Thursday Decision and Monday–Friday Execution dry-run Codex schedules are active and the completed temporary scheduler probe is paused. The first manual Decision attempt proved that the hosted session exposes Robinhood write tools and stopped without repository or broker changes. D31 now accepts prompt-only non-use for the initial Account A allocation, so the next manual or scheduled Decision may continue while calling only required read operations. An explicit manual run can publish a Decision in either configured mode; the current execution command remains dry-run only. Manual live Execution is an approved trigger for the still-unimplemented reviewed MCP call loop, not evidence that the call loop exists. Account B schedule work remains separate.
+
+After Account A acquires its first position, extend the fixed policy with the smallest honest HOLD/SELL target-portfolio behavior before publishing another strategy Decision. The current empty-account policy stops rather than pretending a cash-only target preserves an owned position.
 
 Repository MVP acceptance is complete. Hosted acceptance is complete per lane when its scheduled dry cycle is understandable from the account-scoped OrderPlan, script outputs, JSONL records, and report without using broker write tools.
 
