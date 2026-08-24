@@ -66,3 +66,10 @@ Before handing off, append one entry with local timestamp, outcome, evidence, ne
 - Automation: the active Account A Decision prompt now follows the strategy document and `publish-decision`; its schedule is unchanged.
 - Evidence: 39 core tests, `compileall`, and `git diff --check` pass.
 - Next: observe the next Decision and dry Execution; add strategy code only if live evidence shows the prompt path is insufficient.
+
+## 2026-08-24 02:07 PDT — Learning reference added
+
+- Outcome: added `learning/compile-scope-before-codex-execution.md` and its source PNG as a learning reference.
+- Boundary: the note explicitly distinguishes image text from repository and user instructions.
+- Evidence: source and repository PNG hashes match; Markdown image target exists; `git diff --check` passes.
+- Next: none.
