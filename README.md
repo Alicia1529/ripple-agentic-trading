@@ -1,10 +1,57 @@
 # Ripple Trading
 
-Ripple is a two-account, fixture-backed dry-run trading MVP. Each isolated lane separates an LLM Decision Routine from a narrow next-morning Execution Routine and applies deterministic risk calculations. Hosted acceptance and the live MCP call loop remain unfinished.
+Ripple is a small, inspectable experiment in **AI-native development** and **agentic trading**. It explores how an LLM can make bounded portfolio decisions while ordinary Python code remains responsible for deterministic validation, position sizing, and risk controls.
 
-Start with [`PROPOSAL.md`](PROPOSAL.md). The current technical contract is in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), safety rules in [`docs/INVARIANTS.md`](docs/INVARIANTS.md), unfinished work in [`docs/TODO.md`](docs/TODO.md), and operations in [`docs/RUNBOOK.md`](docs/RUNBOOK.md).
+The repository currently contains a fixture-backed **dry-run MVP for exactly two isolated Robinhood account lanes**. It can produce plans and simulated execution records, but the live broker call loop and hosted acceptance gates are not complete. It is a learning project—not a production trading bot or a promise of returns.
 
-## Fixture dry cycles
+## What this project explores
+
+Ripple has two connected learning goals:
+
+- **AI-native development:** use agents to explore a problem, compile it into a small approved scope, implement one testable slice, and preserve the reasoning and operating boundaries in the repository.
+- **Agentic trading:** give an LLM a narrow Decision role, then pass its immutable plan to a separate Execution role constrained by deterministic code and explicit human-owned live gates.
+
+The central question is not “can an AI pick stocks?” It is: **what boundaries, artifacts, checks, and operating practices make an agent-driven trading loop understandable and reviewable?**
+
+## How the loop works
+
+```text
+Latest completed market session
+              │
+              ▼
+     Decision Routine (LLM)
+     facts → thesis → OrderPlan
+              │
+              │ immutable, credential-free plan
+              ▼
+   Next-morning Execution Routine
+   current facts → deterministic checks
+              │
+       ┌──────┼────────┐
+       ▼      ▼        ▼
+    execute  scale    abort
+    dry run   down    safely
+```
+
+Each account lane has its own configuration, state directory, schedules, broker connection, risk state, and human-controlled live switch. The lanes share schemas and risk code, but one account can never authorize work in the other.
+
+The current MVP enforces rules such as:
+
+- long equities only—no shorts, leverage, or options;
+- a 20% maximum position size;
+- daily-loss and drawdown gates;
+- stale or missing data fails closed;
+- taxpayer-wide wash-sale checks;
+- deterministic stop-loss and take-profit exits;
+- no credentials or account numbers in repository artifacts.
+
+See [`docs/INVARIANTS.md`](docs/INVARIANTS.md) for the complete non-negotiable safety checklist.
+
+## Try the dry-run MVP
+
+Requirements: Python 3.12 and [`uv`](https://docs.astral.sh/uv/). The MVP uses checked-in fixtures and does not require broker credentials.
+
+Run both isolated account lanes:
 
 ```bash
 uv run --no-cache python -m ripple.mvp run-dry-cycle \
@@ -18,13 +65,54 @@ uv run --no-cache python -m ripple.mvp run-dry-cycle \
   --output /tmp/ripple-mvp/account_B
 ```
 
-Each command writes a frozen snapshot, immutable plan, execution result, JSONL records, and report below its account-specific output. It refuses to overwrite an existing cycle and never calls a broker tool. Hosted stages use the same implementation through `publish-decision` and `execute-dry-run`; see [`routines/`](routines/) for their exact prompts and schedule.
+Each command creates an account-scoped snapshot, immutable order plan, execution result, JSONL records, and readable report. Re-running the same cycle against the same output fails instead of overwriting prior evidence. No broker tool is called.
 
-Run the core suite:
+Run the core test suite:
 
 ```bash
 env PYTHONDONTWRITEBYTECODE=1 uv run --no-cache python -m unittest \
-  tests.test_decision_snapshot tests.test_order_plan tests.test_risk tests.test_mvp_cycle
+  tests.test_decision_snapshot \
+  tests.test_order_plan \
+  tests.test_risk \
+  tests.test_mvp_cycle
 ```
 
-Not financial advice. [MIT](LICENSE).
+## Repository map
+
+| Path | Purpose |
+|---|---|
+| [`ripple/`](ripple/) | CLI, schemas, validation, and deterministic risk code |
+| [`routines/`](routines/) | Hosted Decision and Execution prompts plus schedule |
+| [`strategies/`](strategies/) | Account A's current strategy specification |
+| [`config/`](config/) | Separate configuration for the two account lanes |
+| [`fixtures/`](fixtures/) | Credential-free inputs for reproducible dry cycles |
+| [`tests/`](tests/) | Core behavior and invariant coverage |
+| [`learning/`](learning/) | Notes and visual references from the AI-native development process |
+| [`docs/`](docs/) | Architecture, safety rules, operations, decisions, and current work |
+
+The first learning note, [`Compile Scope Before Codex Execution`](learning/compile-scope-before-codex-execution.md), captures a practice used in this repository: explore broadly, choose the smallest runnable milestone, define its autonomy boundary, verify it, and stop.
+
+## Current status
+
+The two-account fixture-backed dry-run path is implemented and covered by tests. Work still required before either lane can trade live includes:
+
+1. observing complete hosted scheduled dry cycles for both accounts;
+2. implementing and reviewing the narrow live MCP read/review/place/cancel loop;
+3. proving each broker connection selects the intended account;
+4. receiving explicit human approval to change each lane from `dry_run` to `live`.
+
+The initial live allocation, if those gates are completed, is intentionally limited to $500–1000 per account. Funding, activation, capital increases, and additional accounts always remain human decisions. Follow progress in [`docs/TODO.md`](docs/TODO.md).
+
+## Read next
+
+- [`PROPOSAL.md`](PROPOSAL.md) — intended outcome and scope
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — current system boundaries and data flow
+- [`docs/INVARIANTS.md`](docs/INVARIANTS.md) — non-negotiable safety rules
+- [`docs/RUNBOOK.md`](docs/RUNBOOK.md) — operation, recovery, and kill-switch procedures
+- [`docs/DECISIONS.md`](docs/DECISIONS.md) — durable architecture decisions
+
+## Disclaimer
+
+Ripple is an educational software project. It is not financial advice, and its dry-run results do not represent real fills or future performance. Live trading and its consequences remain the account owner's responsibility.
+
+Licensed under the [MIT License](LICENSE).
