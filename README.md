@@ -101,6 +101,36 @@ env PYTHONDONTWRITEBYTECODE=1 uv run --no-cache python -m unittest \
   tests.test_mvp_cycle
 ```
 
+## Create the scheduled Codex workflows
+
+OpenAI currently exposes Codex automations as **Scheduled tasks** in the ChatGPT desktop app. A scheduled task created from Codex can work in a local Git project, while a web-only task cannot directly access a folder on this computer. See the official [Scheduled tasks documentation](https://developers.openai.com/codex/app/automations).
+
+The files in [`routines/`](routines/) are the durable prompts that a scheduled task reads; they are not executable schedules and are not registered automatically. [`routines/SCHEDULE.md`](routines/SCHEDULE.md) is the operator-owned target schedule manifest. It documents the eventual four-task live/shadow topology, but the current rollout should activate only the two shadow tasks below because there is no live account or approved broker-write loop.
+
+Before creating the tasks:
+
+- open this repository as a local project in the ChatGPT desktop app and select Codex;
+- use the intended private state branch, confirm the worktree is clean, and confirm unattended `git pull`/`git push` can use the repository remote;
+- keep the computer on, the desktop app running, and the repository available at each trigger time; and
+- grant only repository write and network access needed for Git and market facts. Shadow tasks need no Robinhood connection or broker-write permission.
+
+Create two **standalone** scheduled tasks. Choose this local project, not an isolated worktree, so Decision and Execution use the same checked-out branch and credential-free state history. Leave model and reasoning settings at their defaults unless an observed run requires a reviewed change.
+
+| Task name | Time zone and recurrence | Saved prompt |
+|---|---|---|
+| `Ripple Shadow Decision` | `America/New_York`; Sun–Thu at 9:00 PM. Advanced rule: `RRULE:FREQ=WEEKLY;BYDAY=SU,MO,TU,WE,TH;BYHOUR=21;BYMINUTE=0` | `Work in the selected Ripple repository. Read routines/DECISION_SHADOW.md completely and follow it exactly. This task owns only the Shadow Decision cohort. Do not perform Execution or live work. If a precondition fails, stop and report it without broadening authority.` |
+| `Ripple Shadow Execution` | `America/New_York`; Mon–Fri at 9:35 AM. Advanced rule: `RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=35` | `Work in the selected Ripple repository. Read routines/EXECUTION_SHADOW.md completely and follow it exactly. This task owns only the Shadow Execution cohort. Do not perform Decision or live work. If a precondition fails, stop and report it without broadening authority.` |
+
+The desktop workflow is:
+
+1. Open a Codex chat for this local repository and ask it to create the standalone scheduled task with the name, saved prompt, recurrence, and time zone above. You can also create and later manage it from **Scheduled** in the desktop sidebar.
+2. Before enabling recurrence, run each saved prompt once in a normal Codex chat. Confirm catalog validation selects only `account_b` for shadow and no account for live.
+3. Enable Shadow Decision first. After its first successful scheduled run, inspect `state/accounts/account_b/plans/<decision-date>/order_plan.json` and its `Decision: shadow <date>` commit.
+4. Enable Shadow Execution. After the next-weekday run, inspect `state/accounts/account_b/executions/<execution-date>/shadow.json`, its report/log, ending virtual account, and `Execution: shadow <date>` commit. Confirm no broker call occurred.
+5. Review the first few runs in **Scheduled**. Pause a task after a failed precondition, Git conflict, unexpected artifact, credential finding, or timing error; do not backfill a missed cycle.
+
+Do not create or enable the two live tasks yet. They become eligible only after the live tasks in [`docs/TODO.md`](docs/TODO.md) are complete and Alicia explicitly approves the mode change and allocation. Editing a routine changes what the next scheduled run reads; changing a trigger or enabling live remains an operator action in the Scheduled interface and must stay aligned with [`routines/SCHEDULE.md`](routines/SCHEDULE.md).
+
 ## Repository map
 
 | Path | Purpose |

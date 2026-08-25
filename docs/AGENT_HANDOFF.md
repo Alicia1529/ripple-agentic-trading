@@ -2,14 +2,6 @@
 
 Read these rules and the three entries in this file before work. Before handing off, append one chronological entry with local timestamp, outcome, evidence, next action, and only material risk. Keep each entry within 100 words and five bullets, link to authoritative files instead of duplicating them, and retain exactly the latest three entries total.
 
-## 2026-08-24 22:12 PDT — README safety layers
-
-- Outcome: documented supported deterministic checks and separated code, LLM/workflow, and human safety responsibilities in `README.md`.
-- Clarity: stated the prompt-enforced execution gap and promoted the existing scope-compilation note into a dedicated Learning section.
-- Behavior: documentation only; risk code, prompts, values, schemas, execution, state, and all invariants are unchanged.
-- Evidence: core tests, both fixture dry cycles, internal link checks, and `git diff --check` pass.
-- Next/risk: keep this summary aligned with the authoritative architecture and invariants as the live loop changes.
-
 ## 2026-08-24 22:28 PDT — Clear current documentation model
 
 - Outcome: restored clear purpose, glossary, agent routing, system walkthrough, responsibility, artifact, timing, and safety structures without reviving retired architecture.
@@ -25,3 +17,11 @@ Read these rules and the three entries in this file before work. Before handing 
 - Structure: split four routine contracts and aligned Proposal, Architecture, Decisions, Invariants, Runbook, TODO, README, and glossary.
 - Evidence: 36 core tests, catalog/cohort commands, both fixture cycles, artifact inspection, internal links, credential scan, and `git diff --check` pass.
 - Next/risk: configure shadow schedules; live loop remains gated, and both lanes still select the same strategy.
+
+## 2026-08-24 23:26 PDT — Scheduled Codex workflow setup
+
+- Outcome: documented how `routines/` prompts and `routines/SCHEDULE.md` map to desktop Scheduled tasks.
+- Activation: specified two standalone local-project shadow tasks, exact prompts, ET recurrences, permissions, and first-run review steps.
+- Safety: live tasks remain disabled; shadow tasks receive no Robinhood connection or broker-write authority.
+- Evidence: README links, Markdown diff, core tests, and `git diff --check` pass.
+- Next/risk: create and observe the two tasks; local-project scheduling requires a clean checkout, running desktop app, and working Git access.
