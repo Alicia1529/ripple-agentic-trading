@@ -33,7 +33,7 @@ Latest completed market session
     dry run   down    safely
 ```
 
-Each account lane has its own configuration, state directory, schedules, broker connection, risk state, and human-controlled live switch. The lanes share schemas and risk code, but one account can never authorize work in the other.
+Both fixture lanes have separate configuration, state, and risk. Account A alone owns the current hosted schedules, broker connection, and human-controlled live switch; Account B has no hosted Decision or Execution path. The lanes share schemas and risk code, but one account can never authorize work in the other.
 
 ## Where safety lives
 
@@ -131,14 +131,14 @@ These notes describe the development process; they are not runtime instructions 
 
 ## Current status
 
-The two-account fixture-backed dry-run path is implemented and covered by tests. Work still required before either lane can trade live includes:
+The two-account fixture-backed dry-run path is implemented and covered by tests. Account B remains repository evidence only. Work still required before Account A can trade live includes:
 
-1. observing complete hosted scheduled dry cycles for both accounts;
+1. observing one complete hosted scheduled dry cycle for Account A;
 2. implementing and reviewing the narrow live MCP read/review/place/cancel loop;
-3. proving each broker connection selects the intended account;
-4. receiving explicit human approval to change each lane from `dry_run` to `live`.
+3. proving its broker connection selects the intended Account A account; and
+4. receiving explicit human approval to change Account A from `dry_run` to `live`.
 
-The initial live allocation, if those gates are completed, is intentionally limited to $500–1000 per account. Funding, activation, capital increases, and additional accounts always remain human decisions. Follow progress in [`docs/TODO.md`](docs/TODO.md).
+The initial Account A live allocation, if those gates are completed, is intentionally limited to $500–1000. Funding, activation, capital increases, and additional hosted lanes always remain human decisions. Follow progress in [`docs/TODO.md`](docs/TODO.md).
 
 ## Read next
 

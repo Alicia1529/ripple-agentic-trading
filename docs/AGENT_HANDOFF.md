@@ -2,14 +2,6 @@
 
 Read these rules and the three entries in this file before work. Before handing off, append one chronological entry with local timestamp, outcome, evidence, next action, and only material risk. Keep each entry within 100 words and five bullets, link to authoritative files instead of duplicating them, and retain exactly the latest three entries total.
 
-## 2026-08-24 18:47 PDT — MVP cleanup
-
-- Outcome: removed retired research/prototypes and the unused execution-future seam; compressed current documentation into single sources of truth.
-- Behavior: the two-account trading loop, schedules, risk values, schemas, account isolation, strategy, and state semantics are unchanged.
-- Evidence: core suite passes 30 tests; both fixture dry cycles preserve statuses, actions, and artifacts; reference and whitespace checks pass.
-- Commits: artifact removal `e52546f`; documentation commit is the commit containing this entry.
-- Next/risk: complete the hosted and live gates in `docs/TODO.md`; prompt, duplicate, ambiguous-outcome, and pre-log risks remain accepted only at the initial allocation.
-
 ## 2026-08-24 22:05 PDT — GitHub README refresh
 
 - Outcome: rewrote `README.md` as an accessible project overview centered on AI-native development and agentic trading.
@@ -25,3 +17,11 @@ Read these rules and the three entries in this file before work. Before handing 
 - Behavior: documentation only; risk code, prompts, values, schemas, execution, state, and all invariants are unchanged.
 - Evidence: core tests, both fixture dry cycles, internal link checks, and `git diff --check` pass.
 - Next/risk: keep this summary aligned with the authoritative architecture and invariants as the live loop changes.
+
+## 2026-08-24 22:28 PDT — Clear current documentation model
+
+- Outcome: restored clear purpose, glossary, agent routing, system walkthrough, responsibility, artifact, timing, and safety structures without reviving retired architecture.
+- Scope: Account A alone owns the hosted path; Account B remains a tested fixture lane with no hosted Decision, Execution, schedule, or MCP binding.
+- Sources: aligned Proposal, Architecture, Decisions, Invariants, TODO, Runbook, README, and routine contracts; code and risk behavior are unchanged.
+- Evidence: 30 core tests, both fixture dry cycles, internal links, and `git diff --check` pass.
+- Next/risk: complete Account A hosted acceptance and the reviewed live loop in `docs/TODO.md`.

@@ -4,10 +4,10 @@ Git history retains superseded reasoning. This file summarizes only decisions th
 
 ## Product and release
 
-- Ripple exists to learn from a small, inspectable real-money agent loop. Exactly two independent Robinhood Agentic lanes are in scope.
-- Initial exposure is $500–1000 per lane. Alicia alone enables live mode, funds accounts, restarts a tier-two-locked lane, or approves more capital.
-- One complete scheduled dry cycle and verified account binding gate each lane's live activation. Eight continuous live weeks permit a capital review, not automatic scaling.
-- A third account or increased capital triggers architecture review of execution isolation, durability, idempotency, reconciliation, and operational ownership.
+- Ripple exists to learn from a small, inspectable real-money agent loop. The repository keeps two independent fixture lanes; Account A alone owns the current hosted path.
+- Initial exposure is $500–1000 for Account A. Alicia alone enables live mode, funds the account, restarts a tier-two lock, or approves more capital.
+- One complete Account A scheduled dry cycle and verified account binding gate its live activation. Eight continuous live weeks permit a capital review, not automatic scaling.
+- An Account B hosted path, a third account, or increased capital triggers architecture review of execution isolation, durability, idempotency, reconciliation, and operational ownership.
 
 ## Decision and execution
 
@@ -18,7 +18,7 @@ Git history retains superseded reasoning. This file summarizes only decisions th
 
 ## State and isolation
 
-- Account A and B use concrete separate configurations, state roots, risk state, schedules, and hosted MCP connections over the same CLI and risk code. There is no coordinator, shared ledger, or `accounts[]` framework.
+- Account A and B use concrete separate configurations, state roots, and risk state over the same CLI and risk code. Account A alone has hosted schedules and an MCP connection; Account B remains fixture-backed. There is no coordinator, shared ledger, or `accounts[]` framework.
 - `DecisionSnapshot` and `OrderPlan` remain strict immutable value objects. Persisted financial values are base-10 decimal strings. OrderPlans accept positive share-quantity `LIMIT`, `regular_hours`, `gfd` orders and carry a credential-free account baseline.
 - Private Git stores code, configuration, per-cycle plans, compact JSONL records, and sanitized reports between fresh hosted sessions. Hosted MCP stores OAuth state. Tokens, cookies, account numbers, and raw authenticated responses never enter Git artifacts.
 - Git is not a transactional submission journal or cross-runner lease. The small-account MVP explicitly accepts crash-before-log, duplicate-call, ambiguous-timeout, prompt/tool-use, configuration, and model-drift risks.

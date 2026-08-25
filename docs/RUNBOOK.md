@@ -1,6 +1,6 @@
 # Runbook
 
-Operational procedures for the two-lane hosted MVP. Operate each account independently; never combine both accounts in one routine session.
+Operational procedures for the hosted Account A MVP plus the two fixture-backed repository lanes. Account B has no hosted schedules or bound MCP path.
 
 ## Dry-run verification
 
@@ -18,7 +18,7 @@ uv run --no-cache python -m ripple.mvp run-dry-cycle \
   --output /tmp/ripple-mvp/account_B
 ```
 
-The two hosted stages use `publish-decision` and `execute-dry-run` exactly as documented in `routines/DECISION.md` and `routines/EXECUTION.md`. Their credential-free continuity output belongs under `state/`. A second command for the same cycle fails instead of overwriting it.
+Account A's two hosted stages use `publish-decision` and `execute-dry-run` exactly as documented in `routines/DECISION.md` and `routines/EXECUTION.md`. Their credential-free continuity output belongs under `state/`. A second command for the same cycle fails instead of overwriting it.
 
 To rehearse the two hosted stages immediately, Alicia may explicitly start each routine with **Run now** while Account A remains `dry_run`. Outside the normal window, the routine adds `--manual-run` to the documented command. Run Decision first and Execution second with an execution-context `as_of` later than the plan's `decision_time`. Confirm both JSONL records say `run_kind=manual`. This path never authorizes broker writes and does not replace the required observed scheduled cycle.
 
@@ -28,8 +28,8 @@ After the reviewed live MCP call loop exists and Alicia enables Account A, **Run
 
 There is no instantaneous broker-side "flatten everything" switch.
 
-1. Alicia changes the affected lane's human-owned `execution.mode` to `disabled` in the private repository and pushes it. No routine may edit this setting. Disable both configs when the affected account is uncertain.
-2. Disable that lane's two hosted schedules; disable all four schedules if immediate system-wide certainty is needed.
+1. Alicia changes Account A's human-owned `execution.mode` to `disabled` in the private repository and pushes it. No routine may edit this setting.
+2. Disable Account A's two hosted schedules.
 3. The next Decision Routine produces no new OrderPlan.
 4. The next Execution Routine submits no new orders and may cancel visible pending orders.
 5. Existing positions are not automatically liquidated. Use ordinary manual broker orders if an immediate exit is required.
@@ -39,12 +39,12 @@ Because v1 execution is LLM-mediated, disabling the hosted schedules is the stro
 ## Before first live run
 
 - Keep the repository private and confirm plans, JSONL records, reports, prompts, and test fixtures contain no credentials, cookies, account numbers, or raw authenticated responses.
-- Bind one hosted Robinhood MCP connection to each account lane. Prove that each connection selects the intended account; do not export account numbers or tokens into repository secrets or local files.
+- Bind Account A's hosted Robinhood MCP connection and prove that it selects the intended account; do not export account numbers or tokens into repository secrets or local files.
 - In the Account A Decision prompt, allow only the minimum Robinhood reads needed for account state and quotes. The hosted session exposes write tools, but the routine must never call review/place/cancel or any other modifying operation. If a Decision run does call one, disable the lane and inspect Robinhood before continuing.
 - Give only the isolated Execution Routine the narrow Robinhood read/review/place/cancel tools it needs. Do not provide news browsing or investment-reasoning inputs to that routine.
-- Enable exactly one Decision schedule and one Execution schedule per account following `routines/SCHEDULE.md`. Confirm their assigned config, state root, broker connection, repository, branch, timezone, and `America/New_York` self-check.
-- Keep each lane's `execution.mode=dry_run` through its complete scheduled Day T decision → Day T+1 execution cycle. Review its plan, script output, exact proposed calls, JSONL records, and report.
-- Alicia alone changes each lane's `execution.mode` to `live`; the lanes may be activated on different days.
+- Enable exactly one Account A Decision schedule and one Account A Execution schedule following `routines/SCHEDULE.md`. Confirm their config, state root, broker connection, repository, branch, timezone, and `America/New_York` self-check.
+- Keep Account A's `execution.mode=dry_run` through its complete scheduled Day T decision → Day T+1 execution cycle. Review its plan, script output, exact proposed calls, JSONL records, and report.
+- Alicia alone changes Account A's `execution.mode` to `live`.
 
 ## Routine checks
 
