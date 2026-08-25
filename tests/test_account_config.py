@@ -31,7 +31,7 @@ class AccountCatalogTests(unittest.TestCase):
         self.assertEqual(
             {config.account_id: config.strategy_id for config in catalog},
             {
-                "account_a": "growth_momentum_v1",
+                "account_a": "growth_momentum_v2",
                 "account_b": "earnings_drift_v1",
             },
         )

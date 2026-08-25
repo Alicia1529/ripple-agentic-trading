@@ -15,7 +15,7 @@ Validate the catalog and run `python -m ripple.mvp list-accounts --mode live`. Z
 The reviewed loop must:
 
 1. pull a clean repository and load the unexecuted prior-trading-day plan;
-2. gather current cash, positions, loss-sale history, order history, and fresh held/planned-symbol quotes without persisting raw responses;
+2. gather current cash, positions, loss-sale history, order history, and fresh held/planned-symbol quotes without persisting raw responses; when a BUY freezes `gap_cancel_above`, also provide that symbol's actual regular-session `session_open`, and stop if it is unavailable;
 3. run the checked-in deterministic risk calculation;
 4. stop on whole-plan abort, ambiguous broker history, MCP error, or prior success;
 5. review/place only allowed actions exactly as emitted, never increasing quantity or changing symbol, side, type, or timing;

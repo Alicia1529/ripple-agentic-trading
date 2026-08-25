@@ -41,13 +41,14 @@ _REQUIRED_ORDER_FIELDS = {
     "time_in_force",
 }
 
-_OPTIONAL_ORDER_FIELDS = {"buy_reason"}
+_OPTIONAL_ORDER_FIELDS = {"buy_reason", "gap_cancel_above"}
 
 _DECIMAL_ORDER_FIELDS = {
     "quantity",
     "limit_price",
     "price_tolerance_pct",
     "reference_price_at_decision",
+    "gap_cancel_above",
 }
 _SYMBOL = re.compile(r"[A-Z][A-Z0-9.-]{0,9}")
 
@@ -67,6 +68,8 @@ def _validate_planned_order(order: Mapping[str, Any]) -> None:
         raise ValueError("side must be BUY or SELL")
     if order["side"] == "SELL" and "buy_reason" in order:
         raise ValueError("buy_reason is permitted only for BUY orders")
+    if order["side"] == "SELL" and "gap_cancel_above" in order:
+        raise ValueError("gap_cancel_above is permitted only for BUY orders")
     if order["order_type"] != "LIMIT":
         raise ValueError("MVP OrderPlan orders must be LIMIT")
     if order["market_hours"] != "regular_hours":
@@ -79,6 +82,11 @@ def _validate_planned_order(order: Mapping[str, Any]) -> None:
     if Decimal(order["price_tolerance_pct"]) > Decimal("0.10"):
         raise ValueError("price_tolerance_pct must not exceed 0.10")
     reference_price = Decimal(order["reference_price_at_decision"])
+    if (
+        "gap_cancel_above" in order
+        and Decimal(order["gap_cancel_above"]) <= reference_price
+    ):
+        raise ValueError("gap_cancel_above must exceed reference_price_at_decision")
     limit_move = abs(Decimal(order["limit_price"]) - reference_price) / reference_price
     if limit_move > Decimal(order["price_tolerance_pct"]):
         raise ValueError("limit_price must be inside price_tolerance_pct")

@@ -18,6 +18,21 @@ class OrderPlanTests(unittest.TestCase):
             "orders": [],
         }
 
+    def valid_buy_order(self):
+        return {
+            "order_id": "04bbf1c7-416b-4ca2-b5a6-0e27be980965",
+            "symbol": "AAPL",
+            "side": "BUY",
+            "quantity": "12",
+            "order_type": "LIMIT",
+            "limit_price": "227.50",
+            "price_tolerance_pct": "0.005",
+            "reference_price_at_decision": "226.40",
+            "market_hours": "regular_hours",
+            "time_in_force": "gfd",
+            "buy_reason": "Strongest eligible momentum candidate.",
+        }
+
     def test_plan_is_deeply_immutable_and_contains_no_execution_state(self):
         document = {
             "order_plan_id": "d44c4279-6d02-4773-a888-f906fb738aae",
@@ -222,6 +237,35 @@ class OrderPlanTests(unittest.TestCase):
             document = self.valid_document()
             document["account_baseline"] = baseline
             invalid_documents.append(document)
+
+        for document in invalid_documents:
+            with self.subTest(document=document):
+                with self.assertRaises(ValueError):
+                    OrderPlan.from_dict(document)
+
+    def test_buy_may_record_an_opening_gap_cancel_price(self):
+        document = self.valid_document()
+        document["orders"] = [self.valid_buy_order()]
+        document["orders"][0]["gap_cancel_above"] = "233.192"
+
+        plan = OrderPlan.from_dict(document)
+
+        self.assertEqual(plan.orders[0]["gap_cancel_above"], "233.192")
+
+    def test_opening_gap_cancel_price_is_buy_only_and_above_reference(self):
+        invalid_documents = []
+
+        sell = self.valid_document()
+        sell["orders"] = [self.valid_buy_order()]
+        sell["orders"][0]["side"] = "SELL"
+        sell["orders"][0].pop("buy_reason")
+        sell["orders"][0]["gap_cancel_above"] = "233.192"
+        invalid_documents.append(sell)
+
+        not_above_reference = self.valid_document()
+        not_above_reference["orders"] = [self.valid_buy_order()]
+        not_above_reference["orders"][0]["gap_cancel_above"] = "226.40"
+        invalid_documents.append(not_above_reference)
 
         for document in invalid_documents:
             with self.subTest(document=document):

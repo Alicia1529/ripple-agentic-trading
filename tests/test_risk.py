@@ -190,6 +190,41 @@ class RiskEvaluationTests(unittest.TestCase):
                 self.assertIsNone(result["actions"][0]["actual_sizing"])
                 self.assertIsNone(result["actions"][0]["broker_order"])
 
+    def test_buy_above_opening_gap_threshold_is_rejected(self):
+        plan = self.plan()
+        plan["orders"][0]["gap_cancel_above"] = "103.00"
+        context = self.context()
+        context["quotes"]["AAPL"]["session_open"] = "103.01"
+
+        result = evaluate_plan(plan, context, self.rules())
+
+        self.assertEqual(result["status"], "rejected")
+        self.assertEqual(result["actions"][0]["reason_code"], "opening_gap")
+        self.assertIsNone(result["actions"][0]["broker_order"])
+
+    def test_buy_at_opening_gap_threshold_is_allowed(self):
+        plan = self.plan()
+        plan["orders"][0]["gap_cancel_above"] = "103.00"
+        context = self.context()
+        context["quotes"]["AAPL"]["session_open"] = "103.00"
+
+        result = evaluate_plan(plan, context, self.rules())
+
+        self.assertEqual(result["status"], "allowed")
+        self.assertTrue(result["actions"][0]["allowed"])
+
+    def test_missing_required_session_open_aborts_the_plan(self):
+        plan = self.plan()
+        plan["orders"][0]["gap_cancel_above"] = "103.00"
+
+        result = evaluate_plan(plan, self.context(), self.rules())
+
+        self.assertEqual(result["status"], "aborted")
+        self.assertEqual(result["abort_reason"], "missing_session_open")
+        self.assertEqual(
+            result["actions"][0]["reason_code"], "missing_session_open",
+        )
+
     def test_sell_is_clipped_to_owned_quantity(self):
         plan = self.plan()
         plan["target_portfolio"] = {"AAPL": "0", "cash": "1"}

@@ -51,6 +51,8 @@ _ABORT_MESSAGES = {
     "stale_quote": "A required current quote is stale.",
     "account_state_mismatch": "Current cash or positions do not match the decision baseline.",
     "price_outside_tolerance": "The current price moved beyond the plan's allowed tolerance.",
+    "missing_session_open": "A required session opening price is missing.",
+    "opening_gap": "The session opened above the plan's buy cancellation price.",
     "daily_loss": "The daily loss circuit breaker blocks new purchases.",
     "drawdown_restart_required": "New purchases require a human restart after tier-two drawdown.",
     "drawdown_tier2": "Tier-two drawdown blocks new purchases.",
@@ -224,12 +226,18 @@ def _validate_inputs(execution_context: Mapping[str, Any], rules: Mapping[str, A
     if not isinstance(quotes, Mapping):
         raise ValueError("quotes must be an object")
     for symbol, quote in quotes.items():
-        if not isinstance(symbol, str) or not isinstance(quote, Mapping) or set(quote) != {
-            "price", "as_of"
-        }:
+        quote_fields = set(quote) if isinstance(quote, Mapping) else set()
+        if (
+            not isinstance(symbol, str)
+            or not isinstance(quote, Mapping)
+            or not {"price", "as_of"} <= quote_fields
+            or not quote_fields <= {"price", "as_of", "session_open"}
+        ):
             raise ValueError("quote fields do not match the schema")
         _positive_decimal(quote["price"], "quote price")
         _timestamp(quote["as_of"])
+        if "session_open" in quote:
+            _positive_decimal(quote["session_open"], "session open")
 
 
 def evaluate_plan(
@@ -277,6 +285,12 @@ def evaluate_plan(
         ):
             data_abort_reason = "stale_quote"
             break
+    if data_abort_reason is None and any(
+        "gap_cancel_above" in order
+        and "session_open" not in quotes[order["symbol"]]
+        for order in plan.orders
+    ):
+        data_abort_reason = "missing_session_open"
     if data_abort_reason is not None:
         return {
             "order_plan_id": plan.order_plan_id,
@@ -336,6 +350,12 @@ def evaluate_plan(
         quote = quotes[symbol]
         current_price = Decimal(quote["price"])
         reference_price = Decimal(order["reference_price_at_decision"])
+        if (
+            "gap_cancel_above" in order
+            and Decimal(quote["session_open"]) > Decimal(order["gap_cancel_above"])
+        ):
+            actions.append(_rejected_action(order, "opening_gap"))
+            continue
         price_move = abs(current_price - reference_price) / reference_price
         if price_move > Decimal(order["price_tolerance_pct"]):
             actions.append(_rejected_action(order, "price_outside_tolerance"))

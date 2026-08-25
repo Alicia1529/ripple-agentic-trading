@@ -2,14 +2,6 @@
 
 Read these rules and the three entries in this file before work. Before handing off, append one chronological entry with local timestamp, outcome, evidence, next action, and only material risk. Keep each entry within 100 words and five bullets, link to authoritative files instead of duplicating them, and retain exactly the latest three entries total.
 
-## 2026-08-24 23:12 PDT — Strategy catalog and shadow execution
-
-- Outcome: added filename-identified account configs, strategy validation/attribution, live/shadow/dry-run cohorts, and T+1 quote Shadow Fills with ending virtual state.
-- Migration: `account_a` is manual dry-run, `account_b` is shadow; uppercase state remains immutable legacy evidence.
-- Structure: split four routine contracts and aligned Proposal, Architecture, Decisions, Invariants, Runbook, TODO, README, and glossary.
-- Evidence: 36 core tests, catalog/cohort commands, both fixture cycles, artifact inspection, internal links, credential scan, and `git diff --check` pass.
-- Next/risk: configure shadow schedules; live loop remains gated, and both lanes still select the same strategy.
-
 ## 2026-08-24 23:26 PDT — Scheduled Codex workflow setup
 
 - Outcome: documented how `routines/` prompts and `routines/SCHEDULE.md` map to desktop Scheduled tasks.
@@ -24,3 +16,10 @@ Read these rules and the three entries in this file before work. Before handing 
 - Design: adapted event research and thesis metadata to `DecisionSnapshot.inputs`; shared OrderPlan, deterministic risk, T+1 timing, and lane isolation are unchanged.
 - Evidence: catalog/cohort validation, 36 focused-snapshot and 41 combined-worktree tests, Account B fixture cycle, artifact inspection, credential scan, and `git diff --check` pass.
 - Next/risk: observe a sourced scheduled cycle; the fixture proves plumbing, not the strategy's research quality or comparative performance.
+
+## 2026-08-24 23:58 PDT — Account A Growth Momentum v2
+
+- Outcome: added [`growth_momentum_v2`](../strategies/growth_momentum_v2.md) and selected it for dry-run `account_a`; Account B files and state were not changed by this task.
+- Design: added optional BUY `gap_cancel_above` with required `session_open`; above-threshold opens reject and missing opens fail closed, while legacy plans remain valid.
+- Evidence: catalog/cohorts, 41 core tests, Account A fixture attribution, policy scan, and `git diff --check` pass.
+- Next/risk: exercise a sourced v2 Decision; the deterministic 10% tolerance cap and unfinished Live Gate remain in force.
