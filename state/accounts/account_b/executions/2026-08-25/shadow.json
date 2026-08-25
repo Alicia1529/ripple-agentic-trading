@@ -1,0 +1,22 @@
+{
+  "abort_reason": null,
+  "account_id": "account_b",
+  "actions": [],
+  "ending_account": {
+    "cash": "1000",
+    "daily_pnl": "0",
+    "equity": "1000",
+    "high_water_mark": "1000",
+    "loss_sales": [],
+    "new_positions_today": 0,
+    "positions": {}
+  },
+  "fill_status": "no_actions",
+  "manual_restart_required": false,
+  "mode": "shadow",
+  "order_plan_id": "a664f9e2-4cec-5a6f-a399-0836dc4ddefa",
+  "position_alerts": [],
+  "shadow_fills": [],
+  "status": "allowed",
+  "strategy_id": "earnings_drift_v1"
+}

@@ -2,13 +2,6 @@
 
 Read these rules and the three entries in this file before work. Before handing off, append one chronological entry with local timestamp, outcome, evidence, next action, and only material risk. Keep each entry within 100 words and five bullets, link to authoritative files instead of duplicating them, and retain exactly the latest three entries total.
 
-## 2026-08-25 00:37 PDT — Account B manual Shadow Decision
-
-- Outcome: published the Alicia-authorized manual 2026-08-24 Decision for `account_b`; `earnings_drift_v1` produced plan `a664f9e2-4cec-5a6f-a399-0836dc4ddefa` with zero orders and 100% cash.
-- Evidence: catalog/cohort validation, sourced three-session universe screen, artifact/schema inspection, credential scan, and `git diff --check` pass.
-- Tests: 41 core tests ran; the documented `account_a` mode/universe fixture mismatch remains at 9 failures and 8 errors.
-- Next/risk: 2026-08-25 Shadow Execution may consume this plan; the manual provenance is explicit and no broker or Execution work occurred.
-
 ## 2026-08-25 01:00 PDT — Manual live routine timing override
 
 - Outcome: Live Decision and Execution routines now permit Alicia-authorized manual invocation outside scheduled windows while retaining manual provenance.
@@ -24,3 +17,10 @@ Read these rules and the three entries in this file before work. Before handing 
 - Safety: missing authoritative precomputed v2 technical and FCF facts failed closed; the snapshot records a `NO_TRADE` result and no broker-write tool was used.
 - Verification: catalog, JSON/schema inspection, credential scan, and `git diff --check` pass; core test baseline remains 9 failures and 8 errors from the config/fixture mismatch.
 - Next/risk: Execution may consume this plan on 2026-08-26; it contains no orders, and the Live Gate remains unfinished.
+
+## 2026-08-25 06:39 PDT — Account B scheduled Shadow Execution
+
+- Outcome: executed `account_b` plan `a664f9e2-4cec-5a6f-a399-0836dc4ddefa` at 09:39 EDT; deterministic risk allowed zero actions and `fill_status` is `no_actions`.
+- Evidence: `earnings_drift_v1` ending state is $1000 cash, no positions, no fills, and no broker call; see the immutable shadow result and report under `state/accounts/account_b`.
+- Verification: catalog/cohort checks, JSON inspection, credential scan, and 41 core tests; the existing fixture/config mismatch remains 9 failures and 8 errors.
+- Next/risk: review this scheduled T+1 no-action cycle as hosted shadow-acceptance evidence; zero-fee/zero-slippage assumptions remain explicit.
