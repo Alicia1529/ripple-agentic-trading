@@ -1,0 +1,141 @@
+{
+  "as_of": "2026-08-25T04:09:00-04:00",
+  "inputs": {
+    "account": {
+      "as_of": "2026-08-25T04:09:00-04:00",
+      "binding": "Agent A accessible brokerage account",
+      "cash_settled": "1000.0000",
+      "equity": "1000",
+      "positions": []
+    },
+    "facts": {
+      "AAPL": {
+        "close": "310.34",
+        "sector": "Electronic Technology"
+      },
+      "AMD": {
+        "close": "456.745",
+        "sector": "Electronic Technology"
+      },
+      "AMZN": {
+        "close": "262.07",
+        "sector": "Retail Trade"
+      },
+      "AVGO": {
+        "close": "358.76",
+        "sector": "Electronic Technology"
+      },
+      "COST": {
+        "close": "971.4",
+        "sector": "Retail Trade"
+      },
+      "GOOGL": {
+        "close": "348.06",
+        "sector": "Technology Services"
+      },
+      "HD": {
+        "close": "337.43",
+        "sector": "Retail Trade"
+      },
+      "JPM": {
+        "close": "356.39",
+        "sector": "Finance"
+      },
+      "LLY": {
+        "close": "1246.93",
+        "sector": "Health Technology"
+      },
+      "MSFT": {
+        "close": "487.31",
+        "sector": "Technology Services"
+      },
+      "MU": {
+        "close": "910.43",
+        "sector": "Electronic Technology"
+      },
+      "NVDA": {
+        "close": "208.48",
+        "sector": "Electronic Technology"
+      },
+      "QQQ": {
+        "close": "706.32",
+        "sector": "Miscellaneous"
+      },
+      "SPY": {
+        "close": "763.47",
+        "sector": "Miscellaneous"
+      },
+      "TSLA": {
+        "close": "348.95",
+        "sector": "Consumer Durables"
+      },
+      "UNH": {
+        "close": "398.76",
+        "sector": "Health Services"
+      },
+      "V": {
+        "close": "382.41",
+        "sector": "Finance"
+      },
+      "XOM": {
+        "close": "164.05",
+        "sector": "Energy Minerals"
+      }
+    },
+    "facts_provenance": {
+      "close_as_of": "2026-08-24T16:00:00-04:00",
+      "close_source": "Robinhood official completed-session SIP close",
+      "fundamentals_market_date": "2026-08-24",
+      "symbol_source_url_template": "https://robinhood.com/stocks/<symbol>"
+    },
+    "market": {
+      "QQQ": {
+        "close": "706.32",
+        "mom_60_10": null
+      },
+      "SPY": {
+        "close": "763.47",
+        "sma50": null
+      },
+      "as_of": "2026-08-24T16:00:00-04:00",
+      "source_url": "https://robinhood.com/stocks/SPY"
+    },
+    "strategy_evaluation": {
+      "buy": null,
+      "plan_type": "NO_TRADE",
+      "regime": {
+        "spy_above_sma50": null
+      },
+      "rejected_candidates": [],
+      "sells": [],
+      "strategy_id": "growth_momentum_v2",
+      "warnings": [
+        "The connected read-only data did not provide authoritative precomputed SMA50, mom_60_10, vol_60, risk_adj_mom, atr20_pct, rel_mom_qqq, rel_mom_streak, or days_to_earnings for the complete universe.",
+        "The connected financial data did not provide authoritative precomputed rev_growth_yoy, gross_margin, fcf_ttm, or fcf_trend values required by Growth Momentum v2.",
+        "Growth Momentum v2 forbids inventing or recomputing missing required figures; the market gate and hard filters are therefore incomplete and no candidate may be ranked or researched.",
+        "This manual Decision uses the latest completed session, 2026-08-24, and is dated 2026-08-25 for possible 2026-08-26 Execution. It does not backfill or replace the immutable legacy 2026-08-24 evidence."
+      ]
+    }
+  },
+  "snapshot_id": "4fb001c9-2902-53f0-a8d7-9d6c6a4b8aa9",
+  "universe": [
+    "AAPL",
+    "MSFT",
+    "NVDA",
+    "AMZN",
+    "AMD",
+    "MU",
+    "GOOGL",
+    "TSLA",
+    "AVGO",
+    "JPM",
+    "V",
+    "XOM",
+    "UNH",
+    "COST",
+    "HD",
+    "LLY",
+    "SPY",
+    "QQQ"
+  ]
+}
