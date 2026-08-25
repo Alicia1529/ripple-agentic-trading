@@ -8,7 +8,7 @@ The reviewed Agentic Robinhood read/review/place/cancel loop is not implemented,
 
 ## Cohort selection
 
-Validate the catalog and run `python -m ripple.mvp list-accounts --mode live`. Zero lines is a successful no-op. More than one line is an invalid catalog. Use exactly one returned account, config, plan, state root, and platform-managed Robinhood binding after the gate is complete.
+Run `uv run --no-cache python -m ripple.mvp validate-configs`, then `uv run --no-cache python -m ripple.mvp list-accounts --mode live`. Zero lines is a successful no-op. More than one line is an invalid catalog. Use exactly one returned account, config, plan, state root, and platform-managed Robinhood binding after the gate is complete.
 
 ## Required live behavior after approval
 

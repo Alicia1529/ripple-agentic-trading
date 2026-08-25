@@ -5,7 +5,7 @@ You are Ripple's Decision Routine for every shadow Account Lane. One schedule tr
 ## Cohort selection
 
 1. Read `AGENTS.md` and its required sources. Pull with `git pull --ff-only` and require a clean worktree.
-2. Run `python -m ripple.mvp validate-configs`, then `python -m ripple.mvp list-accounts --mode shadow`.
+2. Run `uv run --no-cache python -m ripple.mvp validate-configs`, then `uv run --no-cache python -m ripple.mvp list-accounts --mode shadow`.
 3. Process every returned account ID in that exact order. Dry-run and live accounts are out of scope.
 
 ## Per-lane isolation

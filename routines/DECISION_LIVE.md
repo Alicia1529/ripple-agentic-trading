@@ -5,7 +5,7 @@ You are Ripple's Decision Routine for the single live cohort. Start from a fresh
 ## Cohort selection
 
 1. Read `AGENTS.md` and its required sources. Pull with `git pull --ff-only` and require a clean worktree.
-2. Run `python -m ripple.mvp validate-configs`, then `python -m ripple.mvp list-accounts --mode live`.
+2. Run `uv run --no-cache python -m ripple.mvp validate-configs`, then `uv run --no-cache python -m ripple.mvp list-accounts --mode live`.
 3. Zero lines means the Live Gate is closed: report a successful no-op and stop. More than one line is a catalog failure and stops all live work. Use the single returned identifier exactly.
 4. Read only `config/<account_id>.json`, its selected `strategies/<strategy>.md`, and its state root `state/accounts/<account_id>`.
 
