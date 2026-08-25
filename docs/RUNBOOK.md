@@ -1,88 +1,105 @@
 # Runbook
 
-Operational procedures for the hosted Account A MVP plus the two fixture-backed repository lanes. Account B has no hosted schedules or bound MCP path.
+Operational procedures for the account catalog, manual development lane, shadow cohort, and future single live lane.
 
-## Dry-run verification
+## Repository verification
 
-Run the complete fixture-backed path without broker tools:
+Validate the complete catalog and inspect scheduled membership:
+
+```bash
+uv run --no-cache python -m ripple.mvp validate-configs
+uv run --no-cache python -m ripple.mvp list-accounts --mode live
+uv run --no-cache python -m ripple.mvp list-accounts --mode shadow
+uv run --no-cache python -m ripple.mvp list-accounts --mode dry_run
+```
+
+The current expected output is zero live lanes, `account_b` shadow, and `account_a` dry-run. A missing strategy or second live configuration must fail validation.
+
+Run both credential-free fixture paths:
 
 ```bash
 uv run --no-cache python -m ripple.mvp run-dry-cycle \
-  --config config/mvp.json \
+  --config config/account_a.json \
   --fixture fixtures/mvp/dry_cycle.json \
-  --output /tmp/ripple-mvp/account_A
+  --output /tmp/ripple-mvp/account_a
 
-uv run --no-cache python -m ripple.mvp run-dry-cycle \
-  --config config/mvp-account-b.json \
+uv run --no-cache python -m ripple.mvp run-shadow-cycle \
+  --config config/account_b.json \
   --fixture fixtures/mvp/dry_cycle_account_b.json \
-  --output /tmp/ripple-mvp/account_B
+  --output /tmp/ripple-mvp/account_b
 ```
 
-Account A's two hosted stages use `publish-decision` and `execute-dry-run` exactly as documented in `routines/DECISION.md` and `routines/EXECUTION.md`. Their credential-free continuity output belongs under `state/`. A second command for the same cycle fails instead of overwriting it.
+The first command writes proposed dry-run actions only. The second writes `executions/<date>/shadow.json`, including deterministic risk, Shadow Fill attempts, and `ending_account`. Neither command calls a broker. Re-running the same cycle fails instead of overwriting evidence.
 
-To rehearse the two hosted stages immediately, Alicia may explicitly start each routine with **Run now** while Account A remains `dry_run`. Outside the normal window, the routine adds `--manual-run` to the documented command. Run Decision first and Execution second with an execution-context `as_of` later than the plan's `decision_time`. Confirm both JSONL records say `run_kind=manual`. This path never authorizes broker writes and does not replace the required observed scheduled cycle.
+## Hosted schedules
 
-After the reviewed live MCP call loop exists and Alicia enables Account A, **Run now** may also trigger that same live routine outside the window. Before any review/place call, inspect committed execution records and broker history. If either shows the plan/order already succeeded, stop. The first successful manual or scheduled execution wins; never overwrite its record or submit the plan again. An ambiguous outcome is not success or failure evidence and must be inspected manually before any future run.
+Configure exactly the four cohort triggers in `routines/SCHEDULE.md`: live Decision, shadow Decision, live Execution, and shadow Execution. Never schedule dry-run lanes.
 
-## Kill switch
+Each run starts by validating the complete catalog. A live run with no selected lane is a successful no-op. A shadow run processes every selected lane independently and reports a per-lane summary.
 
-There is no instantaneous broker-side "flatten everything" switch.
+## Shadow operation
 
-1. Alicia changes Account A's human-owned `execution.mode` to `disabled` in the private repository and pushes it. No routine may edit this setting.
-2. Disable Account A's two hosted schedules.
-3. The next Decision Routine produces no new OrderPlan.
-4. The next Execution Routine submits no new orders and may cancel visible pending orders.
-5. Existing positions are not automatically liquidated. Use ordinary manual broker orders if an immediate exit is required.
+For each shadow lane:
 
-Because v1 execution is LLM-mediated, disabling the hosted schedules is the strongest operational stop; the config flag is an additional routine-level guard, not a security boundary.
+1. Use the latest prior result's `ending_account` as the next virtual portfolio; for the first cycle, use the configured `shadow.initial_cash` with no positions.
+2. Mark equity and daily P&L from current quotes, update high-water mark only upward, and reset `new_positions_today` at the new trading date before publishing the new account baseline. Do not treat stale ending valuation or a prior day's count as current.
+3. Publish one plan using the lane's selected Strategy Spec.
+4. At T+1 Execution, provide fresh quotes for every held and planned symbol and call `execute-shadow`.
+5. Inspect `fill_status`, every `shadow_fills` entry, and `ending_account`. A `not_filled` limit remains unfilled; do not manually force it into the virtual portfolio.
+6. Commit only new credential-free state artifacts. Never rewrite an earlier plan or shadow result.
 
-## Before first live run
+Zero fees and zero slippage are explicit MVP assumptions. Do not describe shadow performance as live, executable, or after-cost performance.
 
-- Keep the repository private and confirm plans, JSONL records, reports, prompts, and test fixtures contain no credentials, cookies, account numbers, or raw authenticated responses.
-- Bind Account A's hosted Robinhood MCP connection and prove that it selects the intended account; do not export account numbers or tokens into repository secrets or local files.
-- In the Account A Decision prompt, allow only the minimum Robinhood reads needed for account state and quotes. The hosted session exposes write tools, but the routine must never call review/place/cancel or any other modifying operation. If a Decision run does call one, disable the lane and inspect Robinhood before continuing.
-- Give only the isolated Execution Routine the narrow Robinhood read/review/place/cancel tools it needs. Do not provide news browsing or investment-reasoning inputs to that routine.
-- Enable exactly one Account A Decision schedule and one Account A Execution schedule following `routines/SCHEDULE.md`. Confirm their config, state root, broker connection, repository, branch, timezone, and `America/New_York` self-check.
-- Keep Account A's `execution.mode=dry_run` through its complete scheduled Day T decision → Day T+1 execution cycle. Review its plan, script output, exact proposed calls, JSONL records, and report.
-- Alicia alone changes Account A's `execution.mode` to `live`.
+## Live Gate and kill switch
+
+No configuration is live today. Before the first mode change:
+
+- implement and review the Agentic Robinhood loop;
+- prove the connection selects the intended broker account;
+- reconcile real cash and positions with the selected lane rather than carrying over virtual state;
+- complete the required scheduled no-write acceptance;
+- confirm there is exactly one live configuration; and
+- obtain Alicia's explicit mode and allocation approval.
+
+There is no instantaneous repository-side “flatten everything” switch. To stop live work:
+
+1. Disable both live schedules on the hosting platform.
+2. Change the affected configuration from `live` to `dry_run` and push it. No routine may make this change.
+3. Inspect the broker account and manually cancel or close anything that requires immediate action.
+
+Changing mode does not cancel pending orders or liquidate positions. Disabling schedules is the strongest operational stop.
 
 ## Routine checks
 
-For each hosted run, verify:
+For every hosted run, verify:
 
-1. It pulled the expected private branch without a conflict.
-2. The Decision Routine created no more than one plan for its account and trading date.
-3. The Execution Routine loaded that exact committed plan, matching execution-context `account_id`, and expected account configuration.
-4. The state-root basename matches `account_id`, current cash/positions match the plan baseline, and all held/planned-symbol quotes are present and fresh.
-5. Deterministic script output, proposed/actual quantities, Robinhood result IDs, and final status appear in compact credential-free logs.
-6. The run committed and pushed its output. Never force-push to repair a routine conflict.
-
-During the initial canary, Alicia should inspect the first live results directly in Robinhood. The repository is an audit aid, not a transactional source of truth.
+1. the expected private branch was pulled without conflict;
+2. catalog validation passed and cohort membership was recorded;
+3. configuration filename, plan, context, and state-root basename use the same account ID;
+4. the plan's strategy ID matches the selected configuration;
+5. all held/planned-symbol quotes are present and fresh;
+6. deterministic output and actual live or assumed shadow outcomes are recorded separately; and
+7. no credential, token, cookie, account number, or raw authenticated response entered Git.
 
 ## Failure response
 
 | Situation | Action |
 |---|---|
-| Scheduled run missing or failed | Inspect the hosted task log. Do not backfill a stale decision or order; fix the cause for the next normal cycle. |
-| Robinhood MCP asks for authorization | Stop the run and reconnect interactively through the hosted platform. Never paste credentials into a prompt or Git. |
-| Git pull/push conflict | Keep the run stopped, inspect both histories, and resolve normally. Never force-push over trading records. |
-| Malformed plan, config, script output, quote, or account response | Submit nothing. Preserve a sanitized error record and fix the input or code before the next cycle. |
-| MCP timeout or crash near order placement | Do not immediately rerun. Inspect Robinhood order history and positions manually before the next schedule. Record what is known without claiming the outcome was automatically reconciled. |
-| Unexpected or duplicate order | Disable both schedules, set `execution.mode=disabled`, inspect Robinhood, and correct/cancel manually as appropriate. Preserve the plan and logs for review. |
-| Risk result and placed quantity differ | Disable live execution and trigger an architecture review, even if the dollar loss is small. |
-| Material drawdown or behavior outside the configured universe | Disable live execution and review before restarting. |
+| Missing Strategy Spec or malformed catalog | Stop all cohorts; fix and review configuration before the next normal cycle |
+| Second live configuration | Stop live schedules; restore at most one live lane before any Decision or Execution work |
+| One shadow lane fails | Record and stop that lane; continue only independently validated shadow lanes |
+| Scheduled run is missed | Do not backfill a stale Decision or order; fix the cause for the next normal cycle |
+| Git conflict | Stop the affected run and resolve normally; never force-push trading evidence |
+| Missing/stale quote or baseline mismatch | Execute and simulate nothing for the affected planned work |
+| Robinhood authorization request | Stop live work and reconnect interactively; never paste credentials into a prompt or Git |
+| Ambiguous live broker outcome | Do not retry; inspect Robinhood history and positions before a later schedule |
+| Risk output differs from submitted live order | Disable live schedules and trigger architecture review |
+| Unexpected Shadow Fill | Preserve the result, disable shadow schedules if systemic, and correct code rather than editing evidence |
 
-## Tier-two drawdown restart
+## Tier-two restart
 
-When a lane reaches tier-two drawdown, the script creates `<state-root>/risk/drawdown_tier2.lock.json`. Equity recovery does not clear it and routines must not modify it.
-
-1. Keep new entries disabled and inspect the broker account, pending orders, recent fills, reports, and the triggering execution result.
-2. Resolve any account discrepancy or ambiguous outcome. If the cause is unexplained, keep the lock and disable the lane's schedules.
-3. Alicia decides whether restarting new entries is acceptable. If so, delete only that lane's exact lock file in a reviewed repository change and commit it. Never delete another lane's lock.
-4. Run a fresh scheduled dry cycle before restoring live mode. Risk-reducing exits remain permitted while the lock exists.
+`<state-root>/risk/drawdown_tier2.lock.json` blocks new BUYs until Alicia reviews and removes that exact lane's lock. Equity recovery cannot clear it. Inspect the relevant real or virtual account evidence, resolve discrepancies, and run a fresh reviewed cycle before restoring entries.
 
 ## Known limits
 
-Production v1 intentionally lacks a transactionally durable submission journal, cross-runner lease, exactly-once guarantee, automatic ambiguous-outcome reconciliation, or non-LLM execution boundary. An LLM can misread risk output, send wrong arguments, call a tool twice, misuse configuration, or drift after a model/prompt update. These risks are accepted only for the initial small allocation.
-
-Before any capital increase or third account, review actual incidents and near misses and make a new durable architecture decision. Eight weeks of operation permits that review; it does not automatically approve scaling.
+Live v1 lacks a transactional submission journal, cross-runner lease, exactly-once guarantee, automatic ambiguous-outcome reconciliation, and non-LLM execution barrier. Shadow v1 assumes quote-price fills with no costs and is not a broker emulator. These limitations must remain visible in every performance review.

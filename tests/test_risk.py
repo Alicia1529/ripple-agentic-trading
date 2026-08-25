@@ -9,7 +9,8 @@ class RiskEvaluationTests(unittest.TestCase):
         return {
             "order_plan_id": "d44c4279-6d02-4773-a888-f906fb738aae",
             "decision_time": "2026-08-24T21:00:00-04:00",
-            "account_id": "account_A",
+            "account_id": "account_a",
+            "strategy_id": "growth_momentum_v1",
             "model_config_version": "mvp_v1",
             "decision_snapshot_id": "10de633f-be1f-4548-944a-76b94296ed5b",
             "market_snapshot_as_of": "2026-08-24T20:55:00-04:00",
@@ -32,7 +33,7 @@ class RiskEvaluationTests(unittest.TestCase):
 
     def context(self):
         return {
-            "account_id": "account_A",
+            "account_id": "account_a",
             "as_of": "2026-08-25T09:35:00-04:00",
             "account": {
                 "equity": "1000",
@@ -50,7 +51,7 @@ class RiskEvaluationTests(unittest.TestCase):
 
     def rules(self):
         return {
-            "account_id": "account_A",
+            "account_id": "account_a",
             "execution": {"mode": "dry_run"},
             "universe": ["AAPL", "MSFT", "SPY", "QQQ"],
             "risk": {
@@ -133,10 +134,6 @@ class RiskEvaluationTests(unittest.TestCase):
 
     def test_execution_guards_reject_without_broker_arguments(self):
         cases = []
-
-        disabled_rules = self.rules()
-        disabled_rules["execution"]["mode"] = "disabled"
-        cases.append((self.plan(), self.context(), disabled_rules, "execution_disabled", "rejected"))
 
         stale = self.context()
         stale["quotes"]["AAPL"]["as_of"] = "2026-08-25T09:00:00-04:00"
@@ -313,7 +310,7 @@ class RiskEvaluationTests(unittest.TestCase):
         cases.append((self.plan(), self.context(), bad_mode))
 
         wrong_account = self.context()
-        wrong_account["account_id"] = "account_B"
+        wrong_account["account_id"] = "account_b"
         cases.append((self.plan(), wrong_account, self.rules()))
 
         for plan, context, rules in cases:

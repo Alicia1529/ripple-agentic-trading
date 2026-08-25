@@ -1,216 +1,181 @@
 # Current architecture
 
-This document explains how Ripple works today. It is the current technical design, not a roadmap or decision history. Durable reasons and superseded alternatives belong in `docs/DECISIONS.md`; unfinished work belongs in `docs/TODO.md`.
+This document describes Ripple as implemented today. Durable reasons belong in `docs/DECISIONS.md`; unfinished work belongs in `docs/TODO.md`.
 
-Ripple is a fixture-backed dry-run MVP moving Account A toward hosted acceptance. The repository runs exactly two isolated Robinhood Agentic fixture lanes over one concrete CLI, strict artifacts, and deterministic risk code. Account B has no hosted schedules or bound MCP path.
+Ripple is an account-catalog MVP for comparing isolated strategy lanes. `account_a` is a manual `dry_run` development lane and `account_b` is a fixture-backed `shadow` lane. The catalog and shadow execution path are implemented. Hosted schedules, Account A acceptance, and the reviewed live Robinhood broker-write loop remain unfinished.
 
 ## System at a glance
 
-Both fixture lanes run the same repository sequence with separate configuration and state. The hosted sequence is currently configured only for Account A:
-
 ```text
-latest completed market facts + current account facts
-                         │
-                         ▼
-                Decision Routine (LLM)
-                 applies lane strategy
-                         │
-                  publishes once
-                         ▼
-          DecisionSnapshot + immutable OrderPlan
-                         │
-                  private Git state
-                         │
-                 remains unchanged
-                         ▼
-               Execution Routine (LLM)
-          gathers current account facts and quotes
-                         │
-                         ▼
-            deterministic revalidation code
-                         │
-              ┌──────────┼──────────┐
-              ▼          ▼          ▼
-           execute     scale      reject/abort
-              │
-              ▼
-      dry-run record today; reviewed MCP calls after the live gate
+strategies/<strategy_id>.md
+             ▲
+             │ selected by
+config/<account_id>.json
+             │
+             ▼
+       Account Catalog
+  validates every config and strategy
+  enforces at most one live lane
+        ┌────┴─────┐
+        ▼          ▼
+   live cohort   shadow cohort       dry_run
+     0..1          0..N              manual only
+        │          │
+        ├── Decision Routine(s), prior evening
+        │      produce strategy-attributed immutable plans
+        └── Execution Routine(s), next weekday
+                     │
+              deterministic risk
+                ┌────┴────┐
+                ▼         ▼
+          live adapter  shadow adapter
+          Robinhood     T+1 quote assumption
+          after gate    no broker calls
 ```
 
-The LLM supplies bounded judgment and tool use. Python supplies strict artifact validation and authoritative risk calculations. The owner supplies broker binding, funding, live activation, restart, and expansion decisions.
+The LLM supplies bounded fact gathering and investment judgment. Python validates configurations and artifacts, assigns stable IDs, performs deterministic risk calculations, and simulates Shadow Fills. The owner supplies broker binding, funding, live activation, restart, and strategy-switch decisions.
 
-## Components and responsibilities
+## Account Catalog interface
 
-| Component | Responsibility | Boundary |
+Every file matching `config/*.json` is one Account Lane. The filename stem is its canonical identifier and must be lowercase `snake_case`; there is no duplicated `account_id` field and no central `accounts[]` document.
+
+```json
+{
+  "description": "Human-readable purpose, strategy, universe, and risk summary.",
+  "strategy": "growth_momentum_v1",
+  "execution": {"mode": "shadow"},
+  "shadow": {"initial_cash": "800"},
+  "universe": ["AAPL", "SPY", "QQQ"],
+  "risk": {}
+}
+```
+
+`shadow.initial_cash` is required only for a shadow lane. Financial values remain base-10 decimal strings.
+
+The catalog validates, as one operation:
+
+- strict configuration fields and risk value shapes;
+- canonical account and strategy identifiers;
+- a real `strategies/<strategy_id>.md` file for every selected strategy;
+- unique universe symbols;
+- `execution.mode` in `live`, `shadow`, or `dry_run`; and
+- no more than one live configuration.
+
+The catalog returns deterministic, account-ID-sorted cohorts. A missing strategy or second live configuration invalidates the catalog instead of silently skipping a lane.
+
+## Strategy seam
+
+`strategies/` may contain multiple version-named Strategy Specs. A configuration selects exactly one by identifier. The Decision Routine reads that file completely and applies it to only its assigned lane.
+
+The seam is deliberately small: Strategy Specs are prompt-defined Markdown policies, not Python plugins. The generic publisher and deterministic risk module remain authoritative for shape, sizing, and safety. Adding a new strategy does not require changing Python, but selecting a missing strategy fails catalog validation.
+
+Every new `OrderPlan`, Decision record, deterministic result, execution record, and report carries `strategy_id`. A versioned Strategy Spec should not be edited in place after it has produced decisions; create a new identifier so historical attribution stays meaningful. Git history retains its exact checked-in content.
+
+## Execution modes and scheduled cohorts
+
+| Mode | Scheduled selection | Execution behavior | Authority |
+|---|---|---|---|
+| `live` | The live cohort contains zero or one lane | Deterministic risk output may be sent to the reviewed Agentic Robinhood adapter after the Live Gate | Human-owned activation; real broker consequence |
+| `shadow` | Every shadow lane is selected in account-ID order | Deterministic risk runs; marketable allowed orders receive assumed T+1 quote fills and virtual ending state | No broker connection or write |
+| `dry_run` | Excluded from all scheduled cohorts | Manual fixture/development evaluation only; proposed broker arguments but no fill | Developer evidence only |
+
+Changing an execution mode is a reviewed human operation. A shadow-to-live change also requires broker binding and real cash/position baseline reconciliation; virtual holdings never authorize a real trade.
+
+## Four scheduled runs
+
+Ripple uses four non-overlapping schedule triggers:
+
+| Run | Selection | Intended time |
 |---|---|---|
-| Lane configuration | Names one `account_id`, execution mode, symbol universe, and risk values | One command resolves one configuration; there is no `accounts[]` collection |
-| Decision Routine | Gathers allowed facts, applies the assigned strategy, and prepares one decision input | May use required broker reads; never reviews, places, changes, or cancels an order |
-| Decision publisher | Validates timing, account, universe, target weights, order shape, and position cap; assigns stable IDs and writes new artifacts | Does not perform research or broker work |
-| `DecisionSnapshot` | Freezes the allowed inputs, universe, and timezone-aware `as_of` used by the decision | Contains no credentials or execution outcomes |
-| `OrderPlan` | Freezes the target portfolio, proposed orders, decision metadata, and credential-free account baseline | Execution records never mutate it |
-| Execution Routine | Loads the published plan, gathers current account facts, runs deterministic checks, and follows their result | Receives no news or new thesis material; cannot invent a trade |
-| Risk engine | Produces allowed, clipped, rejected, or aborted actions from the plan, current facts, and configured rules | Does not choose investments or call the broker |
-| Lane State | Carries immutable-per-cycle plans plus append-only-style JSONL facts, results, reports, and account-scoped locks between fresh sessions | Git continuity is not a transactional journal |
-| Hosted MCP connection | Holds Robinhood authorization and exposes account/broker tools | Credentials and raw authenticated responses stay outside Git and artifacts |
+| Live Decision | 0..1 live lane | Sunday–Thursday around 9:00 PM `America/New_York` |
+| Shadow Decision | all shadow lanes | Sunday–Thursday around 9:00 PM `America/New_York` |
+| Live Execution | 0..1 live lane | next weekday around 9:35 AM `America/New_York` |
+| Shadow Execution | all shadow lanes | next weekday around 9:35 AM `America/New_York` |
 
-Account A's current strategy is `strategies/growth_momentum_v1.md`. It screens the full configured universe, reviews current holdings, and may publish no trade, one fixed 10% BUY, one full discretionary SELL, or both. The strategy is prompt-defined; there is no strategy-specific Python engine or plugin framework.
+There may be zero live lane while the Live Gate is closed; the live runs then finish without account work. Dry-run lanes are never selected. Missed cycles are not backfilled.
 
-## Why Decision and Execution are separate
-
-Decision timing and execution timing solve different problems:
-
-- A decision should use a completed market session and allow after-close facts, such as earnings, time to arrive.
-- Execution should use current account state and current prices after the next market opens.
-- Keeping investment reasoning out of the session that owns execution capability narrows the role and makes deviations easier to identify.
-- Freezing the plan overnight makes the original intent reviewable and prevents next-morning narrative drift.
-
-This split also keeps time semantics honest. A signal that uses Day T's completed close cannot claim a fill at that same close. It may only be evaluated against a Day T+1 execution opportunity.
+The shadow runs are one scheduled cohort but each lane remains an independent Decision Cycle. One lane's malformed input or failure is reported for that lane and does not authorize, mutate, or suppress another lane's work.
 
 ## One Decision Cycle
 
-### 1. Prior-evening Decision
+### Prior-evening Decision
 
-Account A runs around 9:00 PM `America/New_York` Sunday–Thursday. Sunday uses Friday's completed close plus facts available by Sunday evening; other decisions use the latest completed session.
+The Decision Routine:
 
-The fresh Decision Routine:
+1. validates the complete catalog and selects its live or shadow cohort;
+2. isolates one lane's configuration, state root, and selected Strategy Spec;
+3. gathers allowed market and account facts;
+4. prepares one strict `DecisionSnapshot`, account baseline, target portfolio, and zero or more proposed orders; and
+5. publishes one immutable, strategy-attributed `OrderPlan`.
 
-1. selects one assigned lane and reads only its configuration;
-2. gathers the required credential-free market and account facts;
-3. applies the lane's checked-in strategy;
-4. prepares one strict snapshot, account baseline, target portfolio, and zero or more proposed orders; and
-5. calls `publish-decision`, which writes a new `DecisionSnapshot`, `OrderPlan`, and compact decision record.
+Decision never reviews, places, cancels, or changes a broker order. Missing facts produce no trade or stop that lane rather than authorizing a guess. A second publication for the same lane and date fails instead of overwriting evidence.
 
-A missing required fact produces no trade or stops publication rather than authorizing a guess. A second publication for the same owned cycle fails instead of overwriting the existing decision.
+For a shadow lane, the Decision baseline comes from its latest prior `ending_account`; the first cycle starts from the reviewed `shadow.initial_cash`. Before the next cycle, current quotes mark equity and daily P&L, high-water mark moves only upward, and the prior trading day's new-position count resets. A live lane reads its real account through the platform-managed connection. These sources never merge.
 
-### 2. Overnight boundary
+### Overnight boundary
 
-The published `OrderPlan` remains unchanged. Git carries the credential-free artifacts into the next fresh session. No trading occurs merely because a plan exists.
+The published plan remains unchanged. Git carries credential-free artifacts into the next fresh routine. Execution receives no new investment thesis and does not rewrite Decision content.
 
-### 3. Next-weekday Execution
+### Next-weekday Execution
 
-Account A runs around 9:35 AM `America/New_York`. Waiting past 9:30 avoids treating the most volatile opening minutes as the intended execution point.
+Execution loads the prior-trading-day plan, current account state, loss-sale history, and fresh quotes. It then runs the shared deterministic risk module.
 
-The fresh Execution Routine:
+Live execution may eventually submit only script-allowed actions exactly as emitted through the reviewed Robinhood read/review/place/cancel loop. That loop is not implemented or approved today, so no configuration is live.
 
-1. loads the lane's prior-trading-day plan and configuration;
-2. gathers current cash, positions, loss-sale history, order history, and required quotes;
-3. builds a strict execution context;
-4. runs deterministic revalidation; and
-5. records the exact allowed, clipped, rejected, or aborted actions.
+Shadow execution uses the same risk output but never calls Robinhood. For each allowed action:
 
-Today, `execute-dry-run` writes proposed broker arguments without a broker write. The reviewed live MCP read/review/place/cancel loop is not implemented yet. When it exists and the lane's Live Gate is open, the routine may submit only script-allowed actions exactly as emitted. A script-produced full-position Risk Exit is the sole order permitted without a matching planned order.
+- the current quote must still satisfy the planned limit (`BUY quote <= limit`, `SELL quote >= limit`); market Risk Exits are marketable;
+- a marketable order is assumed filled at the execution quote and `as_of` time;
+- fees and slippage are explicitly zero in this MVP;
+- an unmarketable limit is recorded as `not_filled`; and
+- cash, quantity, average cost, new-position count, and visible loss-sale state are carried into an immutable per-cycle `ending_account`.
 
-Missed cycles are not backfilled. An aborted plan waits for the next normal Decision Cycle.
+The plan's signal time remains Day T and every fill attempt remains Day T+1. Shadow never backdates a fill to the decision close.
 
-## Two isolated lanes
+## Modules and responsibilities
 
-| Lane | Configuration | State root | Hosted boundary |
-|---|---|---|---|
-| Account A | `config/mvp.json` | `state/accounts/account_A` | One Decision schedule, one Execution schedule, one bound MCP connection |
-| Account B | `config/mvp-account-b.json` | `state/accounts/account_B` | Fixture-backed only; no hosted schedules or bound MCP path |
-
-For every command, the configuration, plan, execution context, state-root basename, risk state, broker call, and live mode must agree on `account_id`. One lane's plan, failure, lock, or approval cannot authorize work in the other.
-
-Taxpayer-wide loss-sale history is the only documented cross-account input. It may inform the wash-sale check, but it does not merge lane state or execution authority.
-
-There is no coordinator, batch runner, shared ledger, credential abstraction, or third-account support. Adding an Account B hosted path is new scope rather than an implied consequence of its fixture lane.
-
-## Artifacts and state flow
-
-| Artifact | Created by | Used by | Mutability |
-|---|---|---|---|
-| `DecisionSnapshot` | Decision publisher | Review and reproducibility | Immutable once published |
-| `OrderPlan` | Decision publisher | Execution Routine and review | Immutable once published |
-| Decision JSONL record | Decision publisher | Continuity and audit review | A new compact fact is appended |
-| Execution result | Execution command | Report, review, and duplicate checks | New per cycle; never rewrites the plan |
-| Execution JSONL record | Execution command | Continuity and audit review | A new compact fact is appended |
-| Human-readable report | Execution command | Operator review | Derived from the execution result |
-| Tier-two lock | Execution command after a tier-two breach | Later Execution cycles | Persists until the owner removes that lane's exact lock after review |
-
-Persisted financial values are base-10 decimal strings. Planned orders use positive share quantities and are `LIMIT`, `regular_hours`, and `gfd`; BUY orders carry the decision-stage reason. Artifacts contain stable plan/order IDs and no credentials or account numbers.
-
-## Safety and authority layers
-
-Ripple has three different safety layers. They must not be described as interchangeable:
-
-| Layer | What it controls | What it does not guarantee |
+| Module | Interface responsibility | What stays behind it |
 |---|---|---|
-| Deterministic code | Schemas, IDs, account binding, plan shape, timing, risk calculations, sizing, clipping, rejection, and abort results | It does not gather facts, choose investments, or directly prevent an LLM from ignoring its result |
-| LLM routine contract | Allowed research, role separation, tool selection, exact use of deterministic output, stop conditions, and sanitized artifacts | It is prompt- and process-enforced, not a code-level capability boundary |
-| Human/platform control | Broker authorization, live mode, funding, schedule disablement, drawdown restart, and capital/account expansion | It does not make Git transactional or remove broker-call ambiguity |
+| Account catalog | Load all lane configs and select one mode cohort | Filename identity, strict schema, strategy existence, live-count validation, deterministic ordering |
+| Decision publisher | Publish one validated Decision Cycle | Timing, universe, target weights, stable IDs, strategy attribution, immutable writes |
+| `DecisionSnapshot` | Represent allowed decision inputs | Strict JSON and immutable nested values |
+| `OrderPlan` | Represent strategy-attributed decision intent | Strict order shape, account baseline, portfolio weights, immutable nested values |
+| Risk module | Return allowed, clipped, rejected, or aborted actions | Account binding, freshness, sizing, cash reservation, loss/drawdown/wash-sale/exit rules |
+| Shadow adapter | Return fill attempts and ending virtual state | T+1 marketability, quote-price fills, position/cash state transition, no broker I/O |
+| Live adapter | Use deterministic output with Robinhood | Still unfinished and gated |
+| Lane State | Carry credential-free evidence across fresh sessions | Per-lane plans, snapshots, executions, logs, reports, and locks |
 
-Account A's hosted Decision session exposes broker write tools because the connection cannot be restricted per tool. The routine may use required reads but must never call review, place, cancel, or any modifying operation. A Decision-stage write is an incident: stop the lane, disable its schedules, and inspect Robinhood.
+## Artifacts and state
 
-The Execution Routine must use risk output verbatim, but v1 does not technically prevent it from misreading that output, passing an incorrect argument, or calling a tool twice. Initial live exposure is intentionally small because these are accepted operational risks, not prevented failure modes.
+| Artifact | Mutability and use |
+|---|---|
+| `DecisionSnapshot` | Immutable allowed facts and universe for review/reproduction |
+| `OrderPlan` | Immutable account-, strategy-, and cycle-attributed decision |
+| Decision JSONL record | One compact append-only-style publication fact |
+| Dry-run result | Manual proposed actions; explicitly not fills |
+| Shadow result | Risk result, fill attempts, assumptions, and ending virtual account state |
+| Execution JSONL record | Mode, strategy, result status, and fill count for monitoring |
+| Report | Human-readable action and Shadow Fill summary |
+| Tier-two lock | Lane-scoped persistent block on new BUYs until owner review |
 
-`docs/INVARIANTS.md` is the authoritative review checklist for these boundaries.
+Canonical new state roots are `state/accounts/<account_id>`. Plans and execution outputs never cross roots. Legacy uppercase `state/accounts/account_A` evidence stays read-only and is not a valid root for the lowercase catalog.
 
-## Deterministic revalidation
+## Deterministic safety
 
-All limits are evaluated against the assigned lane's account state:
+All modes use the same rules: 20% maximum symbol position, three new positions per day, 5% daily-loss breaker, 10% tier-one drawdown, 15% tier-two drawdown and owner restart, 15-minute quote freshness, 30-day taxpayer-wide wash-sale lookback, 8% stop loss, and 20% take profit.
 
-| Rule | Current value | Deterministic result |
-|---|---:|---|
-| Maximum position | 20% per symbol | Clip to the available room or reject |
-| New positions | 3 per account/day | Reject excess new BUYs |
-| Daily loss | 5% of account equity | Block new BUYs; exits remain |
-| Drawdown tier 1 | 10% from high-water mark | Block new BUYs |
-| Drawdown tier 2 | 15% from high-water mark | Persist a human-restart lock; exits remain |
-| Quote freshness | 15 minutes | Missing or stale required data aborts planned trading |
-| Wash sale | 30-day taxpayer-wide lookback | Block the BUY; never block a safely computable exit |
-| Position thresholds | 8% stop loss / 20% take profit | Emit a deterministic full-position Risk Exit |
-| Products | Long equities only | Reject unsupported direction or product shapes |
+Execution also checks the decision baseline, universe, price tolerance, cumulative BUY cash, and SELL holdings. Missing or stale facts, malformed input, cross-account mismatch, or unsafe sizing fails closed. A deterministic full-position Risk Exit is the only action allowed without a matching planned order.
 
-Execution also verifies that current cash and positions match the decision baseline, the symbol remains in the lane universe, price movement stays within the plan tolerance, BUY cost fits cumulatively reserved cash, and SELL quantity does not exceed the holding.
+## Authority and reliability
 
-Required-data uncertainty fails closed. Missing quotes, stale quotes, malformed input, account mismatch, or an unsafe sizing calculation authorizes no planned order. Required-data uncertainty suppresses Risk Exits too rather than guessing a quantity or price.
+Deterministic code controls schemas, IDs, account binding, timing, risk calculations, and Shadow Fill state transitions. Routine prompts control fact gathering and LLM tool use. The owner and platform control credentials, schedules, broker binding, live activation, capital, and restart.
 
-Every action retains the original proposal, triggered rule, actual sizing, readable reason, and `account_id`.
+Git is continuity and audit evidence, not a transactional submission journal or cross-runner lease. Live execution still accepts duplicate-call, ambiguous-timeout, crash-before-log, prompt/tool-use, and model-drift risk at the small canary allocation. Shadow results avoid broker risk but remain assumptions, not evidence that a real limit order would have filled at that price or with zero costs.
 
-## Git, MCP, and reliability boundaries
+Credentials, tokens, cookies, account numbers, and raw authenticated responses never enter Git artifacts, fixtures, prompts, logs, or reports.
 
-### Continuity state
+## Current non-goals
 
-| Store | Holds | Required behavior |
-|---|---|---|
-| Private Git repository | Code, configuration, plans, compact JSONL facts, results, reports, and locks | Pull before work, write only new credential-free artifacts, commit and push normally, and stop on conflict |
-| Hosted MCP connection | Robinhood OAuth state and account authorization | Keep credentials in the platform; reconnect interactively when required |
+The implemented architecture does not include automatic strategy scoring/promotion, a dashboard, multiple simultaneous live lanes, a Python strategy engine, transactional persistence, exactly-once broker execution, automatic reconciliation, intraday trading, additional brokers, tax-lot optimization, or a calibrated slippage/fee model.
 
-Git is organizational memory and audit evidence, not transactional submission state. It does not close the interval between broker acceptance and a later log commit, and it provides no cross-runner lease.
-
-### Duplicate and ambiguous outcomes
-
-V1 reduces duplicates with stable IDs, one scheduler per phase and lane, existing-output refusal, repository and visible broker-history checks, first-success ownership, and no blind retry after an ambiguous response.
-
-These guards do not provide exactly-once execution. An MCP timeout, malformed response, or crash near submission stops the run. The owner must inspect Robinhood before any later attempt; the system must not infer success or failure from missing Git evidence.
-
-### Credential boundary
-
-Credentials, tokens, cookies, account numbers, and raw authenticated responses never enter Git, prompts, plans, fixtures, logs, or reports. Account numbers may exist only transiently in tool arguments and session memory.
-
-## Live gates
-
-Account A remains `dry_run` until all four conditions are satisfied:
-
-1. its hosted MCP connection is bound and proven to select the intended Account A broker account;
-2. one scheduled prior-evening Decision and next-weekday dry Execution cycle is complete and reviewable;
-3. the narrow live MCP read/review/place/cancel loop is implemented and reviewed; and
-4. Alicia explicitly changes Account A's mode and approves its initial allocation.
-
-The first Account A live cycles are inspected directly in Robinhood. After eight continuous live weeks, observed performance and incidents permit a capital review; they do not authorize an increase. Capital expansion, an Account B hosted path, or a third account requires explicit new scope and architecture review.
-
-`execution.mode` is human-owned. `dry_run` forbids broker writes, `live` permits only the reviewed loop, and `disabled` stops new work. Disabling hosted schedules is the strongest operational stop. Neither action automatically liquidates existing positions.
-
-## Accepted risks and non-goals
-
-At Account A's initial $500–1000 allocation, the owner accepts prompt/tool-use mistakes, incorrect broker arguments, duplicate calls, ambiguous timeouts, crash-before-log gaps, configuration misuse, prompt injection, and model or prompt drift. These limits must remain explicit in reports and reviews.
-
-The current architecture does not include:
-
-- a third account, shared coordinator, account framework, shared ledger, or comparison/shadow topology;
-- a non-LLM executor, transactional journal, cross-runner lease, exactly-once guarantee, or automatic ambiguous-outcome reconciliation;
-- self-managed OAuth, additional brokers, intraday trading, tax-lot optimization, or sophisticated execution algorithms;
-- a generic strategy/data-provider/plugin framework, analyst ensemble, dashboard, or automatic capital changes; or
-- execution-stage investment reasoning or any broker write from the Decision Routine.
-
-Operational procedures and recovery steps belong in `docs/RUNBOOK.md`. Remaining acceptance work belongs in `docs/TODO.md`.
+Operational procedures belong in `docs/RUNBOOK.md`. Remaining hosted and live work belongs in `docs/TODO.md`.

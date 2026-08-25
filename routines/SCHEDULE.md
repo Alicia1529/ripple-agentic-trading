@@ -1,16 +1,16 @@
-# Hosted Schedule
+# Hosted schedule
 
-The current hosted path is Account A only. Configure exactly one Decision Routine and one Execution Routine:
+Configure exactly four non-overlapping cohort triggers:
 
-| Routine | Trigger | Prompt |
-|---|---|---|
-| Account A Decision | Sunday–Thursday at 9:00 PM `America/New_York` | Account A + `routines/DECISION.md` |
-| Account A Execution | Weekdays at 9:35 AM `America/New_York` | Account A + `routines/EXECUTION.md` |
+| Routine | Selection | Trigger | Prompt |
+|---|---|---|---|
+| Live Decision | zero or one `live` account | Sunday–Thursday 9:00 PM `America/New_York` | `routines/DECISION_LIVE.md` |
+| Shadow Decision | all `shadow` accounts | Sunday–Thursday 9:00 PM `America/New_York` | `routines/DECISION_SHADOW.md` |
+| Live Execution | zero or one `live` account | Weekdays 9:35 AM `America/New_York` | `routines/EXECUTION_LIVE.md` |
+| Shadow Execution | all `shadow` accounts | Weekdays 9:35 AM `America/New_York` | `routines/EXECUTION_SHADOW.md` |
 
-If the hosted scheduler cannot express an IANA timezone, trigger in a wider UTC window and retain the prompt's `America/New_York` self-check. Do not configure overlapping copies. Missed cycles are not backfilled.
+Every trigger validates the full catalog before selecting its cohort. A live run with no account is a successful no-op. Dry-run accounts are never scheduled. Missed cycles are not backfilled.
 
-Account A passes hosted dry-run acceptance after one observed scheduled Day T Decision Routine and Day T+1 Execution Routine. Switching it to live requires separate implementation of the reviewed MCP call loop plus Alicia's explicit change of its `execution.mode`; these prompts do not authorize it.
+If the scheduler cannot express an IANA timezone, trigger within a wider UTC window and retain each routine's `America/New_York` self-check. Do not configure overlapping copies of the same cohort phase.
 
-Account B remains a fixture-backed repository lane. It has no hosted Decision schedule, Execution schedule, or bound MCP path.
-
-For Account A, an explicit Alicia-initiated **Run now** may use `publish-decision --manual-run` outside the Decision window in either `dry_run` or `live`. `execute-dry-run --manual-run` remains the immediate no-write rehearsal. After the reviewed live MCP call loop is implemented and Alicia enables it, Run now may trigger that same live Execution Routine outside its window. Manual and scheduled triggers are not last-write-wins: the first successful execution wins, and a later trigger must stop.
+The current catalog has no live account, so both live triggers must do no account work. The Shadow Decision and Execution schedules are not accepted until one observed `account_b` Day T → T+1 cycle is reviewed. The live Execution prompt remains a stop contract until the broker loop and Live Gate tasks in `docs/TODO.md` are complete.

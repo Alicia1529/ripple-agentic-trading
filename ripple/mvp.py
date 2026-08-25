@@ -10,9 +10,11 @@ from typing import Any, Mapping
 from uuid import NAMESPACE_URL, uuid5
 from zoneinfo import ZoneInfo
 
+from .account_config import AccountConfig, load_account_catalog, load_account_config
 from .decision_snapshot import DecisionSnapshot
 from .order_plan import OrderPlan
 from .risk import evaluate_plan
+from .shadow import simulate_shadow_fills
 
 
 _CYCLE_FIELDS = {"snapshot", "account_baseline", "decision", "execution_context"}
@@ -65,9 +67,8 @@ def _next_weekday(value: date) -> date:
             return candidate
 
 
-def _validate_state_root(output: Path, config: Mapping[str, Any]) -> None:
-    account_id = config.get("account_id")
-    if not isinstance(account_id, str) or output.name != account_id:
+def _validate_state_root(output: Path, config: AccountConfig) -> None:
+    if output.name != config.account_id:
         raise ValueError("state root must end with the configured account_id")
 
 
@@ -123,24 +124,17 @@ def _validate_runtime_clock(now: datetime, expected_time: str, phase: str) -> No
 
 def _build_plan(
     decision_input: Mapping[str, Any],
-    config: Mapping[str, Any],
+    config: AccountConfig,
     *,
     enforce_schedule: bool = True,
 ) -> OrderPlan:
-    if set(config) != {"account_id", "execution", "universe", "risk"}:
-        raise ValueError("configuration fields do not match the schema")
-    mode = config["execution"].get("mode") if isinstance(config["execution"], Mapping) else None
-    if mode == "disabled":
-        raise ValueError("decision publishing is disabled")
-    if mode not in {"dry_run", "live"}:
-        raise ValueError("execution.mode is not supported")
     if set(decision_input) != _DECISION_INPUT_FIELDS:
         raise ValueError("decision input fields do not match the schema")
     snapshot = DecisionSnapshot.from_dict(decision_input["snapshot"])
     decision = decision_input["decision"]
     if not isinstance(decision, Mapping) or set(decision) != _DECISION_FIELDS:
         raise ValueError("decision fields do not match the schema")
-    if snapshot.universe != tuple(config["universe"]):
+    if snapshot.universe != config.universe:
         raise ValueError("snapshot universe does not match configuration")
     account_baseline = decision_input["account_baseline"]
     if not isinstance(account_baseline, Mapping):
@@ -150,7 +144,7 @@ def _build_plan(
     target_symbols = set(decision["target_portfolio"]) - {"cash"}
     if not target_symbols <= set(snapshot.universe):
         raise ValueError("target portfolio contains a symbol outside the snapshot universe")
-    max_position = Decimal(config["risk"]["max_position_pct"])
+    max_position = Decimal(config.risk["max_position_pct"])
     if any(
         Decimal(value) > max_position
         for symbol, value in decision["target_portfolio"].items()
@@ -164,7 +158,7 @@ def _build_plan(
     _validate_decision_timing(
         decision_time, snapshot.as_of, enforce_schedule=enforce_schedule,
     )
-    plan_id = str(uuid5(NAMESPACE_URL, f"ripple:{config['account_id']}:{_date(decision_time)}"))
+    plan_id = str(uuid5(NAMESPACE_URL, f"ripple:{config.account_id}:{_date(decision_time)}"))
     orders = []
     for index, proposed_order in enumerate(decision["orders"]):
         if not isinstance(proposed_order, Mapping) or "order_id" in proposed_order:
@@ -178,7 +172,8 @@ def _build_plan(
     return OrderPlan.from_dict({
         "order_plan_id": plan_id,
         "decision_time": decision_time,
-        "account_id": config["account_id"],
+        "account_id": config.account_id,
+        "strategy_id": config.strategy_id,
         "model_config_version": decision["model_config_version"],
         "decision_snapshot_id": snapshot.snapshot_id,
         "market_snapshot_as_of": snapshot.as_of,
@@ -189,7 +184,7 @@ def _build_plan(
 
 
 def _publish_decision(
-    config: Mapping[str, Any],
+    config: AccountConfig,
     decision_input: Mapping[str, Any],
     output: Path,
     *,
@@ -211,6 +206,7 @@ def _publish_decision(
     _append_jsonl(output / "logs" / "decisions.jsonl", {
         "kind": "decision_published",
         "account_id": plan.account_id,
+        "strategy_id": plan.strategy_id,
         "order_plan_id": plan.order_plan_id,
         "decision_snapshot_id": plan.decision_snapshot_id,
         "decision_time": plan.decision_time,
@@ -226,6 +222,8 @@ def _write_report(
     plan: OrderPlan,
     execution_context: Mapping[str, Any],
     result: Mapping[str, Any],
+    *,
+    title: str,
 ) -> None:
     action_lines = []
     for action in result["actions"]:
@@ -248,23 +246,34 @@ def _write_report(
         if buy_reason is not None:
             line += f"\n  - Buy reason: {buy_reason}"
         action_lines.append(line)
+    fill_lines = []
+    for fill in result.get("shadow_fills", []):
+        fill_lines.append(
+            f"- {fill['status'].upper()} {fill['side']} {fill['symbol']} "
+            f"{fill['quantity']} at `${fill['price']}` (`{fill['reason_code']}`)"
+        )
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("x") as report:
         report.write(
-            "# Ripple MVP — DRY RUN\n\n"
+            f"# Ripple — {title}\n\n"
             f"- Account: `{plan.account_id}`\n"
+            f"- Strategy: `{plan.strategy_id}`\n"
             f"- Order plan: `{plan.order_plan_id}`\n"
             f"- Decision: `{plan.decision_time}`\n"
             f"- Execution check: `{execution_context['as_of']}`\n"
             f"- Result: **{result['status']}**\n\n"
             "## Proposed actions\n\n"
             + ("\n".join(action_lines) if action_lines else "- No orders")
+            + (
+                "\n\n## Shadow fill attempts\n\n" + "\n".join(fill_lines)
+                if fill_lines else ""
+            )
             + "\n\nNo broker write tool was called.\n"
         )
 
 
 def _execute_dry_run(
-    config: Mapping[str, Any],
+    config: AccountConfig,
     plan: OrderPlan,
     execution_context: Mapping[str, Any],
     output: Path,
@@ -272,6 +281,8 @@ def _execute_dry_run(
     run_kind: str = "fixture",
 ) -> dict[str, Any]:
     _validate_state_root(output, config)
+    if config.mode != "dry_run":
+        raise ValueError("execute-dry-run requires execution.mode=dry_run")
     _validate_execution_timing(
         plan.decision_time,
         execution_context["as_of"],
@@ -283,11 +294,9 @@ def _execute_dry_run(
         raise FileExistsError(17, "File exists", execution_path)
     latch_path = output / "risk" / "drawdown_tier2.lock.json"
     result = evaluate_plan(
-        plan.to_dict(), execution_context, config,
+        plan.to_dict(), execution_context, config.risk_rules(),
         new_entries_locked=latch_path.is_file(),
     )
-    if result["mode"] != "dry_run":
-        raise ValueError("execute-dry-run requires execution.mode=dry_run")
     if result["manual_restart_required"] and not latch_path.exists():
         _write_new_json(latch_path, {
             "account_id": plan.account_id,
@@ -298,6 +307,7 @@ def _execute_dry_run(
     _append_jsonl(output / "logs" / "executions.jsonl", {
         "kind": "dry_run_completed",
         "account_id": plan.account_id,
+        "strategy_id": plan.strategy_id,
         "order_plan_id": plan.order_plan_id,
         "occurred_at": execution_context["as_of"],
         "status": result["status"],
@@ -310,6 +320,68 @@ def _execute_dry_run(
         plan,
         execution_context,
         result,
+        title="DRY RUN",
+    )
+    return result
+
+
+def _execute_shadow(
+    config: AccountConfig,
+    plan: OrderPlan,
+    execution_context: Mapping[str, Any],
+    output: Path,
+    *,
+    run_kind: str = "fixture",
+) -> dict[str, Any]:
+    _validate_state_root(output, config)
+    if config.mode != "shadow":
+        raise ValueError("execute-shadow requires execution.mode=shadow")
+    _validate_execution_timing(
+        plan.decision_time,
+        execution_context["as_of"],
+        enforce_schedule=run_kind != "manual",
+    )
+    execution_date = _date(execution_context["as_of"])
+    execution_path = output / "executions" / execution_date / "shadow.json"
+    if execution_path.exists():
+        raise FileExistsError(17, "File exists", execution_path)
+    latch_path = output / "risk" / "drawdown_tier2.lock.json"
+    risk_result = evaluate_plan(
+        plan.to_dict(), execution_context, config.risk_rules(),
+        new_entries_locked=latch_path.is_file(),
+    )
+    result = {
+        **risk_result,
+        **simulate_shadow_fills(risk_result, execution_context),
+    }
+    if result["manual_restart_required"] and not latch_path.exists():
+        _write_new_json(latch_path, {
+            "account_id": plan.account_id,
+            "triggered_at": execution_context["as_of"],
+            "reason_code": "drawdown_tier2",
+        })
+    _write_new_json(execution_path, result)
+    _append_jsonl(output / "logs" / "executions.jsonl", {
+        "kind": "shadow_execution_completed",
+        "account_id": plan.account_id,
+        "strategy_id": plan.strategy_id,
+        "order_plan_id": plan.order_plan_id,
+        "occurred_at": execution_context["as_of"],
+        "status": result["status"],
+        "fill_status": result["fill_status"],
+        "action_count": len(result["actions"]),
+        "fill_count": sum(
+            fill["status"] == "filled" for fill in result["shadow_fills"]
+        ),
+        "result_uri": f"executions/{execution_date}/shadow.json",
+        "run_kind": run_kind,
+    })
+    _write_report(
+        output / "reports" / f"{execution_date}.md",
+        plan,
+        execution_context,
+        result,
+        title="SHADOW EXECUTION",
     )
     return result
 
@@ -322,11 +394,13 @@ def publish_decision(
     now: datetime | None = None,
     manual: bool = False,
 ) -> OrderPlan:
-    config = _read_json(config_path)
+    config = load_account_config(config_path)
     decision_input = _read_json(input_path)
     decision = decision_input.get("decision")
     if not isinstance(decision, Mapping) or not isinstance(decision.get("decision_time"), str):
         raise ValueError("decision input is missing decision_time")
+    if not manual and config.mode == "dry_run":
+        raise ValueError("dry_run accounts are excluded from scheduled Decision runs")
     if not manual:
         _validate_runtime_clock(
             now or datetime.now(timezone.utc), decision["decision_time"], "decision",
@@ -346,9 +420,7 @@ def execute_dry_run(
     now: datetime | None = None,
     manual: bool = False,
 ) -> dict[str, Any]:
-    config = _read_json(config_path)
-    if manual and config.get("execution", {}).get("mode") != "dry_run":
-        raise ValueError("manual runs require execution.mode=dry_run")
+    config = load_account_config(config_path)
     execution_context = _read_json(context_path)
     execution_time = execution_context.get("as_of")
     if not isinstance(execution_time, str):
@@ -366,14 +438,55 @@ def execute_dry_run(
     )
 
 
+def execute_shadow(
+    config_path: Path,
+    plan_path: Path,
+    context_path: Path,
+    output: Path,
+    *,
+    now: datetime | None = None,
+    manual: bool = False,
+) -> dict[str, Any]:
+    config = load_account_config(config_path)
+    execution_context = _read_json(context_path)
+    execution_time = execution_context.get("as_of")
+    if not isinstance(execution_time, str):
+        raise ValueError("execution context is missing as_of")
+    if not manual:
+        _validate_runtime_clock(
+            now or datetime.now(timezone.utc), execution_time, "execution",
+        )
+    return _execute_shadow(
+        config,
+        OrderPlan.from_dict(_read_json(plan_path)),
+        execution_context,
+        output,
+        run_kind="manual" if manual else "scheduled",
+    )
+
+
 def run_dry_cycle(config_path: Path, fixture_path: Path, output: Path) -> dict[str, Any]:
-    config = _read_json(config_path)
+    config = load_account_config(config_path)
+    if config.mode != "dry_run":
+        raise ValueError("run-dry-cycle requires execution.mode=dry_run")
     fixture = _read_json(fixture_path)
     if set(fixture) != _CYCLE_FIELDS:
         raise ValueError("MVP fixture fields do not match the schema")
     decision_input = {field: fixture[field] for field in _DECISION_INPUT_FIELDS}
     plan = _publish_decision(config, decision_input, output)
     return _execute_dry_run(config, plan, fixture["execution_context"], output)
+
+
+def run_shadow_cycle(config_path: Path, fixture_path: Path, output: Path) -> dict[str, Any]:
+    config = load_account_config(config_path)
+    if config.mode != "shadow":
+        raise ValueError("run-shadow-cycle requires execution.mode=shadow")
+    fixture = _read_json(fixture_path)
+    if set(fixture) != _CYCLE_FIELDS:
+        raise ValueError("MVP fixture fields do not match the schema")
+    decision_input = {field: fixture[field] for field in _DECISION_INPUT_FIELDS}
+    plan = _publish_decision(config, decision_input, output)
+    return _execute_shadow(config, plan, fixture["execution_context"], output)
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -393,16 +506,45 @@ def _parser() -> argparse.ArgumentParser:
     execute.add_argument("--output", type=Path, required=True)
     execute.add_argument("--manual-run", action="store_true")
 
+    shadow = subparsers.add_parser("execute-shadow")
+    shadow.add_argument("--config", type=Path, required=True)
+    shadow.add_argument("--plan", type=Path, required=True)
+    shadow.add_argument("--context", type=Path, required=True)
+    shadow.add_argument("--output", type=Path, required=True)
+    shadow.add_argument("--manual-run", action="store_true")
+
     cycle = subparsers.add_parser("run-dry-cycle")
     cycle.add_argument("--config", type=Path, required=True)
     cycle.add_argument("--fixture", type=Path, required=True)
     cycle.add_argument("--output", type=Path, required=True)
+
+    shadow_cycle = subparsers.add_parser("run-shadow-cycle")
+    shadow_cycle.add_argument("--config", type=Path, required=True)
+    shadow_cycle.add_argument("--fixture", type=Path, required=True)
+    shadow_cycle.add_argument("--output", type=Path, required=True)
+
+    validate = subparsers.add_parser("validate-configs")
+    validate.add_argument("--config-dir", type=Path, default=Path("config"))
+    validate.add_argument("--strategies-dir", type=Path, default=Path("strategies"))
+
+    listing = subparsers.add_parser("list-accounts")
+    listing.add_argument("--config-dir", type=Path, default=Path("config"))
+    listing.add_argument("--strategies-dir", type=Path, default=Path("strategies"))
+    listing.add_argument("--mode", choices=("live", "shadow", "dry_run"), required=True)
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
+        if args.command in {"validate-configs", "list-accounts"}:
+            catalog = load_account_catalog(args.config_dir, args.strategies_dir)
+            if args.command == "validate-configs":
+                print(f"account catalog valid: {len(catalog.accounts)} account(s)")
+            else:
+                for config in catalog.for_mode(args.mode):
+                    print(config.account_id)
+            return 0
         if args.command == "publish-decision":
             plan = publish_decision(
                 args.config, args.input, args.output,
@@ -415,6 +557,13 @@ def main(argv: list[str] | None = None) -> int:
                 args.config, args.plan, args.context, args.output,
                 manual=args.manual_run,
             )
+        elif args.command == "execute-shadow":
+            result = execute_shadow(
+                args.config, args.plan, args.context, args.output,
+                manual=args.manual_run,
+            )
+        elif args.command == "run-shadow-cycle":
+            result = run_shadow_cycle(args.config, args.fixture, args.output)
         else:
             result = run_dry_cycle(args.config, args.fixture, args.output)
     except FileExistsError as error:
@@ -423,7 +572,10 @@ def main(argv: list[str] | None = None) -> int:
     except (KeyError, TypeError, ValueError) as error:
         print(f"command failed: {error}", file=sys.stderr)
         return 2
-    print(f"dry-run cycle complete: {result['status']} ({len(result['actions'])} action(s))")
+    print(
+        f"{result['mode']} cycle complete: "
+        f"{result['status']} ({len(result['actions'])} action(s))"
+    )
     return 0
 
 

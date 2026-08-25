@@ -1,6 +1,6 @@
 # Ripple agent entrypoint
 
-Ripple is an existing two-account, fixture-backed dry-run MVP moving toward hosted acceptance. Preserve the isolated account lanes, trading behavior, deterministic safety rules, schemas, timing, and state semantics. Build the shortest safe slice that produces evidence for a current requirement.
+Ripple is an existing account-catalog MVP with one development lane and one shadow lane, moving toward hosted live acceptance. Preserve lane isolation, strategy attribution, deterministic safety rules, timing, and state semantics. Build the shortest safe slice that produces evidence for a current requirement.
 
 ## Sources of truth
 
@@ -20,7 +20,7 @@ Use task-specific context only when its branch applies:
 - Read `docs/DECISIONS.md` before changing durable architecture; record an approved decision there and update `docs/ARCHITECTURE.md` in the same change.
 - Read `docs/RUNBOOK.md` for deployment, scheduling, debugging, incident response, or recovery.
 - Read `routines/` for hosted prompt or schedule work.
-- Read `strategies/growth_momentum_v1.md` for Account A investment behavior.
+- Read the strategy selected by each in-scope `config/<account_id>.json` before Decision work.
 
 ## Delivery contract
 

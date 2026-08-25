@@ -1,64 +1,74 @@
 # Ripple Trading — Proposal
 
-**Current stage:** the repository implements a two-account, fixture-backed dry-run MVP. Account A is moving toward hosted scheduled acceptance; the reviewed live broker-write loop remains unfinished. Account B has no hosted Decision or Execution path.
+**Current stage:** Ripple has a validated account catalog, one fixture-backed development lane, and one fixture-backed shadow lane. The scheduled live/shadow routine topology is specified; hosted acceptance and the reviewed Robinhood broker-write loop remain unfinished.
 
-This document explains what Ripple is, why it exists, and what the current release is meant to prove. `docs/ARCHITECTURE.md` is the current technical design, `docs/DECISIONS.md` records why durable choices were made, and `docs/TODO.md` tracks unfinished work.
+`docs/ARCHITECTURE.md` is the current technical design, `docs/DECISIONS.md` records durable choices, and `docs/TODO.md` tracks unfinished work.
 
-## What this is
+## What Ripple is for
 
-Ripple is a deliberately small system for learning how an LLM-authored trading decision can move through deterministic, inspectable safety checks before execution.
+Ripple is a small system for learning how multiple investment strategies behave when each LLM-authored decision passes through the same deterministic, inspectable safety checks. It has two connected goals:
 
-The repository models exactly two isolated Robinhood Agentic account lanes. Both reuse the same CLI, schemas, and deterministic risk code while keeping configuration and state separate. Account A is the current hosted lane, with its own Decision Routine, Execution Routine, broker connection, and human-owned live gate. Account B remains fixture-backed repository evidence only.
+1. learn which responsibilities belong to an LLM, deterministic code, the hosting platform, and the human owner; and
+2. collect comparable live and shadow evidence so the owner can review records, replay behavior later, and decide whether a strategy deserves further evaluation.
 
-## Why it exists
+Ripple does not claim that an AI can beat the market. A shadow result is an explicit fill assumption, and live trading remains financially consequential and human-owned.
 
-Ripple has two connected learning goals:
-
-1. **AI-native development:** learn how to turn broad ideas into bounded, reviewable slices that produce working evidence rather than speculative infrastructure.
-2. **Agentic trading:** learn which responsibilities fit an LLM, which must remain deterministic, and where prompt-mediated execution still leaves real operational risk.
-
-The project is not trying to prove that an AI can reliably beat the market from a small sample. It is trying to make the full decision-to-execution loop understandable: what the model saw, what it decided, what code allowed or rejected, what would be sent to the broker, and where human authority remains required.
-
-## Current release
-
-The current repository proves this vertical slice without broker writes:
+## Target structure now represented in the repository
 
 ```text
-credential-free fixture
-        ↓
-DecisionSnapshot + OrderPlan
-        ↓
-deterministic execution revalidation
-        ↓
-proposed broker arguments + JSONL evidence + readable report
+strategies/*.md
+       ↑ selected by strategy identifier
+config/<account_id>.json
+       │ filename is the account identifier
+       ▼
+validated Account Catalog
+ ├── live cohort: 0 or 1 Account Lane
+ ├── shadow cohort: every shadow Account Lane
+ └── dry_run: manual development only
+       │
+       ├── Decision: one live run + one shadow run
+       └── Execution: one live run + one shadow run
+                    │
+           deterministic risk authority
+             ┌──────┴──────┐
+             ▼             ▼
+        Robinhood live   T+1 quote Shadow Fill
+        after Live Gate  with no broker call
 ```
 
-The two fixture lanes run this path independently and reject cross-account use. Hosted acceptance proves Account A's same prior-evening Decision → next-weekday dry Execution path in scheduled fresh sessions with its intended broker connection.
+Each account configuration contains a human-readable description, one Strategy Spec identifier, an execution mode, a symbol universe, and risk limits. Adding a Strategy Spec means adding a version-named Markdown file and selecting it from an account configuration; catalog validation fails when that file does not exist or more than one configuration is live.
 
-Live activation is a later gate. It requires the narrow MCP read/review/place/cancel loop to be implemented and reviewed, the intended account binding to be proven, a complete scheduled dry cycle to be inspected, and the owner to explicitly change that lane's mode.
+## Current concrete lanes
 
-## Scope at a glance
+| Account Lane | Mode | Strategy | Current role |
+|---|---|---|---|
+| `account_a` | `dry_run` | `growth_momentum_v1` | Manual fixture-backed development and future live candidate; never scheduled in this mode |
+| `account_b` | `shadow` | `growth_momentum_v1` | Scheduled-cohort candidate producing deterministic risk and assumed T+1 quote-fill evidence without Robinhood writes |
 
-- **Exactly two concrete repository lanes:** Account A owns the current hosted path; Account B remains fixture-backed. There is no shared account collection, batch coordinator, or third-account framework.
-- **Separate Decision and Execution sessions:** investment reasoning happens before the plan is frozen; next-morning execution does not create a new thesis.
-- **Deterministic risk authority:** checked-in code validates plan shape, account state, data freshness, sizing, cash, position, loss, drawdown, wash-sale, and exit rules.
-- **Small, inspectable state:** credential-free plans, logs, results, locks, and reports pass between fresh sessions through private Git.
-- **Platform-owned credentials:** Robinhood authorization remains in the hosted MCP connection, outside repository artifacts.
-- **Human-owned exposure:** the system cannot fund an account, enable live mode, clear a restart lock, increase capital, or add another lane.
+The two lanes intentionally use the same Strategy Spec today; the catalog proves assignment and isolation without inventing an unapproved investment policy. A later strategy comparison adds another versioned Strategy Spec or changes a lane through a reviewed configuration change.
+
+Existing `state/accounts/account_A` artifacts are immutable legacy fixture evidence. Canonical lowercase identifiers start new state under `state/accounts/account_a` and `state/accounts/account_b`; old evidence is not rewritten.
+
+## Mode contract
+
+- `live`: selected by the live Decision and Execution schedules; at most one configuration may use it. Real orders remain blocked until the reviewed Agentic Robinhood loop, broker binding proof, hosted acceptance, and explicit owner approval are complete.
+- `shadow`: selected with every other shadow lane in the shadow schedules. Deterministic checks run normally. A marketable allowed order is assumed filled at the documented next-weekday quote with zero fees and zero slippage, then written as credential-free evidence and ending virtual account state.
+- `dry_run`: excluded from all schedules. It exists for deliberate manual fixture and strategy development and never calls the broker or writes shadow-fill evidence.
+
+Changing a shadow lane to live is not an automatic promotion. The owner must reconcile the real broker account, positions, cash baseline, connection, and Live Gate. The system never opens or funds an account, enables live mode, increases capital, or clears a tier-two lock.
 
 ## Evidence and release gates
 
 | Stage | Evidence required | What it permits |
 |---|---|---|
-| Repository dry-run | Both fixtures complete in isolated state roots and the core tests pass | Continue to hosted setup |
-| Hosted dry acceptance | One Account A scheduled Decision and next-weekday dry Execution cycle is reviewable | Review Account A for live readiness |
-| Small live canary | Account A live loop reviewed, account binding proven, owner approval recorded | Begin with an approved $500–1000 allocation |
-| Capital or account expansion | Eight continuous weeks of operational evidence plus a new architecture review | Human consideration of a specific change; never automatic expansion |
-
-The Account A small allocation limits exposure while gathering real evidence. It does not make duplicate calls, ambiguous outcomes, incorrect tool use, prompt drift, or crash-before-log gaps technically impossible. Those are accepted limitations of the initial canary and must be reconsidered before expanding capital or adding another hosted lane.
+| Repository acceptance | Catalog validation, isolated dry/shadow fixture cycles, and all core tests pass | Configure hosted cohorts |
+| Shadow hosted acceptance | One scheduled prior-evening Decision and next-weekday Shadow Execution is reviewable | Begin accumulating comparison evidence |
+| Live hosted acceptance | Intended live lane completes the required scheduled no-write acceptance and account binding proof | Review the lane for Live Gate approval |
+| Small live canary | Reviewed broker-write loop plus explicit owner approval | Begin with the approved $500–1000 allocation |
+| Strategy or capital change | Reviewed live/shadow evidence and a new human decision | Consider a specific switch or increase; never automatic |
 
 ## Boundaries
 
-The current release is the two-account, long-only, prior-evening decision and next-morning execution loop. It does not include additional brokers or accounts, intraday trading, a generic strategy framework, comparison/shadow infrastructure, custom OAuth, a non-LLM executor, transactional submission state, exactly-once execution, automatic reconciliation, dashboards, or automated capital changes.
+The current release is long-only, prior-evening Decision and next-weekday Execution. It does not include a dashboard, automated strategy ranking or promotion, intraday trading, multiple simultaneous live accounts, transactional submission state, exactly-once broker execution, automatic reconciliation, sophisticated slippage/fee models, or a Python strategy plugin engine.
 
-Live trading and its consequences remain the account owner's responsibility. Read `docs/ARCHITECTURE.md` for the system walkthrough, `docs/INVARIANTS.md` for the safety contract, `docs/TODO.md` for the remaining gates, and `docs/RUNBOOK.md` for operation and recovery.
+Live trading and its consequences remain the account owner's responsibility. Read `docs/ARCHITECTURE.md` for the system walkthrough and `docs/INVARIANTS.md` for the safety contract.

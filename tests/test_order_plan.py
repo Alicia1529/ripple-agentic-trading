@@ -8,7 +8,8 @@ class OrderPlanTests(unittest.TestCase):
         return {
             "order_plan_id": "d44c4279-6d02-4773-a888-f906fb738aae",
             "decision_time": "2026-08-22T21:05:00-04:00",
-            "account_id": "account_A",
+            "account_id": "account_a",
+            "strategy_id": "growth_momentum_v1",
             "model_config_version": "config_A_v3",
             "decision_snapshot_id": "10de633f-be1f-4548-944a-76b94296ed5b",
             "market_snapshot_as_of": "2026-08-22T21:00:00-04:00",
@@ -21,7 +22,8 @@ class OrderPlanTests(unittest.TestCase):
         document = {
             "order_plan_id": "d44c4279-6d02-4773-a888-f906fb738aae",
             "decision_time": "2026-08-22T21:05:00-04:00",
-            "account_id": "account_A",
+            "account_id": "account_a",
+            "strategy_id": "growth_momentum_v1",
             "model_config_version": "config_A_v3",
             "decision_snapshot_id": "10de633f-be1f-4548-944a-76b94296ed5b",
             "market_snapshot_as_of": "2026-08-22T21:00:00-04:00",

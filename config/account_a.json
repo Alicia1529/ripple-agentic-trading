@@ -1,5 +1,6 @@
 {
-  "account_id": "account_A",
+  "description": "Development lane for the small Account A validation portfolio. It uses Growth Momentum v1 over a fixed liquid large-cap and index universe, with deterministic position, loss, drawdown, quote-freshness, wash-sale, stop-loss, and take-profit constraints. It is not selected by scheduled runs until the owner opens the Live Gate.",
+  "strategy": "growth_momentum_v1",
   "execution": {
     "mode": "dry_run"
   },

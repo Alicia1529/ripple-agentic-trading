@@ -19,6 +19,7 @@ _REQUIRED_FIELDS = {
     "order_plan_id",
     "decision_time",
     "account_id",
+    "strategy_id",
     "model_config_version",
     "decision_snapshot_id",
     "market_snapshot_as_of",
@@ -107,6 +108,7 @@ class OrderPlan:
     order_plan_id: str
     decision_time: str
     account_id: str
+    strategy_id: str
     model_config_version: str
     decision_snapshot_id: str
     market_snapshot_as_of: str
@@ -122,6 +124,7 @@ class OrderPlan:
             "order_plan_id": require_canonical_uuid(document["order_plan_id"], "order_plan_id"),
             "decision_time": require_aware_timestamp(document["decision_time"], "decision_time"),
             "account_id": require_nonempty_string(document["account_id"], "account_id"),
+            "strategy_id": require_nonempty_string(document["strategy_id"], "strategy_id"),
             "model_config_version": require_nonempty_string(
                 document["model_config_version"], "model_config_version"
             ),
@@ -183,6 +186,7 @@ class OrderPlan:
             "order_plan_id": self.order_plan_id,
             "decision_time": self.decision_time,
             "account_id": self.account_id,
+            "strategy_id": self.strategy_id,
             "model_config_version": self.model_config_version,
             "decision_snapshot_id": self.decision_snapshot_id,
             "market_snapshot_as_of": self.market_snapshot_as_of,

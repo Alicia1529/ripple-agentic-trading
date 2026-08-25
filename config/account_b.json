@@ -1,7 +1,11 @@
 {
-  "account_id": "account_B",
+  "description": "Shadow lane for comparing strategy evidence without broker writes. It currently applies Growth Momentum v1 to the same fixed liquid large-cap and index universe as Account A, uses an $800 virtual starting balance, and applies the same deterministic position, loss, drawdown, quote-freshness, wash-sale, stop-loss, and take-profit constraints.",
+  "strategy": "growth_momentum_v1",
   "execution": {
-    "mode": "dry_run"
+    "mode": "shadow"
+  },
+  "shadow": {
+    "initial_cash": "800"
   },
   "universe": [
     "AAPL",

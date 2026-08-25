@@ -6,6 +6,7 @@ import tempfile
 import unittest
 
 from ripple import OrderPlan
+from ripple.account_config import load_account_config
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,23 +16,24 @@ class MvpDryCycleTests(unittest.TestCase):
     def test_two_account_lanes_produce_isolated_state(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
-            base = ["python3.12", "-m", "ripple.mvp", "run-dry-cycle"]
             lanes = {
-                "account_A": (
-                    ROOT / "config" / "mvp.json",
+                "account_a": (
+                    "run-dry-cycle",
+                    ROOT / "config" / "account_a.json",
                     ROOT / "fixtures" / "mvp" / "dry_cycle.json",
                 ),
-                "account_B": (
-                    ROOT / "config" / "mvp-account-b.json",
+                "account_b": (
+                    "run-shadow-cycle",
+                    ROOT / "config" / "account_b.json",
                     ROOT / "fixtures" / "mvp" / "dry_cycle_account_b.json",
                 ),
             }
 
             plans = {}
-            for account_id, (config, fixture) in lanes.items():
+            for account_id, (command, config, fixture) in lanes.items():
                 output = root / account_id
                 completed = subprocess.run(
-                    base + [
+                    ["python3.12", "-m", "ripple.mvp", command] + [
                         "--config", str(config),
                         "--fixture", str(fixture),
                         "--output", str(output),
@@ -52,28 +54,28 @@ class MvpDryCycleTests(unittest.TestCase):
                 self.assertEqual(execution_log["account_id"], account_id)
 
             self.assertNotEqual(
-                plans["account_A"]["order_plan_id"],
-                plans["account_B"]["order_plan_id"],
+                plans["account_a"]["order_plan_id"],
+                plans["account_b"]["order_plan_id"],
             )
-            account_a_fixture = json.loads(lanes["account_A"][1].read_text())
-            account_b_fixture = json.loads(lanes["account_B"][1].read_text())
+            account_a_fixture = json.loads(lanes["account_a"][2].read_text())
+            account_b_fixture = json.loads(lanes["account_b"][2].read_text())
             self.assertEqual(account_a_fixture["snapshot"], account_b_fixture["snapshot"])
-            from ripple.mvp import _execute_dry_run, _read_json
+            from ripple.mvp import _execute_shadow
             with self.assertRaisesRegex(ValueError, "account_id does not match"):
-                _execute_dry_run(
-                    _read_json(lanes["account_B"][0]),
-                    OrderPlan.from_dict(plans["account_A"]),
+                _execute_shadow(
+                    load_account_config(lanes["account_b"][1]),
+                    OrderPlan.from_dict(plans["account_a"]),
                     account_b_fixture["execution_context"],
-                    root / "crossed" / "account_B",
+                    root / "crossed" / "account_b",
                 )
             self.assertFalse((root / "crossed").exists())
 
     def test_cli_produces_one_reviewable_credential_free_cycle(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
-            output = Path(temporary_directory) / "account_A"
+            output = Path(temporary_directory) / "account_a"
             command = [
                 "python3.12", "-m", "ripple.mvp", "run-dry-cycle",
-                "--config", str(ROOT / "config" / "mvp.json"),
+                "--config", str(ROOT / "config" / "account_a.json"),
                 "--fixture", str(ROOT / "fixtures" / "mvp" / "dry_cycle.json"),
                 "--output", str(output),
             ]
@@ -83,7 +85,7 @@ class MvpDryCycleTests(unittest.TestCase):
             )
 
             self.assertEqual(completed.returncode, 0, completed.stderr)
-            self.assertIn("dry-run cycle complete", completed.stdout)
+            self.assertIn("dry_run cycle complete", completed.stdout)
 
             plan_path = output / "plans" / "2026-08-24" / "order_plan.json"
             snapshot_path = output / "snapshots" / "2026-08-24" / "decision_snapshot.json"
@@ -131,11 +133,13 @@ class MvpDryCycleTests(unittest.TestCase):
             self.assertEqual(len(decision_log.read_text().splitlines()), 1)
             self.assertEqual(len(execution_log.read_text().splitlines()), 1)
 
-    def test_hosted_routine_commands_handoff_through_published_plan(self):
-        fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
+    def test_scheduled_shadow_commands_handoff_through_published_plan(self):
+        fixture = json.loads(
+            (ROOT / "fixtures" / "mvp" / "dry_cycle_account_b.json").read_text()
+        )
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
-            output = root / "account_A"
+            output = root / "account_b"
             decision_input = root / "decision.json"
             context_input = root / "execution_context.json"
             decision_input.write_text(json.dumps({
@@ -144,8 +148,8 @@ class MvpDryCycleTests(unittest.TestCase):
                 "decision": fixture["decision"],
             }))
             context_input.write_text(json.dumps(fixture["execution_context"]))
-            from ripple.mvp import execute_dry_run, publish_decision
-            config = ROOT / "config" / "mvp.json"
+            from ripple.mvp import execute_shadow, publish_decision
+            config = ROOT / "config" / "account_b.json"
 
             publish_decision(
                 config, decision_input, output,
@@ -153,14 +157,16 @@ class MvpDryCycleTests(unittest.TestCase):
             )
 
             plan_path = output / "plans" / "2026-08-24" / "order_plan.json"
-            execute_dry_run(
+            execute_shadow(
                 config, plan_path, context_input, output,
                 now=datetime.fromisoformat(fixture["execution_context"]["as_of"]),
             )
-            self.assertTrue((output / "executions" / "2026-08-25" / "dry_run.json").is_file())
+            self.assertTrue((output / "executions" / "2026-08-25" / "shadow.json").is_file())
 
     def test_sunday_decision_executes_monday(self):
-        fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
+        fixture = json.loads(
+            (ROOT / "fixtures" / "mvp" / "dry_cycle_account_b.json").read_text()
+        )
         fixture["snapshot"]["as_of"] = "2026-08-23T20:55:00-04:00"
         fixture["decision"]["decision_time"] = "2026-08-23T21:00:00-04:00"
         fixture["execution_context"]["as_of"] = "2026-08-24T09:35:00-04:00"
@@ -169,7 +175,7 @@ class MvpDryCycleTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
-            output = root / "account_A"
+            output = root / "account_b"
             decision_input = root / "decision.json"
             context_input = root / "context.json"
             decision_input.write_text(json.dumps({
@@ -178,29 +184,29 @@ class MvpDryCycleTests(unittest.TestCase):
                 "decision": fixture["decision"],
             }))
             context_input.write_text(json.dumps(fixture["execution_context"]))
-            from ripple.mvp import execute_dry_run, publish_decision
+            from ripple.mvp import execute_shadow, publish_decision
 
             publish_decision(
-                ROOT / "config" / "mvp.json",
+                ROOT / "config" / "account_b.json",
                 decision_input,
                 output,
                 now=datetime.fromisoformat(fixture["decision"]["decision_time"]),
             )
             plan_path = output / "plans" / "2026-08-23" / "order_plan.json"
-            execute_dry_run(
-                ROOT / "config" / "mvp.json",
+            execute_shadow(
+                ROOT / "config" / "account_b.json",
                 plan_path,
                 context_input,
                 output,
                 now=datetime.fromisoformat(fixture["execution_context"]["as_of"]),
             )
             self.assertTrue(
-                (output / "executions" / "2026-08-24" / "dry_run.json").is_file()
+                (output / "executions" / "2026-08-24" / "shadow.json").is_file()
             )
 
     def test_friday_and_saturday_decisions_are_rejected(self):
         fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
-        config = json.loads((ROOT / "config" / "mvp.json").read_text())
+        config = load_account_config(ROOT / "config" / "account_a.json")
         from ripple.mvp import _build_plan
 
         for decision_time in (
@@ -228,7 +234,7 @@ class MvpDryCycleTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
-            output = root / "account_A"
+            output = root / "account_a"
             decision_input = root / "decision.json"
             context_input = root / "context.json"
             decision_input.write_text(json.dumps({
@@ -237,7 +243,7 @@ class MvpDryCycleTests(unittest.TestCase):
                 "decision": fixture["decision"],
             }))
             context_input.write_text(json.dumps(fixture["execution_context"]))
-            config = ROOT / "config" / "mvp.json"
+            config = ROOT / "config" / "account_a.json"
             publish = subprocess.run(
                 [
                     "python3.12", "-m", "ripple.mvp", "publish-decision",
@@ -270,12 +276,12 @@ class MvpDryCycleTests(unittest.TestCase):
 
     def test_manual_decision_is_allowed_for_live_mode(self):
         fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
-        config = json.loads((ROOT / "config" / "mvp.json").read_text())
+        config = json.loads((ROOT / "config" / "account_a.json").read_text())
         config["execution"]["mode"] = "live"
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
-            config_path = root / "live.json"
+            config_path = root / "account_a.json"
             input_path = root / "decision.json"
             config_path.write_text(json.dumps(config))
             input_path.write_text(json.dumps({
@@ -286,23 +292,23 @@ class MvpDryCycleTests(unittest.TestCase):
             from ripple.mvp import publish_decision
 
             plan = publish_decision(
-                config_path, input_path, root / "account_A", manual=True,
+                config_path, input_path, root / "account_a", manual=True,
             )
-            self.assertEqual(plan.account_id, "account_A")
+            self.assertEqual(plan.account_id, "account_a")
             self.assertEqual(
                 json.loads(
-                    (root / "account_A" / "logs" / "decisions.jsonl").read_text()
+                    (root / "account_a" / "logs" / "decisions.jsonl").read_text()
                 )["run_kind"],
                 "manual",
             )
 
     def test_first_execution_record_wins_between_manual_and_scheduled_runs(self):
         fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
-        config_path = ROOT / "config" / "mvp.json"
+        config_path = ROOT / "config" / "account_a.json"
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
-            output = root / "account_A"
+            output = root / "account_a"
             decision_input = root / "decision.json"
             context_input = root / "context.json"
             decision_input.write_text(json.dumps({
@@ -317,7 +323,7 @@ class MvpDryCycleTests(unittest.TestCase):
                 config_path,
                 decision_input,
                 output,
-                now=datetime.fromisoformat(fixture["decision"]["decision_time"]),
+                manual=True,
             )
             plan_path = output / "plans" / "2026-08-24" / "order_plan.json"
             execute_dry_run(
@@ -348,13 +354,13 @@ class MvpDryCycleTests(unittest.TestCase):
         )
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            output = Path(temporary_directory) / "account_A"
+            output = Path(temporary_directory) / "account_a"
             fixture_path = Path(temporary_directory) / "fixture.json"
             fixture_path.write_text(json.dumps(fixture))
             completed = subprocess.run(
                 [
                     "python3.12", "-m", "ripple.mvp", "run-dry-cycle",
-                    "--config", str(ROOT / "config" / "mvp.json"),
+                    "--config", str(ROOT / "config" / "account_a.json"),
                     "--fixture", str(fixture_path),
                     "--output", str(output),
                 ],
@@ -369,41 +375,34 @@ class MvpDryCycleTests(unittest.TestCase):
                 (output / "executions" / "2026-08-25" / "dry_run.json").is_file()
             )
 
-    def test_disabled_mode_and_same_day_execution_fail_closed(self):
+    def test_scheduled_dry_run_and_same_day_execution_fail_closed(self):
         fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
-        config = json.loads((ROOT / "config" / "mvp.json").read_text())
+        config = load_account_config(ROOT / "config" / "account_a.json")
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
-            output = root / "account_A"
+            output = root / "account_a"
             decision_input = root / "decision.json"
             decision_input.write_text(json.dumps({
                 "snapshot": fixture["snapshot"],
                 "account_baseline": fixture["account_baseline"],
                 "decision": fixture["decision"],
             }))
-            disabled_config = root / "disabled.json"
-            config["execution"]["mode"] = "disabled"
-            disabled_config.write_text(json.dumps(config))
-            base = ["python3.12", "-m", "ripple.mvp"]
-
-            disabled = subprocess.run(
-                base + [
-                    "run-dry-cycle", "--config", str(disabled_config),
-                    "--fixture", str(ROOT / "fixtures" / "mvp" / "dry_cycle.json"),
+            scheduled = subprocess.run(
+                [
+                    "python3.12", "-m", "ripple.mvp", "publish-decision",
+                    "--config", str(ROOT / "config" / "account_a.json"),
+                    "--input", str(decision_input),
                     "--output", str(output),
                 ],
                 cwd=ROOT, text=True, capture_output=True, check=False,
             )
-            self.assertNotEqual(disabled.returncode, 0)
-            self.assertIn("disabled", disabled.stderr)
+            self.assertNotEqual(scheduled.returncode, 0)
+            self.assertIn("excluded", scheduled.stderr)
             self.assertFalse(output.exists())
 
-            config["execution"]["mode"] = "dry_run"
-            enabled_config = root / "enabled.json"
-            enabled_config.write_text(json.dumps(config))
             from ripple.mvp import _publish_decision, _read_json
             plan = _publish_decision(
-                _read_json(enabled_config), _read_json(decision_input), output,
+                config, _read_json(decision_input), output,
             )
             context = fixture["execution_context"]
             context["as_of"] = "2026-08-24T22:00:00-04:00"
@@ -413,16 +412,16 @@ class MvpDryCycleTests(unittest.TestCase):
             from ripple.mvp import _execute_dry_run
             with self.assertRaisesRegex(ValueError, "next weekday"):
                 _execute_dry_run(
-                    _read_json(enabled_config), plan, _read_json(context_path), output,
+                    config, plan, _read_json(context_path), output,
                 )
 
     def test_state_root_must_match_configured_account(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
-            wrong_root = Path(temporary_directory) / "account_B"
+            wrong_root = Path(temporary_directory) / "account_b"
             completed = subprocess.run(
                 [
                     "python3.12", "-m", "ripple.mvp", "run-dry-cycle",
-                    "--config", str(ROOT / "config" / "mvp.json"),
+                    "--config", str(ROOT / "config" / "account_a.json"),
                     "--fixture", str(ROOT / "fixtures" / "mvp" / "dry_cycle.json"),
                     "--output", str(wrong_root),
                 ],
@@ -435,7 +434,7 @@ class MvpDryCycleTests(unittest.TestCase):
 
     def test_weekend_delayed_or_out_of_window_execution_is_rejected(self):
         fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
-        config = json.loads((ROOT / "config" / "mvp.json").read_text())
+        config = load_account_config(ROOT / "config" / "account_a.json")
         from ripple.mvp import _build_plan, _execute_dry_run
 
         plan = _build_plan(
@@ -460,16 +459,16 @@ class MvpDryCycleTests(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         _execute_dry_run(
                             config, plan, context,
-                            Path(temporary_directory) / "account_A",
+                            Path(temporary_directory) / "account_a",
                         )
 
     def test_tier_two_drawdown_latch_persists_until_human_reset(self):
         fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
-        config = json.loads((ROOT / "config" / "mvp.json").read_text())
+        config = load_account_config(ROOT / "config" / "account_a.json")
         from ripple.mvp import _build_plan, _execute_dry_run
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            output = Path(temporary_directory) / "account_A"
+            output = Path(temporary_directory) / "account_a"
             first_plan = _build_plan(
                 {
                     "snapshot": fixture["snapshot"],

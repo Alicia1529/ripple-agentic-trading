@@ -4,6 +4,3 @@ __pycache__/
 *.pyc
 .venv/
 venv/
-
-# Local-only Chinese reading copies of docs/ — not published to GitHub
-docs/zh/

@@ -47,7 +47,6 @@ def _timestamp(value: str) -> datetime:
 
 
 _ABORT_MESSAGES = {
-    "execution_disabled": "Execution is disabled for this account.",
     "missing_quote": "A required current quote is missing.",
     "stale_quote": "A required current quote is stale.",
     "account_state_mismatch": "Current cash or positions do not match the decision baseline.",
@@ -156,7 +155,7 @@ def _validate_inputs(execution_context: Mapping[str, Any], rules: Mapping[str, A
         raise ValueError("risk rule fields do not match the schema")
     if not isinstance(rules["execution"], Mapping) or set(rules["execution"]) != {"mode"}:
         raise ValueError("execution fields do not match the schema")
-    if rules["execution"]["mode"] not in {"dry_run", "live", "disabled"}:
+    if rules["execution"]["mode"] not in {"dry_run", "live", "shadow"}:
         raise ValueError("execution.mode is not supported")
     require_nonempty_string(rules["account_id"], "account_id")
     universe = rules["universe"]
@@ -265,19 +264,6 @@ def evaluate_plan(
     tier_two_triggered = drawdown >= Decimal(risk_rules["drawdown_tier2_pct"])
     manual_restart_required = new_entries_locked or tier_two_triggered
 
-    if mode == "disabled":
-        actions = [_rejected_action(order, "execution_disabled") for order in plan.orders]
-        return {
-            "order_plan_id": plan.order_plan_id,
-            "account_id": plan.account_id,
-            "mode": mode,
-            "status": "rejected",
-            "abort_reason": None,
-            "manual_restart_required": manual_restart_required,
-            "actions": actions,
-            "position_alerts": [],
-        }
-
     required_symbols = set(account["positions"]) | {order["symbol"] for order in plan.orders}
     data_abort_reason = None
     for symbol in sorted(required_symbols):
@@ -295,6 +281,7 @@ def evaluate_plan(
         return {
             "order_plan_id": plan.order_plan_id,
             "account_id": plan.account_id,
+            "strategy_id": plan.strategy_id,
             "mode": mode,
             "status": "aborted",
             "abort_reason": data_abort_reason,
@@ -461,6 +448,7 @@ def evaluate_plan(
     return {
         "order_plan_id": plan.order_plan_id,
         "account_id": plan.account_id,
+        "strategy_id": plan.strategy_id,
         "mode": mode,
         "status": status,
         "abort_reason": plan_abort_reason,

@@ -1,11 +1,12 @@
 # Growth Momentum v1
 
-This is the complete Account A investment policy for the small-account MVP. The
-Decision Routine applies it; there is no separate strategy engine.
+This is a complete investment policy that any Account Lane may select by using
+`"strategy": "growth_momentum_v1"` in its configuration. The Decision Routine
+applies it; there is no separate strategy engine.
 
 ## Inputs
 
-Use only the symbols in `config/mvp.json`. For every stock in that universe that
+Use only the symbols in the selected Account Lane's configuration. For every stock in that universe that
 is not already held, collect the latest completed close, SMA50, 60-session
 return, and next earnings date. Also collect SPY's close and SMA50 and QQQ's
 60-session return. Missing or uncertain required data disqualifies that symbol.
@@ -57,4 +58,4 @@ most 1% above it and a SELL limit at most 1% below it.
 The LLM gathers the facts and applies this policy. Checked-in code validates the
 published OrderPlan and revalidates execution risk, but does not independently
 prove exhaustive research or the economic truth of a HOLD/SELL judgment. That
-prompt-mediated risk is accepted for the initial small Account A allocation.
+prompt-mediated risk is accepted only under the selected lane's documented mode and allocation.

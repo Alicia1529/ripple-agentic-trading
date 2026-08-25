@@ -1,36 +1,52 @@
 # Current effective decisions
 
-Git history retains superseded reasoning. This file summarizes only decisions that govern the current MVP.
+Git history retains superseded reasoning. This file summarizes only decisions that govern the current release.
 
 ## Product and release
 
-- Ripple exists to learn from a small, inspectable real-money agent loop. The repository keeps two independent fixture lanes; Account A alone owns the current hosted path.
-- Initial exposure is $500–1000 for Account A. Alicia alone enables live mode, funds the account, restarts a tier-two lock, or approves more capital.
-- One complete Account A scheduled dry cycle and verified account binding gate its live activation. Eight continuous live weeks permit a capital review, not automatic scaling.
-- An Account B hosted path, a third account, or increased capital triggers architecture review of execution isolation, durability, idempotency, reconciliation, and operational ownership.
+- Ripple compares isolated, strategy-attributed Account Lanes while keeping deterministic risk authority and human-owned live activation.
+- `account_a` is currently `dry_run`; `account_b` is currently `shadow`. There is no live configuration while the broker-write loop and acceptance gates remain unfinished.
+- Initial live exposure remains $500–1000. Alicia alone enables live mode, binds or funds the broker account, restarts a tier-two lock, switches the live strategy, or approves more capital.
+- Live and shadow evidence can support a human review. No metric or threshold automatically promotes a strategy or changes capital.
+
+## Account Catalog and strategies
+
+- Each `config/<account_id>.json` file defines one Account Lane; its lowercase snake-case filename is the sole account identifier.
+- A configuration contains a human-readable description, exactly one Strategy Spec identifier, one execution mode, one universe, and one set of risk values. Shadow lanes also declare initial virtual cash.
+- The catalog validates every selected `strategies/<strategy_id>.md` file and fails if more than one configuration is live. It returns account-ID-sorted cohorts instead of maintaining an `accounts[]` registry.
+- Strategy Specs remain prompt-defined Markdown policies. Ripple does not add a Python plugin engine. New versioned specs are added as new files rather than changing historical attribution in place.
+- `strategy_id` is frozen into new OrderPlans and execution evidence so later review does not depend on the current config alone.
+
+## Modes and scheduling
+
+- `live` selects zero or one lane for the live Decision and Execution runs. `shadow` selects all shadow lanes for their two cohort runs. `dry_run` is excluded from scheduling and exists only for deliberate manual development.
+- Exactly four schedule triggers represent the topology: live Decision, shadow Decision, live Execution, and shadow Execution. One failing shadow lane cannot authorize or mutate another lane.
+- A shadow-to-live change requires explicit reconciliation against the real broker account. Virtual holdings and fills never become broker authority.
+- Disabling both live schedules is the strongest operational stop. Changing the live lane to `dry_run` removes it from scheduled cohorts but does not cancel orders or liquidate positions.
 
 ## Decision and execution
 
-- Decision runs Sunday–Thursday around 9:00 PM `America/New_York`; Sunday uses Friday's completed close plus weekend facts. Execution runs the next weekday around 9:35 AM. Missed cycles are not backfilled.
-- The Decision Routine publishes one immutable `DecisionSnapshot` and `OrderPlan`. It never uses broker write tools, even when the hosted connection exposes them.
-- The Execution Routine may execute, scale down, reject, or abort the published plan after deterministic revalidation. It performs no new investment reasoning. Script-emitted full-position stop-loss/take-profit Risk Exits are the sole unplanned-order exception.
-- Stable plan/order IDs and first-success ownership reduce duplicates. Manual runs are labeled; ambiguous broker outcomes stop without blind retry.
+- Decision runs Sunday–Thursday around 9:00 PM `America/New_York`; Execution runs the next weekday around 9:35 AM. Missed cycles are not backfilled.
+- The Decision Routine publishes one immutable `DecisionSnapshot` and strategy-attributed `OrderPlan`. It never uses broker write tools.
+- The Execution Routine performs no new investment reasoning. It may execute, scale down, reject, or abort after deterministic revalidation. Script-emitted full-position stop-loss/take-profit Risk Exits are the sole unplanned-order exception.
+- Stable IDs and first-success ownership reduce duplicates. Manual runs are labeled; ambiguous live broker outcomes stop without blind retry.
+
+## Shadow execution
+
+- Shadow uses the same deterministic risk result as live/dry evaluation and never calls a broker.
+- An allowed BUY limit fills only when the T+1 execution quote is at or below its limit; an allowed SELL limit fills only when the quote is at or above its limit. Market Risk Exits fill at the quote.
+- A Shadow Fill is recorded at the T+1 quote and execution timestamp with zero fees and zero slippage. Unmarketable limits are recorded as `not_filled`.
+- Each result freezes fill attempts and the ending virtual cash, positions, average costs, new-position count, and loss-sale state for the next cycle. It is comparison evidence, not a claim about real broker fills.
 
 ## State and isolation
 
-- Account A and B use concrete separate configurations, state roots, and risk state over the same CLI and risk code. Account A alone has hosted schedules and an MCP connection; Account B remains fixture-backed. There is no coordinator, shared ledger, or `accounts[]` framework.
-- `DecisionSnapshot` and `OrderPlan` remain strict immutable value objects. Persisted financial values are base-10 decimal strings. OrderPlans accept positive share-quantity `LIMIT`, `regular_hours`, `gfd` orders and carry a credential-free account baseline.
-- Private Git stores code, configuration, per-cycle plans, compact JSONL records, and sanitized reports between fresh hosted sessions. Hosted MCP stores OAuth state. Tokens, cookies, account numbers, and raw authenticated responses never enter Git artifacts.
-- Git is not a transactional submission journal or cross-runner lease. The small-account MVP explicitly accepts crash-before-log, duplicate-call, ambiguous-timeout, prompt/tool-use, configuration, and model-drift risks.
+- Every lane owns its configuration, state root, plan, virtual or real account facts, risk state, execution evidence, and restart lock. Taxpayer-wide loss-sale history remains the only documented cross-lane input.
+- Existing uppercase `state/accounts/account_A` artifacts are immutable legacy fixture evidence. Lowercase catalog identifiers start new canonical roots; historical plans are not rewritten.
+- Private Git stores credential-free plans, compact JSONL facts, results, reports, and locks. Platform-managed Robinhood authorization remains outside the repository.
+- Git is not a transactional submission journal or cross-runner lease. The live canary still accepts crash-before-log, duplicate-call, ambiguous-timeout, prompt/tool-use, configuration, and model-drift risks.
 
-## Deterministic safety
+## Deterministic safety and non-goals
 
-- Risk is computed per account: 20% maximum symbol position, three new positions per day, 5% daily-loss breaker, 10% tier-one drawdown, 15% tier-two drawdown, 15-minute quote freshness, 30-day taxpayer-wide wash-sale lookback, 8% stop-loss, and 20% take-profit.
-- BUY cash is reserved cumulatively at worst-case limit fills. Missing/stale quotes, baseline mismatch, cross-account mismatch, malformed inputs, or uncertain required state fail closed.
-- Tier two persists an account-scoped lock blocking new BUYs until Alicia reviews and removes it. Risk-reducing exits remain possible when safely computable.
-- `execution.mode` is a human-owned gate. Disabling hosted schedules is the strongest operational stop; neither action automatically liquidates positions.
-
-## Current strategy and non-goals
-
-- Account A uses `strategies/growth_momentum_v1.md`: full configured-universe screening and current-position review may yield no trade, one 10% BUY, one full discretionary SELL, or both. The generic publisher and deterministic execution checks remain authoritative.
-- The MVP does not include a strategy engine/plugin system, analyst ensemble, shadow/comparison infrastructure, additional brokers, intraday trading, tax-lot optimization, custom OAuth, a non-LLM executor, transactional persistence, exactly-once submission, or automatic ambiguous-outcome reconciliation.
+- Risk remains per lane: 20% maximum position, three new positions per day, 5% daily loss, 10%/15% drawdown tiers, 15-minute quote age, 30-day taxpayer-wide wash-sale lookback, 8% stop loss, and 20% take profit.
+- Missing or stale facts, baseline mismatch, cross-account mismatch, malformed inputs, or unsafe sizing fail closed. Tier two requires human restart.
+- Current non-goals include a dashboard, automatic strategy ranking/promotion, multiple simultaneous live lanes, additional brokers, intraday trading, a Python strategy engine, transactional persistence, exactly-once submission, automatic reconciliation, and calibrated fee/slippage simulation.

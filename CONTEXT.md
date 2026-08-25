@@ -1,19 +1,31 @@
 # Ripple trading domain
 
-Ripple describes a two-stage, agent-mediated trading loop whose account boundaries, decision artifacts, and risk authority must remain explicit. Use these terms consistently in code and documentation.
+Ripple describes a two-stage, strategy-attributed trading loop whose lane boundaries, decision artifacts, execution evidence, and risk authority remain explicit.
 
 ## Language
 
 **Account Lane**:
-One account's isolated decision-to-execution path, identified by `account_id`. A lane never owns another lane's plan, state, risk, or broker authority.
-_Avoid_: Account worker, account collection
+One isolated strategy portfolio, identified by the filename of its account configuration. A Live Account Lane is bound to a real broker account; a Shadow Account Lane owns virtual evidence only.
+_Avoid_: Broker account, account worker, strategy instance
+
+**Strategy Spec**:
+A checked-in, version-named investment policy selected by an Account Lane and applied only by its Decision Routine.
+_Avoid_: Plugin, strategy engine, trading bot
+
+**Execution Mode**:
+The human-owned classification of an Account Lane as `live`, `shadow`, or `dry_run`.
+_Avoid_: Environment, automatic promotion state
+
+**Scheduled Cohort**:
+The Account Lanes selected for one scheduled run by Execution Mode. The live cohort contains at most one lane; the shadow cohort contains every shadow lane; dry-run lanes belong to neither.
+_Avoid_: Shared account pool, batch account
 
 **Decision Cycle**:
 One prior-evening decision and its corresponding next-weekday execution attempt for a single Account Lane.
-_Avoid_: Trading session, daily run
+_Avoid_: Trading session, daily batch
 
 **Decision Routine**:
-The isolated LLM role that gathers allowed facts, applies the assigned strategy, and publishes one decision without execution authority.
+The isolated LLM role that gathers allowed facts, applies the selected Strategy Spec, and publishes one decision without execution authority.
 _Avoid_: Trading bot, execution agent
 
 **DecisionSnapshot**:
@@ -21,25 +33,29 @@ The immutable allowed inputs, universe, and as-of facts used for one Decision Cy
 _Avoid_: Prompt context, market snapshot
 
 **OrderPlan**:
-The immutable decision-stage instruction for one Account Lane and Decision Cycle. It contains the intended portfolio, proposed orders, and credential-free account baseline, but never execution outcomes.
+The immutable, strategy-attributed decision-stage instruction for one Account Lane and Decision Cycle.
 _Avoid_: Trade result, execution plan
 
 **Execution Routine**:
-The isolated LLM role that applies deterministic risk output to a published OrderPlan. It may execute, scale down, reject, or abort, but does not form a new investment view.
+The isolated role that applies deterministic risk output to a published OrderPlan without forming a new investment view.
 _Avoid_: Portfolio manager, independent trading agent
 
+**Shadow Fill**:
+A credential-free assumption that a deterministic-risk-allowed order filled at its documented next-weekday quote when its limit was marketable. It is evidence, never a broker fill.
+_Avoid_: Paper broker confirmation, backdated fill
+
 **Risk Exit**:
-A deterministic full-position sell produced by a configured stop-loss or take-profit rule. It is risk authority over an existing holding, not a new investment decision or a replacement OrderPlan.
+A deterministic full-position sell produced by a configured stop-loss or take-profit rule.
 _Avoid_: Execution trade idea, replacement plan
 
 **Lane State**:
-The credential-free continuity record owned by one Account Lane, including its plans, decision and execution facts, reports, and restart lock.
+The credential-free continuity record owned by one Account Lane, including plans, facts, results, reports, and restart locks.
 _Avoid_: Shared ledger, transactional journal
 
 **Live Gate**:
-The human-owned approval boundary that permits one Account Lane to move from dry-run evidence to real broker writes after its required acceptance checks.
+The human-owned approval boundary that permits one Account Lane to use real broker-write capability after required acceptance checks.
 _Avoid_: Automatic promotion, model approval
 
 **Hosted Acceptance**:
-Evidence from a complete scheduled Decision Cycle in the intended hosted environment, with no broker write. Manual rehearsal is not Hosted Acceptance.
+Evidence from the intended scheduled environment without unauthorized broker writes. Manual rehearsal is not Hosted Acceptance.
 _Avoid_: Local acceptance, manual dry run

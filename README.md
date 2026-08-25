@@ -1,110 +1,103 @@
 # Ripple Trading
 
-Ripple is a small, inspectable experiment in **AI-native development** and **agentic trading**. It explores how an LLM can make bounded portfolio decisions while ordinary Python code remains responsible for deterministic validation, position sizing, and risk controls.
+Ripple is a small, inspectable experiment in AI-native development and agentic trading. Multiple isolated Account Lanes can select different checked-in investment strategies while sharing deterministic validation and risk rules. The goal is to monitor live and shadow records, understand failures, and build evidence for later human review—not to promise returns.
 
-The repository currently contains a fixture-backed **dry-run MVP for exactly two isolated Robinhood account lanes**. It can produce plans and simulated execution records, but the live broker call loop and hosted acceptance gates are not complete. It is a learning project—not a production trading bot or a promise of returns.
+The repository now implements a validated account catalog, a manual dry-run lane, and a T+1 quote-based shadow execution path. Hosted schedules and the reviewed live Agentic Robinhood broker-write loop remain unfinished, so no configuration is live today.
 
-## What this project explores
-
-Ripple has two connected learning goals:
-
-- **AI-native development:** use agents to explore a problem, compile it into a small approved scope, implement one testable slice, and preserve the reasoning and operating boundaries in the repository.
-- **Agentic trading:** give an LLM a narrow Decision role, then pass its immutable plan to a separate Execution role constrained by deterministic code and explicit human-owned live gates.
-
-The central question is not “can an AI pick stocks?” It is: **what boundaries, artifacts, checks, and operating practices make an agent-driven trading loop understandable and reviewable?**
-
-## How the loop works
+## Actual structure
 
 ```text
-Latest completed market session
-              │
-              ▼
-     Decision Routine (LLM)
-     facts → thesis → OrderPlan
-              │
-              │ immutable, credential-free plan
-              ▼
-   Next-morning Execution Routine
-   current facts → deterministic checks
-              │
-       ┌──────┼────────┐
-       ▼      ▼        ▼
-    execute  scale    abort
-    dry run   down    safely
+strategies/*.md
+       ↑ config selects one strategy
+config/<account_id>.json
+       │ filename is the identifier
+       ▼
+ Account Catalog
+ ├─ live:    zero or one lane
+ ├─ shadow:  every shadow lane
+ └─ dry_run: manual development only
+       │
+       ├─ prior-evening Decision
+       │    → immutable strategy-attributed OrderPlan
+       └─ next-weekday Execution
+            → deterministic risk
+               ├─ live: Agentic Robinhood after Live Gate
+               └─ shadow: assumed T+1 quote fill, no broker call
 ```
 
-Both fixture lanes have separate configuration, state, and risk. Account A alone owns the current hosted schedules, broker connection, and human-controlled live switch; Account B has no hosted Decision or Execution path. The lanes share schemas and risk code, but one account can never authorize work in the other.
+Daily hosting uses four schedule triggers: one live Decision run, one all-shadow Decision run, one live Execution run, and one all-shadow Execution run. A live run may have no selected account; dry-run configurations are never scheduled.
 
-## Where safety lives
+## Current lanes
 
-Ripple deliberately separates deterministic checks from agent behavior. **Code calculates what is allowed; prompts tell the LLM how to operate; humans decide whether live trading is enabled.** These layers are useful, but they are not equivalent guarantees.
+| Account | Mode | Strategy | Purpose |
+|---|---|---|---|
+| `account_a` | `dry_run` | `growth_momentum_v1` | Manual fixture-backed development and future live candidate |
+| `account_b` | `shadow` | `growth_momentum_v1` | Virtual T+1 execution evidence without Robinhood writes |
 
-### Deterministic checks in code
+Both currently use the same strategy because this change does not invent a second investment policy. Add a new version-named file under `strategies/` and select it from another account configuration to begin a meaningful strategy comparison.
 
-The checked-in Python code validates every plan and execution context and returns explicit `allowed`, `partial`, `rejected`, or `aborted` results with reason codes.
+Each account configuration contains:
 
-| Check | Current behavior |
-|---|---|
-| Account and input integrity | Require exact schemas, timezone-aware timestamps, matching `account_id` values, valid decimal strings, and a configured symbol universe. Malformed or mismatched input fails closed. |
-| Order shape | Accept only positive-share `BUY` or `SELL` orders. Planned orders must be `LIMIT`, `regular_hours`, and `gfd`; shorts, leverage, and options are outside the model. |
-| Quote coverage and freshness | Require a quote for every held or planned symbol. A missing quote or one older than 15 minutes aborts planned trading. |
-| Decision baseline | Abort planned trading when current cash or positions differ from the immutable plan baseline. |
-| Price movement | Reject an order when its current price moves beyond the tolerance recorded in the plan; the plan schema caps that tolerance at 10%. |
-| Available cash | Reserve BUY cash cumulatively at the limit price and clip or reject quantities that do not fit. |
-| Position size | Clip or reject a BUY that would take one symbol above 20% of account equity. |
-| New positions | Permit at most 3 new positions per account per day. |
-| Daily loss | Block new BUYs when daily loss reaches 5% of account equity; safely computable exits remain available. |
-| Drawdown | At 10% drawdown, block new BUYs. At 15%, persist a lane-specific lock that requires human review and restart. |
-| Wash sale | Block a BUY when the same symbol has a visible loss sale within the taxpayer-wide 30-day lookback. |
-| Position exits | At an 8% loss or 20% gain from average cost, emit a deterministic full-position Risk Exit. |
-| Sell quantity | Reject a SELL with no position and clip a quantity that exceeds the shares currently held. |
+- a narrative `description` of its purpose, strategy, universe, and risk constraints;
+- a `strategy` identifier that must resolve to `strategies/<strategy>.md`;
+- `execution.mode` in `live`, `shadow`, or `dry_run`;
+- its allowed symbol universe and deterministic risk values; and
+- `shadow.initial_cash` when it owns a virtual portfolio.
 
-The risk engine is authoritative for sizing and permission. It does not choose investments, move money, or call the broker.
+Catalog validation rejects a missing Strategy Spec, malformed config, invalid filename identifier, or more than one live lane.
 
-### LLM and workflow constraints
+## Decision and execution
 
-The agents handle work that cannot be reduced to the current deterministic rules:
+The Decision Routine gathers allowed facts, follows only the selected Strategy Spec, and publishes an immutable `DecisionSnapshot` and `OrderPlan`. The plan freezes both `account_id` and `strategy_id`. Decision has no order-review, place, cancel, or modification authority.
 
-- the **Decision LLM** gathers allowed facts, follows the checked-in strategy, forms the investment view, and publishes an immutable plan;
-- the **Execution LLM** gathers current account facts, runs the risk code, and must use its output verbatim without adding a new thesis or inventing a trade;
-- both routines must respect their assigned account, time window, Git state, existing plan/order history, credential boundary, and stop conditions;
-- an ambiguous broker outcome stops the run and must not be blindly retried.
+The separate Execution Routine gathers current account facts and quotes and runs deterministic risk code. It can allow, scale down, reject, or abort planned actions; it cannot form a new thesis. A deterministic full-position stop-loss/take-profit Risk Exit is the only unplanned-order exception.
 
-These are prompt- and process-enforced constraints. The current MVP does **not** provide a code-level barrier that prevents an LLM from calling the wrong tool, misreading deterministic output, passing incorrect broker arguments, or making a duplicate call. Dry-run mode makes no broker write, and the reviewed live MCP call loop is still unfinished.
+For shadow execution, a risk-allowed BUY limit is marketable when the next-weekday quote is at or below the limit; a SELL limit is marketable when the quote is at or above it. A marketable action is assumed filled at that quote with zero fees and zero slippage. The result records fill attempts and ending virtual account state. These are explicit assumptions, not broker fills.
 
-### Human controls
+## Safety model
 
-Only the owner can bind broker accounts, fund them, change a lane from `dry_run` to `live`, clear a tier-two drawdown lock, increase capital, or add another account. Disabling the hosted schedules is the strongest operational stop.
+Deterministic Python controls schemas, account binding, timing, quote freshness, baseline matching, sizing, cash reservation, position caps, loss and drawdown breakers, wash-sale checks, and Risk Exits. Routine prompts control LLM research and tool use. The human owner controls schedules, Robinhood binding, funding, live activation, capital, and restart.
 
-See [`docs/INVARIANTS.md`](docs/INVARIANTS.md) for the complete non-negotiable safety checklist.
+Core limits are 20% per symbol, three new positions per day, 5% daily loss, 10%/15% drawdown tiers, 15-minute quote age, 30-day taxpayer-wide wash-sale lookback, 8% stop loss, and 20% take profit. Missing or inconsistent required data fails closed.
 
-## Try the dry-run MVP
+The catalog permits at most one live configuration, but this is not a broker-side security boundary. Live v1 still lacks exactly-once execution and automatic ambiguous-outcome reconciliation. See [`docs/INVARIANTS.md`](docs/INVARIANTS.md) for the full contract.
 
-Requirements: Python 3.12 and [`uv`](https://docs.astral.sh/uv/). The MVP uses checked-in fixtures and does not require broker credentials.
+## Run locally
 
-Run both isolated account lanes:
+Requirements: Python 3.12 and [`uv`](https://docs.astral.sh/uv/). These commands use checked-in fixtures and no broker credentials.
+
+Validate the catalog and cohorts:
+
+```bash
+uv run --no-cache python -m ripple.mvp validate-configs
+uv run --no-cache python -m ripple.mvp list-accounts --mode live
+uv run --no-cache python -m ripple.mvp list-accounts --mode shadow
+uv run --no-cache python -m ripple.mvp list-accounts --mode dry_run
+```
+
+Run the dry and shadow fixture lanes:
 
 ```bash
 uv run --no-cache python -m ripple.mvp run-dry-cycle \
-  --config config/mvp.json \
+  --config config/account_a.json \
   --fixture fixtures/mvp/dry_cycle.json \
-  --output /tmp/ripple-mvp/account_A
+  --output /tmp/ripple-mvp/account_a
 
-uv run --no-cache python -m ripple.mvp run-dry-cycle \
-  --config config/mvp-account-b.json \
+uv run --no-cache python -m ripple.mvp run-shadow-cycle \
+  --config config/account_b.json \
   --fixture fixtures/mvp/dry_cycle_account_b.json \
-  --output /tmp/ripple-mvp/account_B
+  --output /tmp/ripple-mvp/account_b
 ```
 
-Each command creates an account-scoped snapshot, immutable order plan, execution result, JSONL records, and readable report. Re-running the same cycle against the same output fails instead of overwriting prior evidence. No broker tool is called.
-
-Run the core test suite:
+Run the tests:
 
 ```bash
 env PYTHONDONTWRITEBYTECODE=1 uv run --no-cache python -m unittest \
+  tests.test_account_config \
   tests.test_decision_snapshot \
   tests.test_order_plan \
   tests.test_risk \
+  tests.test_shadow_execution \
   tests.test_mvp_cycle
 ```
 
@@ -112,44 +105,20 @@ env PYTHONDONTWRITEBYTECODE=1 uv run --no-cache python -m unittest \
 
 | Path | Purpose |
 |---|---|
-| [`ripple/`](ripple/) | CLI, schemas, validation, and deterministic risk code |
-| [`routines/`](routines/) | Hosted Decision and Execution prompts plus schedule |
-| [`strategies/`](strategies/) | Account A's current strategy specification |
-| [`config/`](config/) | Separate configuration for the two account lanes |
-| [`fixtures/`](fixtures/) | Credential-free inputs for reproducible dry cycles |
-| [`tests/`](tests/) | Core behavior and invariant coverage |
-| [`learning/`](learning/) | Notes and visual references from the AI-native development process |
-| [`docs/`](docs/) | Architecture, safety rules, operations, decisions, and current work |
+| [`config/`](config/) | One filename-identified configuration per Account Lane |
+| [`strategies/`](strategies/) | Version-named Strategy Specs selected by config |
+| [`ripple/`](ripple/) | Catalog, artifacts, CLI, deterministic risk, and shadow simulation |
+| [`routines/`](routines/) | Live/shadow Decision and Execution contracts plus schedules |
+| [`fixtures/`](fixtures/) | Credential-free dry and shadow evidence inputs |
+| [`tests/`](tests/) | Catalog, isolation, artifact, risk, timing, and fill coverage |
+| [`docs/`](docs/) | Architecture, decisions, invariants, operations, and unfinished work |
 
-## Learning notes
+Existing `state/accounts/account_A` files are read-only legacy fixture evidence. New canonical state uses lowercase config identifiers and does not rewrite those historical artifacts.
 
-Ripple also records reusable lessons from building the system with coding agents:
+## Current gates
 
-- [`Compile Scope Before Codex Execution`](learning/compile-scope-before-codex-execution.md) — explore broadly, then choose the smallest runnable milestone, define its autonomy boundary, verify it, and stop.
+Before any lane becomes live, Ripple still needs the reviewed Robinhood read/review/place/cancel loop, intended-account binding proof, scheduled hosted acceptance, real cash/position reconciliation, and explicit owner approval. A strategy switch or capital increase remains a separate human decision.
 
-These notes describe the development process; they are not runtime instructions or trading rules.
+Read [`PROPOSAL.md`](PROPOSAL.md), [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`docs/TODO.md`](docs/TODO.md), and [`docs/RUNBOOK.md`](docs/RUNBOOK.md) for the complete current model.
 
-## Current status
-
-The two-account fixture-backed dry-run path is implemented and covered by tests. Account B remains repository evidence only. Work still required before Account A can trade live includes:
-
-1. observing one complete hosted scheduled dry cycle for Account A;
-2. implementing and reviewing the narrow live MCP read/review/place/cancel loop;
-3. proving its broker connection selects the intended Account A account; and
-4. receiving explicit human approval to change Account A from `dry_run` to `live`.
-
-The initial Account A live allocation, if those gates are completed, is intentionally limited to $500–1000. Funding, activation, capital increases, and additional hosted lanes always remain human decisions. Follow progress in [`docs/TODO.md`](docs/TODO.md).
-
-## Read next
-
-- [`PROPOSAL.md`](PROPOSAL.md) — intended outcome and scope
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — current system boundaries and data flow
-- [`docs/INVARIANTS.md`](docs/INVARIANTS.md) — non-negotiable safety rules
-- [`docs/RUNBOOK.md`](docs/RUNBOOK.md) — operation, recovery, and kill-switch procedures
-- [`docs/DECISIONS.md`](docs/DECISIONS.md) — durable architecture decisions
-
-## Disclaimer
-
-Ripple is an educational software project. It is not financial advice, and its dry-run results do not represent real fills or future performance. Live trading and its consequences remain the account owner's responsibility.
-
-Licensed under the [MIT License](LICENSE).
+Ripple is educational software, not financial advice. Live trading and its consequences remain the account owner's responsibility.
