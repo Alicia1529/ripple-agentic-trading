@@ -1,6 +1,6 @@
 # Runbook
 
-Operational procedures for the D26/D27 two-lane hosted v1. Each account is operated independently; never combine both accounts in one routine session.
+Operational procedures for the two-lane hosted MVP. Operate each account independently; never combine both accounts in one routine session.
 
 ## Dry-run verification
 
@@ -69,7 +69,7 @@ During the initial canary, Alicia should inspect the first live results directly
 | Malformed plan, config, script output, quote, or account response | Submit nothing. Preserve a sanitized error record and fix the input or code before the next cycle. |
 | MCP timeout or crash near order placement | Do not immediately rerun. Inspect Robinhood order history and positions manually before the next schedule. Record what is known without claiming the outcome was automatically reconciled. |
 | Unexpected or duplicate order | Disable both schedules, set `execution.mode=disabled`, inspect Robinhood, and correct/cancel manually as appropriate. Preserve the plan and logs for review. |
-| Risk result and placed quantity differ | Disable live execution and treat it as a D26 architecture-review trigger, even if the dollar loss is small. |
+| Risk result and placed quantity differ | Disable live execution and trigger an architecture review, even if the dollar loss is small. |
 | Material drawdown or behavior outside the configured universe | Disable live execution and review before restarting. |
 
 ## Tier-two drawdown restart
@@ -83,6 +83,6 @@ When a lane reaches tier-two drawdown, the script creates `<state-root>/risk/dra
 
 ## Known limits
 
-Production v1 intentionally does not implement a transactionally durable submission journal, cross-runner lease, exactly-once guarantee, automatic ambiguous-outcome reconciliation, or non-LLM execution boundary. An LLM can still misread risk output, send the wrong arguments, call a tool twice, misuse configuration, or change behavior after a model/prompt update. D26 accepts those risks only for the initial small allocation and fast launch.
+Production v1 intentionally lacks a transactionally durable submission journal, cross-runner lease, exactly-once guarantee, automatic ambiguous-outcome reconciliation, or non-LLM execution boundary. An LLM can misread risk output, send wrong arguments, call a tool twice, misuse configuration, or drift after a model/prompt update. These risks are accepted only for the initial small allocation.
 
 Before any capital increase or third account, review actual incidents and near misses and make a new durable architecture decision. Eight weeks of operation permits that review; it does not automatically approve scaling.

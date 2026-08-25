@@ -1,36 +1,30 @@
-# AGENTS.md
+# Ripple agent entrypoint
 
-Start here:
+Ripple is an existing two-account, fixture-backed dry-run MVP moving toward hosted acceptance. Preserve the two isolated account lanes, current trading behavior, deterministic safety rules, schemas, timing, and state semantics. Optimize for the shortest safe path to a testable trading loop; build only for a current concrete requirement.
 
-1. `PROPOSAL.md`
-2. `docs/ARCHITECTURE.md`
-3. `docs/INVARIANTS.md`
-4. `docs/TODO.md`
-5. `docs/AI_NATIVE_DELIVERY.md`
-6. `docs/AGENT_WORKFLOW.md`
-7. `docs/AGENT_HANDOFF.md` — read its rules and latest three entries only
+Read before all work:
 
-Respect `docs/INVARIANTS.md` for every implementation and review. When changing durable architecture, add a decision to `docs/DECISIONS.md` and update `docs/ARCHITECTURE.md`; never introduce such a change silently.
-Before planning or implementation, use `docs/AI_NATIVE_DELIVERY.md` to define the current delivery contract and keep scope, process, and risk proportional to the release stage.
-For deployment, debugging, or recovery work, read `docs/RUNBOOK.md`.
-Run the relevant tests before handing off a change. Use `docs/TODO.md` only for current status and genuinely unfinished work.
+1. `PROPOSAL.md` — outcome and scope
+2. `docs/ARCHITECTURE.md` — current system and accepted boundaries
+3. `docs/INVARIANTS.md` — non-negotiable safety rules
+4. `docs/TODO.md` — genuinely unfinished work
+5. `docs/AGENT_HANDOFF.md` — protocol and latest three entries only
 
-## MVP implementation policy
+Read `docs/RUNBOOK.md` for deployment, debugging, or recovery. Read `CONTEXT.md` when changing domain language. Routine prompts and schedules live in `routines/`; Account A strategy behavior lives in `strategies/growth_momentum_v1.md`.
 
-- Optimize for the shortest safe path to a testable trading loop.
-- Preserve the existing architecture unless redesign is explicitly requested.
-- Reuse existing configuration and data models.
-- Build abstractions only for current, concrete requirements.
-- Treat feature scope as authoritative: adjacent refactoring requires separate approval.
-- Separate required changes from optional improvements, and implement only the required changes.
-- If a change requires a new subsystem or affects more than four production files, stop and request approval; include a smaller alternative.
+## Delivery contract
 
-## Task workflow
+- Define the stage, next observable outcome, exact scope, accepted risks, non-goals, and verification before planning.
+- Preserve existing architecture and reuse current configuration and data models. Adjacent refactoring needs separate approval.
+- A new subsystem or changes to more than four production files require explicit approval and a smaller alternative. Documentation-only breadth is proportional to the task.
+- Durable architecture changes require an explicit decision in `docs/DECISIONS.md` and a matching update to `docs/ARCHITECTURE.md`.
+- Every implementation and review must identify affected invariants and run relevant tests before handoff.
 
-Separate design from implementation:
+## Workflow
 
-1. **Bounded design:** Inspect the code and propose the smallest viable diff without editing files. Explicitly list what will not be built.
-2. **Approval:** Wait for the proposed scope to be reviewed and explicitly approved.
-3. **Bounded implementation:** Start a new thread and implement exactly the approved plan. Preserve the architecture and leave adjacent improvements out of the diff.
+1. **Bounded design:** inspect without editing; propose the smallest viable diff and list explicit non-goals.
+2. **Approval:** wait for explicit scope approval.
+3. **Bounded implementation:** use a new task and implement exactly the approved diff; leave optional improvements out.
+4. **Handoff:** commit focused work with the assigned role prefix, verify it, and append one compact rolling handoff entry.
 
-Use Low reasoning for small, clearly scoped implementation tasks. Reserve Medium or High reasoning for architecture decisions and difficult debugging, where exploring more alternatives is worth the additional scope-expansion risk.
+Use Low reasoning for small, clearly scoped implementation. Use Medium or High only for architecture decisions or difficult debugging where broader exploration is worth the scope risk.
