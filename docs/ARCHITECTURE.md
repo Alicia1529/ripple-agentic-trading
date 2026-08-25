@@ -4,6 +4,10 @@ This document describes Ripple as implemented today. Durable reasons belong in `
 
 Ripple is an account-catalog MVP for comparing isolated strategy lanes. `account_a` is a manual `dry_run` development lane and `account_b` is a fixture-backed `shadow` lane. The catalog and shadow execution path are implemented. Hosted schedules, Account A acceptance, and the reviewed live Robinhood broker-write loop remain unfinished.
 
+Account A selects `growth_momentum_v2`. Its prose research, candidate rejections,
+warnings, and thesis records remain immutable DecisionSnapshot evidence; its
+actual intent still uses the shared OrderPlan schema.
+
 ## System at a glance
 
 ```text
@@ -42,9 +46,9 @@ Every file matching `config/*.json` is one Account Lane. The filename stem is it
 ```json
 {
   "description": "Human-readable purpose, strategy, universe, and risk summary.",
-  "strategy": "growth_momentum_v1",
+  "strategy": "earnings_drift_v1",
   "execution": {"mode": "shadow"},
-  "shadow": {"initial_cash": "800"},
+  "shadow": {"initial_cash": "1000"},
   "universe": ["AAPL", "SPY", "QQQ"],
   "risk": {}
 }
@@ -68,6 +72,8 @@ The catalog returns deterministic, account-ID-sorted cohorts. A missing strategy
 `strategies/` may contain multiple version-named Strategy Specs. A configuration selects exactly one by identifier. The Decision Routine reads that file completely and applies it to only its assigned lane.
 
 The seam is deliberately small: Strategy Specs are prompt-defined Markdown policies, not Python plugins. The generic publisher and deterministic risk module remain authoritative for shape, sizing, and safety. Adding a new strategy does not require changing Python, but selecting a missing strategy fails catalog validation.
+
+Account B currently selects `earnings_drift_v1`, an event-driven policy adapted to the generic publication seam. Its earnings facts, research answers, rejected candidates, warnings, and thesis metadata belong in immutable `DecisionSnapshot.inputs`; its plan still uses the shared `OrderPlan` schema. The first shadow cycle starts from its configured `$1000` virtual balance. Later cycles continue from the latest `ending_account` rather than resetting capital.
 
 Every new `OrderPlan`, Decision record, deterministic result, execution record, and report carries `strategy_id`. A versioned Strategy Spec should not be edited in place after it has produced decisions; create a new identifier so historical attribution stays meaningful. Git history retains its exact checked-in content.
 
@@ -164,7 +170,7 @@ Canonical new state roots are `state/accounts/<account_id>`. Plans and execution
 
 All modes use the same rules: 20% maximum symbol position, three new positions per day, 5% daily-loss breaker, 10% tier-one drawdown, 15% tier-two drawdown and owner restart, 15-minute quote freshness, 30-day taxpayer-wide wash-sale lookback, 8% stop loss, and 20% take profit.
 
-Execution also checks the decision baseline, universe, price tolerance, cumulative BUY cash, and SELL holdings. Missing or stale facts, malformed input, cross-account mismatch, or unsafe sizing fails closed. A deterministic full-position Risk Exit is the only action allowed without a matching planned order.
+Execution also checks the decision baseline, universe, price tolerance, cumulative BUY cash, and SELL holdings. Every planned limit must remain within its positive per-order tolerance, which may not exceed 10%. A BUY may additionally freeze `gap_cancel_above`; such an order requires the actual regular-session open and is rejected when that open is strictly above the frozen threshold. A missing required session open aborts the plan. Missing or stale facts, malformed input, cross-account mismatch, or unsafe sizing fails closed. A deterministic full-position Risk Exit is the only action allowed without a matching planned order.
 
 ## Authority and reliability
 

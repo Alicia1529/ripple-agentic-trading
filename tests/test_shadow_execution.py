@@ -92,7 +92,7 @@ class ShadowExecutionTests(unittest.TestCase):
             )
 
             self.assertEqual(result["mode"], "shadow")
-            self.assertEqual(result["strategy_id"], "growth_momentum_v1")
+            self.assertEqual(result["strategy_id"], "earnings_drift_v1")
             self.assertEqual(result["fill_status"], "filled")
             self.assertEqual(result["shadow_fills"], [{
                 "order_id": result["actions"][0]["order_id"],
@@ -115,7 +115,7 @@ class ShadowExecutionTests(unittest.TestCase):
                 (output / "logs" / "executions.jsonl").read_text()
             )
             self.assertEqual(execution_log["kind"], "shadow_execution_completed")
-            self.assertEqual(execution_log["strategy_id"], "growth_momentum_v1")
+            self.assertEqual(execution_log["strategy_id"], "earnings_drift_v1")
             self.assertEqual(execution_log["fill_count"], 1)
             self.assertIn(
                 "No broker write tool was called",

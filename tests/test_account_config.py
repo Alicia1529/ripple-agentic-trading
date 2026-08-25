@@ -28,10 +28,18 @@ class AccountCatalogTests(unittest.TestCase):
             [config.account_id for config in catalog.for_mode("dry_run")],
             ["account_a"],
         )
+        self.assertEqual(
+            {config.account_id: config.strategy_id for config in catalog},
+            {
+                "account_a": "growth_momentum_v1",
+                "account_b": "earnings_drift_v1",
+            },
+        )
         for config in catalog:
             self.assertTrue(config.description)
-            self.assertEqual(config.strategy_id, "growth_momentum_v1")
             self.assertTrue(config.strategy_path.is_file())
+        account_b = next(config for config in catalog if config.account_id == "account_b")
+        self.assertEqual(account_b.shadow_initial_cash, "1000")
 
     def test_missing_strategy_and_second_live_config_fail_catalog_validation(self):
         from ripple.account_config import load_account_catalog

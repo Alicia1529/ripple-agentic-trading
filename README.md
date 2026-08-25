@@ -31,10 +31,10 @@ Daily hosting uses four schedule triggers: one live Decision run, one all-shadow
 
 | Account | Mode | Strategy | Purpose |
 |---|---|---|---|
-| `account_a` | `dry_run` | `growth_momentum_v1` | Manual fixture-backed development and future live candidate |
-| `account_b` | `shadow` | `growth_momentum_v1` | Virtual T+1 execution evidence without Robinhood writes |
+| `account_a` | `dry_run` | `growth_momentum_v2` | Manual fixture-backed development and future live candidate |
+| `account_b` | `shadow` | `earnings_drift_v1` | Event-driven earnings evidence with virtual T+1 execution and no Robinhood writes |
 
-Both currently use the same strategy because this change does not invent a second investment policy. Add a new version-named file under `strategies/` and select it from another account configuration to begin a meaningful strategy comparison.
+The lanes now select different versioned policies. Account A uses Growth Momentum v2 in the manual development lane. Account B uses Earnings Drift v1 with a `$1000` initial virtual balance; later cycles continue from its latest shadow ending state. This enables attributed comparison evidence but does not automatically rank, promote, or fund either strategy.
 
 Each account configuration contains:
 

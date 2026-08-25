@@ -2,14 +2,6 @@
 
 Read these rules and the three entries in this file before work. Before handing off, append one chronological entry with local timestamp, outcome, evidence, next action, and only material risk. Keep each entry within 100 words and five bullets, link to authoritative files instead of duplicating them, and retain exactly the latest three entries total.
 
-## 2026-08-24 22:28 PDT — Clear current documentation model
-
-- Outcome: restored clear purpose, glossary, agent routing, system walkthrough, responsibility, artifact, timing, and safety structures without reviving retired architecture.
-- Scope: Account A alone owns the hosted path; Account B remains a tested fixture lane with no hosted Decision, Execution, schedule, or MCP binding.
-- Sources: aligned Proposal, Architecture, Decisions, Invariants, TODO, Runbook, README, and routine contracts; code and risk behavior are unchanged.
-- Evidence: 30 core tests, both fixture dry cycles, internal links, and `git diff --check` pass.
-- Next/risk: complete Account A hosted acceptance and the reviewed live loop in `docs/TODO.md`.
-
 ## 2026-08-24 23:12 PDT — Strategy catalog and shadow execution
 
 - Outcome: added filename-identified account configs, strategy validation/attribution, live/shadow/dry-run cohorts, and T+1 quote Shadow Fills with ending virtual state.
@@ -25,3 +17,10 @@ Read these rules and the three entries in this file before work. Before handing 
 - Safety: live tasks remain disabled; shadow tasks receive no Robinhood connection or broker-write authority.
 - Evidence: README links, Markdown diff, core tests, and `git diff --check` pass.
 - Next/risk: create and observe the two tasks; local-project scheduling requires a clean checkout, running desktop app, and working Git access.
+
+## 2026-08-24 23:55 PDT — Account B Earnings Drift strategy
+
+- Outcome: added [`earnings_drift_v1`](../strategies/earnings_drift_v1.md), selected it for `account_b`, and changed first-cycle virtual cash to `$1000`.
+- Design: adapted event research and thesis metadata to `DecisionSnapshot.inputs`; shared OrderPlan, deterministic risk, T+1 timing, and lane isolation are unchanged.
+- Evidence: catalog/cohort validation, 36 focused-snapshot and 41 combined-worktree tests, Account B fixture cycle, artifact inspection, credential scan, and `git diff --check` pass.
+- Next/risk: observe a sourced scheduled cycle; the fixture proves plumbing, not the strategy's research quality or comparative performance.
