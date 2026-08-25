@@ -35,15 +35,46 @@ Latest completed market session
 
 Each account lane has its own configuration, state directory, schedules, broker connection, risk state, and human-controlled live switch. The lanes share schemas and risk code, but one account can never authorize work in the other.
 
-The current MVP enforces rules such as:
+## Where safety lives
 
-- long equities only—no shorts, leverage, or options;
-- a 20% maximum position size;
-- daily-loss and drawdown gates;
-- stale or missing data fails closed;
-- taxpayer-wide wash-sale checks;
-- deterministic stop-loss and take-profit exits;
-- no credentials or account numbers in repository artifacts.
+Ripple deliberately separates deterministic checks from agent behavior. **Code calculates what is allowed; prompts tell the LLM how to operate; humans decide whether live trading is enabled.** These layers are useful, but they are not equivalent guarantees.
+
+### Deterministic checks in code
+
+The checked-in Python code validates every plan and execution context and returns explicit `allowed`, `partial`, `rejected`, or `aborted` results with reason codes.
+
+| Check | Current behavior |
+|---|---|
+| Account and input integrity | Require exact schemas, timezone-aware timestamps, matching `account_id` values, valid decimal strings, and a configured symbol universe. Malformed or mismatched input fails closed. |
+| Order shape | Accept only positive-share `BUY` or `SELL` orders. Planned orders must be `LIMIT`, `regular_hours`, and `gfd`; shorts, leverage, and options are outside the model. |
+| Quote coverage and freshness | Require a quote for every held or planned symbol. A missing quote or one older than 15 minutes aborts planned trading. |
+| Decision baseline | Abort planned trading when current cash or positions differ from the immutable plan baseline. |
+| Price movement | Reject an order when its current price moves beyond the tolerance recorded in the plan; the plan schema caps that tolerance at 10%. |
+| Available cash | Reserve BUY cash cumulatively at the limit price and clip or reject quantities that do not fit. |
+| Position size | Clip or reject a BUY that would take one symbol above 20% of account equity. |
+| New positions | Permit at most 3 new positions per account per day. |
+| Daily loss | Block new BUYs when daily loss reaches 5% of account equity; safely computable exits remain available. |
+| Drawdown | At 10% drawdown, block new BUYs. At 15%, persist a lane-specific lock that requires human review and restart. |
+| Wash sale | Block a BUY when the same symbol has a visible loss sale within the taxpayer-wide 30-day lookback. |
+| Position exits | At an 8% loss or 20% gain from average cost, emit a deterministic full-position Risk Exit. |
+| Sell quantity | Reject a SELL with no position and clip a quantity that exceeds the shares currently held. |
+
+The risk engine is authoritative for sizing and permission. It does not choose investments, move money, or call the broker.
+
+### LLM and workflow constraints
+
+The agents handle work that cannot be reduced to the current deterministic rules:
+
+- the **Decision LLM** gathers allowed facts, follows the checked-in strategy, forms the investment view, and publishes an immutable plan;
+- the **Execution LLM** gathers current account facts, runs the risk code, and must use its output verbatim without adding a new thesis or inventing a trade;
+- both routines must respect their assigned account, time window, Git state, existing plan/order history, credential boundary, and stop conditions;
+- an ambiguous broker outcome stops the run and must not be blindly retried.
+
+These are prompt- and process-enforced constraints. The current MVP does **not** provide a code-level barrier that prevents an LLM from calling the wrong tool, misreading deterministic output, passing incorrect broker arguments, or making a duplicate call. Dry-run mode makes no broker write, and the reviewed live MCP call loop is still unfinished.
+
+### Human controls
+
+Only the owner can bind broker accounts, fund them, change a lane from `dry_run` to `live`, clear a tier-two drawdown lock, increase capital, or add another account. Disabling the hosted schedules is the strongest operational stop.
 
 See [`docs/INVARIANTS.md`](docs/INVARIANTS.md) for the complete non-negotiable safety checklist.
 
@@ -90,7 +121,13 @@ env PYTHONDONTWRITEBYTECODE=1 uv run --no-cache python -m unittest \
 | [`learning/`](learning/) | Notes and visual references from the AI-native development process |
 | [`docs/`](docs/) | Architecture, safety rules, operations, decisions, and current work |
 
-The first learning note, [`Compile Scope Before Codex Execution`](learning/compile-scope-before-codex-execution.md), captures a practice used in this repository: explore broadly, choose the smallest runnable milestone, define its autonomy boundary, verify it, and stop.
+## Learning notes
+
+Ripple also records reusable lessons from building the system with coding agents:
+
+- [`Compile Scope Before Codex Execution`](learning/compile-scope-before-codex-execution.md) — explore broadly, then choose the smallest runnable milestone, define its autonomy boundary, verify it, and stop.
+
+These notes describe the development process; they are not runtime instructions or trading rules.
 
 ## Current status
 
