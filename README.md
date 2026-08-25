@@ -16,15 +16,10 @@ Not financial advice. Read [`PROPOSAL.md`](PROPOSAL.md) for what this is and why
 | [`docs/RUNBOOK.md`](docs/RUNBOOK.md) | Kill switch, what to do when notified, deploy/debug/recovery |
 | [`docs/AI_NATIVE_DELIVERY.md`](docs/AI_NATIVE_DELIVERY.md) | Reusable delivery rules for aligning scope, speed, quality, and risk |
 | [`docs/AGENT_WORKFLOW.md`](docs/AGENT_WORKFLOW.md) | Multi-agent development workflow and starter role prompts |
-| [`docs/archive/`](docs/archive/) | Superseded early drafts, kept for history only |
 
 ## Developing with AI agents
 
 Ripple is designed for independent Codex threads, Claude Code sessions, or other coding agents. Git and the shared project docs carry knowledge and handoffs across temporary sessions; roles belong in task prompts, while concurrent code-writing agents use separate branches and worktrees. See [`docs/AGENT_WORKFLOW.md`](docs/AGENT_WORKFLOW.md).
-
-## Verify local Robinhood MCP OAuth
-
-On macOS, run [`scripts/verify-robinhood-mcp-oauth.sh`](scripts/verify-robinhood-mcp-oauth.sh) only to reproduce the completed local feasibility proof. The five-stage wizard checks Python 3.12, walks through one browser authorization, runs two forced-expiry refresh proofs in separate headless processes, and finishes with ordinary headless reuse. Credentials are stored in macOS Keychain and every MCP session performs only `initialize` and `tools/list`. Production v1 does not use this runner-owned credential path; it uses the hosted platform's managed Robinhood MCP connection per D26.
 
 ## Status
 
@@ -66,7 +61,7 @@ Run the core suite with:
 
 ```bash
 uv run --no-cache python -m unittest \
-  tests.test_decision_snapshot tests.test_order_plan tests.test_execution_event \
+  tests.test_decision_snapshot tests.test_order_plan \
   tests.test_risk tests.test_mvp_cycle
 ```
 

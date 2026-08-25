@@ -101,9 +101,7 @@ There is deliberately no strategy-specific Python engine, policy JSON, data-prov
 
 Once generated, the Execution Routine is instructed to do only four things: **execute as-is / abort the whole plan / scale down against deterministic limits / reject specific orders because risk or account state changed**. A configured stop-loss/take-profit may additionally emit a deterministic full-position market SELL Risk Exit for an existing holding; this is risk authority, not investment reasoning. The routine must not otherwise change direction or invent a trade. In v1 this is enforced by session isolation, tool scoping, strict files, and deterministic scripts—not by a non-LLM process boundary. D26 records that limitation.
 
-Execution results do not mutate the plan. V1 appends compact JSONL records that preserve the original and actual quantities and any applied rule. The existing `ExecutionEvent` value object remains a useful schema for later hardening, but production v1 does not claim transactional append-only persistence, complete transition validation, or crash-safe submission state.
-
-The initial `ExecutionEvent` value object has a strict seven-field envelope, finite kind-specific payloads, detached immutable serialization, downward-only adjustment values, and credential-free URI plus SHA-256 evidence pointers. It is repository evidence and a future hardening seam; wiring it to a transactional repository is explicitly deferred.
+Execution results do not mutate the plan. V1 appends compact JSONL records that preserve the original and actual quantities and any applied rule; it does not claim transactional append-only persistence, complete transition validation, or crash-safe submission state.
 
 - Allowed: a symbol gaps overnight beyond the tolerance threshold → the execution guard rejects that order.
 - Not allowed: the Decision Routine planned a buy yesterday, and the Execution Routine decides today it dislikes the symbol and sells it instead.

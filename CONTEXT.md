@@ -20,10 +20,6 @@ _Avoid_: Trade result, execution plan
 A deterministic full-position sell produced by a configured stop-loss or take-profit rule. It is risk authority applied to an existing holding, not a new investment decision or a mutation of the OrderPlan.
 _Avoid_: Execution Routine trade idea, replacement plan
 
-**ExecutionEvent**:
-An immutable operational-fact document recorded after an OrderPlan is published, such as submission starting, broker acknowledgement, fill, rejection, abort, or unknown outcome. The value object does not itself guarantee append-only persistence; that requires a future transactional repository.
-_Avoid_: OrderPlan status, mutable plan state
-
 **Execution Routine**:
 The isolated scheduled LLM session that applies the deterministic risk scripts to a published OrderPlan and may call broker write tools in production v1.
 _Avoid_: Plain executor, execution agent

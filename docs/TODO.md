@@ -62,6 +62,6 @@ The accepted D26 risks—wrong tool arguments, duplicate calls, crash-after-subm
 
 ## Existing evidence, not launch blockers
 
-- Immutable `DecisionSnapshot`, `OrderPlan`, and `ExecutionEvent` value objects exist with focused tests. Transactional append-only persistence and a complete execution state machine are deferred.
+- Immutable `DecisionSnapshot` and `OrderPlan` value objects exist with focused tests. Transactional append-only persistence and a complete execution state machine are deferred.
 - Local Python MCP bootstrap, fresh-process reuse/refresh, one-account selection, sanitized order-history reads, and a local Codex Automation runtime probe succeeded. Account B binding remains unproven. The local path remains fallback evidence, not the production-v1 credential/runtime design.
-- Robinhood review/place/cancel/history schemas are recorded in `docs/feasibility/`; live idempotency and comprehensive outcome reconciliation are unproven and accepted only at the D26 initial-allocation boundary.
+- Live idempotency and comprehensive outcome reconciliation are unproven and accepted only at the initial-allocation boundary.
