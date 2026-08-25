@@ -1,8 +1,8 @@
 {
-  "as_of": "2026-08-25T04:09:00-04:00",
+  "as_of": "2026-08-24T04:09:00-04:00",
   "inputs": {
     "account": {
-      "as_of": "2026-08-25T04:09:00-04:00",
+      "as_of": "2026-08-24T04:09:00-04:00",
       "binding": "Agent A accessible brokerage account",
       "cash_settled": "1000.0000",
       "equity": "1000",
@@ -113,7 +113,7 @@
         "The connected read-only data did not provide authoritative precomputed SMA50, mom_60_10, vol_60, risk_adj_mom, atr20_pct, rel_mom_qqq, rel_mom_streak, or days_to_earnings for the complete universe.",
         "The connected financial data did not provide authoritative precomputed rev_growth_yoy, gross_margin, fcf_ttm, or fcf_trend values required by Growth Momentum v2.",
         "Growth Momentum v2 forbids inventing or recomputing missing required figures; the market gate and hard filters are therefore incomplete and no candidate may be ranked or researched.",
-        "This manual Decision uses the latest completed session, 2026-08-24, and is dated 2026-08-25 for possible 2026-08-26 Execution. It does not backfill or replace the immutable legacy 2026-08-24 evidence."
+        "This manual Decision uses the latest completed session, 2026-08-24, and is dated 2026-08-24 for possible 2026-08-25 Execution. It does not backfill or replace the immutable legacy 2026-08-24 evidence."
       ]
     }
   },
