@@ -2,13 +2,6 @@
 
 Read these rules and the three entries in this file before work. Before handing off, append one chronological entry with local timestamp, outcome, evidence, next action, and only material risk. Keep each entry within 100 words and five bullets, link to authoritative files instead of duplicating them, and retain exactly the latest three entries total.
 
-## 2026-08-24 23:58 PDT — Account A Growth Momentum v2
-
-- Outcome: added [`growth_momentum_v2`](../strategies/growth_momentum_v2.md) and selected it for dry-run `account_a`; Account B files and state were not changed by this task.
-- Design: added optional BUY `gap_cancel_above` with required `session_open`; above-threshold opens reject and missing opens fail closed, while legacy plans remain valid.
-- Evidence: catalog/cohorts, 41 core tests, Account A fixture attribution, policy scan, and `git diff --check` pass.
-- Next/risk: exercise a sourced v2 Decision; the deterministic 10% tolerance cap and unfinished Live Gate remain in force.
-
 ## 2026-08-25 00:31 PDT — Routine Python entrypoints
 
 - Outcome: replaced every bare Ripple CLI `python` call in the four scheduled routines with the repository-standard `uv run --no-cache python` entrypoint.
@@ -23,3 +16,11 @@ Read these rules and the three entries in this file before work. Before handing 
 - Evidence: catalog/cohort validation, sourced three-session universe screen, artifact/schema inspection, credential scan, and `git diff --check` pass.
 - Tests: 41 core tests ran; the documented `account_a` mode/universe fixture mismatch remains at 9 failures and 8 errors.
 - Next/risk: 2026-08-25 Shadow Execution may consume this plan; the manual provenance is explicit and no broker or Execution work occurred.
+
+## 2026-08-25 01:00 PDT — Manual live routine timing override
+
+- Outcome: Live Decision and Execution routines now permit Alicia-authorized manual invocation outside scheduled windows while retaining manual provenance.
+- Scope: routine instructions and this rolling handoff only; no broker adapter, risk, schema, configuration, state, or Live Gate change.
+- Safety: manual mode changes timing only and cannot bypass account binding, deterministic risk, duplicate/ambiguity checks, immutability, or the unfinished broker-write gate.
+- Evidence: routine inspection and `git diff --check` pass; 41 core tests retain the pre-existing config/fixture mismatch at 9 failures and 8 errors, including all three targeted manual-run tests.
+- Next/risk: implement and review the live adapter before any manual or scheduled broker write.
