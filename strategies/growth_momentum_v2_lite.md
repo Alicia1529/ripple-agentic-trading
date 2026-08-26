@@ -35,7 +35,8 @@ weakening an evidence requirement, or inventing a replacement action.
 3. Calculate the defined indicators directly from the recorded source values
    using base-10 arithmetic. Store both the source values and calculated result
    so a reviewer can reproduce each result. Never estimate or recall a number.
-4. A BUY must fit settled cash without assuming a same-cycle SELL fills.
+4. A BUY must fit `cash_available_to_trade` without assuming a same-cycle SELL
+   fills. Never use margin leverage or add pending deposits to that value.
 5. Default to HOLD when qualitative evidence is incomplete. Absence of adverse
    evidence is not positive evidence.
 6. Keep credentials, account numbers, raw authenticated responses, and full
@@ -72,11 +73,29 @@ high minus prior close, and absolute current low minus prior close. Calculate
 calendar `days_to_earnings` from the Decision date. A missing earnings date
 disqualifies the symbol from BUY consideration.
 
-Also receive current account equity, settled cash, and every current position's
-symbol, quantity, weight, entry date, and stored v2 Lite thesis record. Resolve
-strategy metadata only from immutable history in the same Account Lane. For a
-holding without a v2 Lite thesis, apply available mechanical exits, record the
-missing thesis in warnings, and default to HOLD for thesis-dependent judgment.
+Also receive current account equity, `cash_available_to_trade`, and every current
+position's symbol, quantity, weight, entry date, and stored v2 Lite thesis
+record. Resolve strategy metadata only from immutable history in the same
+Account Lane. For a holding without a v2 Lite thesis, apply available mechanical
+exits, record the missing thesis in warnings, and default to HOLD for
+thesis-dependent judgment.
+
+For a live Robinhood account, define `cash_available_to_trade` as the broker's
+current `unleveraged_buying_power`. This value may include broker-authorized
+early access to a pending deposit, but it must exclude margin leverage. Do not
+use total buying power when it exceeds unleveraged buying power, and do not add
+cash, settled cash, pending deposits, or expected sale proceeds to the broker's
+reported value. For a non-live lane, use only that lane's authoritative
+available virtual cash.
+
+Record the decimal value, the exact basis name
+`broker_unleveraged_buying_power` or `lane_available_virtual_cash`, a
+timezone-aware as-of time, and the credential-free source in
+`DecisionSnapshot.inputs`. For a live account also record the broker-reported
+pending-deposit total as evidence when available; it is context, not additional
+buying capacity. Copy the exact `cash_available_to_trade` decimal into
+`account_baseline.cash` so Execution can compare the same cash basis. Stop the
+Decision if the required value is missing, negative, stale, or ambiguous.
 
 ## Exits
 
@@ -120,7 +139,8 @@ A security is eligible only when every condition is true:
 - the symbol is not already held;
 - fewer than three current positions share its sector;
 - the resulting portfolio contains no more than ten positions; and
-- a 10% target fits settled cash at the protective BUY limit without a sale.
+- a 10% target fits `cash_available_to_trade` at the protective BUY limit
+  without a sale.
 
 Rank passing candidates by `rel_mom_qqq` descending, then `mom_60_10`
 descending, then symbol ascending. Research only the top three in that order.
@@ -176,9 +196,9 @@ price_tolerance_pct = buy_buffer
 ```
 
 Round quantity downward so limit notional exceeds neither 10% of current equity
-nor settled cash. Copy the thesis sentence into `buy_reason`. Execution requires
-the actual regular-session open and rejects the BUY when it is strictly above
-`gap_cancel_above`.
+nor `cash_available_to_trade`. Copy the thesis sentence into `buy_reason`.
+Execution requires the actual regular-session open and rejects the BUY when it
+is strictly above `gap_cancel_above`.
 
 For a SELL:
 
@@ -212,8 +232,8 @@ Stop the entire Decision without publication when:
 
 - a current holding lacks the valid market history required for its mechanical
   exit evaluation;
-- account equity, settled cash, positions, or other required baseline facts are
-  unavailable or inconsistent;
+- account equity, `cash_available_to_trade`, positions, or other required
+  baseline facts are unavailable or inconsistent;
 - a required SELL cannot be represented within Ripple's schema and tolerance
   rules; or
 - the final snapshot, portfolio, or OrderPlan input fails validation.
@@ -241,7 +261,7 @@ Before publication verify:
 - only the top three candidates were researched and rank four was not reached;
 - every research answer has affirmative primary-source support where required;
 - the selected BUY, if any, is the highest-ranked candidate clearing all four
-  questions and fits settled cash without a SELL fill;
+  questions and fits `cash_available_to_trade` without a SELL fill;
 - at most one BUY was selected and its 3% opening-gap threshold is exact;
 - every order respects Ripple's 10% price-tolerance cap;
 - target weights are decimal strings summing exactly to `"1"`;

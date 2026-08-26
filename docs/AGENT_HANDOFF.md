@@ -2,13 +2,6 @@
 
 Read these rules and the three entries in this file before work. Before handing off, append one chronological entry with local timestamp, outcome, evidence, next action, and only material risk. Keep each entry within 100 words and five bullets, link to authoritative files instead of duplicating them, and retain exactly the latest three entries total.
 
-## 2026-08-25 23:04 PDT — Account B historical Shadow Decision
-
-- Outcome: owner-authorized backfill published `account_b`/`earnings_drift_v1` plan `7a0dae3e-23a8-5251-ac17-e141277fe1b9` for trade date 2026-08-26, with zero orders and 100% cash.
-- Rationale: no configured-universe company reported earnings in the prior three completed sessions and no position required an exit; warnings remain separate evidence.
-- Evidence: the complete snapshot exactly matches commit `1b9d2de`; JSON/schema, provenance, credential, and diff checks pass.
-- Tests/risk: 44/53 tests pass; the known 7 failures/2 errors remain legacy dry-run/config mismatches. No Execution, fill, broker, or live work occurred.
-
 ## 2026-08-25 23:12 PDT — Dry-run tests isolated from deployment mode
 
 - Outcome: legacy MVP dry-run tests now create a test-owned temporary `dry_run` configuration instead of reading the live mode from `config/account_a.json`.
@@ -22,3 +15,11 @@ Read these rules and the three entries in this file before work. Before handing 
 - Correction: the previous "assumed T+1 quote fill" label understated [`shadow.py`](../ripple/shadow.py), which records `not_filled`/`limit_not_marketable` when the 9:35 quote misses the planned limit.
 - Scope: diagram labels and evidence edges only; prose, code, configurations, and state are unchanged.
 - Evidence: all three diagrams render through mermaid-cli; `git diff --check` passes.
+
+## 2026-08-26 00:03 PDT — V2 Lite unleveraged buying-power basis
+
+- Outcome: [`growth_momentum_v2_lite.md`](../strategies/growth_momentum_v2_lite.md) may use broker-authorized pending-deposit early access only through `unleveraged_buying_power`; margin and additive pending deposits remain forbidden.
+- Execution: [`EXECUTION_LIVE.md`](../routines/EXECUTION_LIVE.md) maps the same fresh broker value to `execution_context.account.cash`; deterministic baseline mismatch still aborts.
+- Scope: policy and routine text only; no schema, risk, config, Decision, Execution, or broker write changed.
+- Evidence: all 53 tests and `git diff --check` pass.
+- Next/risk: a future live Decision may use this basis; if Robinhood reduces early access before Execution, baseline matching safely aborts the plan.

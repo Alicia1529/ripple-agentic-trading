@@ -19,7 +19,7 @@ Run `uv run --no-cache python -m ripple.mvp validate-configs`, then `uv run --no
 The reviewed loop must:
 
 1. pull a clean repository and load the unexecuted plan from today's `trading_days/<trade-date>` directory;
-2. gather current cash, positions, loss-sale history, order history, and fresh held/planned-symbol quotes without persisting raw responses; when a BUY freezes `gap_cancel_above`, also provide that symbol's actual regular-session `session_open`, and stop if it is unavailable;
+2. gather the current cash basis required by the selected Strategy Spec, positions, loss-sale history, order history, and fresh held/planned-symbol quotes without persisting raw responses; for `growth_momentum_v2_lite`, map the broker's current `unleveraged_buying_power` exactly to `execution_context.account.cash`, never add pending deposits or other cash fields to it, and stop when that value is missing, negative, stale, or ambiguous; record the credential-free cash-basis name, value, as-of time, and pending-deposit total when available, then let deterministic baseline matching abort if it differs from `account_baseline.cash`; when a BUY freezes `gap_cancel_above`, also provide that symbol's actual regular-session `session_open`, and stop if it is unavailable;
 3. run the checked-in deterministic risk calculation;
 4. stop on whole-plan abort, ambiguous broker history, MCP error, or prior success;
 5. review/place only allowed actions exactly as emitted, never increasing quantity or changing symbol, side, type, or timing;
