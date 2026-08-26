@@ -2,13 +2,6 @@
 
 Read these rules and the three entries in this file before work. Before handing off, append one chronological entry with local timestamp, outcome, evidence, next action, and only material risk. Keep each entry within 100 words and five bullets, link to authoritative files instead of duplicating them, and retain exactly the latest three entries total.
 
-## 2026-08-25 22:23 PDT — Decision rationale published
-
-- Outcome: every new Decision now requires a concise `decision_rationale`; the OrderPlan persists it and `publish-decision` prints it after the plan ID.
-- Semantics: rationale explains the final portfolio/orders; warnings remain input-quality or uncertainty evidence. Legacy OrderPlans without rationale remain readable.
-- Scope: updated the shared publisher/schema, active Strategy Specs, fixtures, domain/architecture records, and focused tests; Execution and deterministic risk are unchanged.
-- Evidence: 7 focused tests, compileall, JSON parsing, and `git diff --check` pass. Full 53-test run retains the known 7 failures/2 errors from legacy dry-run tests using current live/shadow configs.
-
 ## 2026-08-25 22:24 PDT — README inputs made runnable
 
 - Outcome: corrected [`README.md`](../README.md#manual-runs) so manual and backfill examples create their Decision and Execution input files before invoking the CLI.
@@ -22,3 +15,10 @@ Read these rules and the three entries in this file before work. Before handing 
 - Contract: Decision and Execution remain separate tasks; prompts carry explicit mode, account/date authority, provenance, routine selection, and safety boundaries.
 - Evidence: prompt paths and flags match the current routines and implementation; `git diff --check` passes.
 - Scope/risk: documentation only; no runtime, configuration, routine, or state changed.
+
+## 2026-08-25 22:37 PDT — Growth Momentum v2 Lite added
+
+- Outcome: added [`growth_momentum_v2_lite.md`](../strategies/growth_momentum_v2_lite.md), a prompt-defined strategy without the v3 compiler or FCF inputs.
+- Safety: source-attributed inputs remain mandatory; uncertainty fails closed, while deterministic risk, timing, and Decision/Execution separation are unchanged.
+- Scope: the Strategy Spec is not selected by any Account Lane; configuration, state, broker access, and Execution remain untouched.
+- Evidence: catalog and diff/credential checks pass; 44/53 tests pass, with the known 7 failures/2 errors from legacy dry-run tests reading current live/shadow configs.
