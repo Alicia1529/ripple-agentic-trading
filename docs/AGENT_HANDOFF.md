@@ -2,13 +2,6 @@
 
 Read these rules and the three entries in this file before work. Before handing off, append one chronological entry with local timestamp, outcome, evidence, next action, and only material risk. Keep each entry within 100 words and five bullets, link to authoritative files instead of duplicating them, and retain exactly the latest three entries total.
 
-## 2026-08-26 00:01 PDT — Shadow branch corrected in the system diagrams
-
-- Outcome: the Mermaid diagrams in [`ARCHITECTURE.md`](ARCHITECTURE.md), [`README.md`](../README.md), and [`PROPOSAL.md`](../PROPOSAL.md) now show shadow skipping only the Robinhood call, not the risk verdict or the T+1 marketability check.
-- Correction: the previous "assumed T+1 quote fill" label understated [`shadow.py`](../ripple/shadow.py), which records `not_filled`/`limit_not_marketable` when the 9:35 quote misses the planned limit.
-- Scope: diagram labels and evidence edges only; prose, code, configurations, and state are unchanged.
-- Evidence: all three diagrams render through mermaid-cli; `git diff --check` passes.
-
 ## 2026-08-26 00:03 PDT — V2 Lite unleveraged buying-power basis
 
 - Outcome: [`growth_momentum_v2_lite.md`](../strategies/growth_momentum_v2_lite.md) may use broker-authorized pending-deposit early access only through `unleveraged_buying_power`; margin and additive pending deposits remain forbidden.
@@ -23,3 +16,10 @@ Read these rules and the three entries in this file before work. Before handing 
 - Rationale: Robinhood returned the expected 2026-08-25 daily bar as interpolated with zero volume across the universe, so the SPY regime and candidate eligibility were not verifiable.
 - Evidence: [`2026-08-27`](../state/accounts/account_a/trading_days/2026-08-27) is credential-free, schema-valid, and strategy/account bound; 53 tests pass.
 - Scope/risk: Decision only; no Execution, shadow, review, placement, cancellation, or broker write occurred. A later Execution still requires separate authority and current baseline matching.
+
+## 2026-08-26 00:26 PDT — Toolchain declared and CI added
+
+- Outcome: [`pyproject.toml`](../pyproject.toml) now declares `requires-python >=3.12` and an empty dependency set, and [`ci.yml`](../.github/workflows/ci.yml) runs the suite and catalog validation on every push and pull request.
+- Gap closed: no document previously named a way to run the tests; `uv run python -m unittest discover -s tests -t .` is now in [`RUNBOOK.md`](RUNBOOK.md) and [`README.md`](../README.md).
+- Risk checked: `[tool.uv] package = false` keeps `uv run --no-cache python -m ripple.mvp ...` behaving exactly as the hosted routines expect; only a gitignored `.venv/` is new.
+- Evidence: 53 tests and `validate-configs` pass under both `uv` and a bare 3.12 interpreter with no install step. No `ripple/*.py`, CLI, config, or state change.

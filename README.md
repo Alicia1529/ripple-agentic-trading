@@ -4,6 +4,17 @@ Ripple is a small, inspectable experiment in AI-native development and agentic t
 
 The repository now implements a validated account catalog, a manual dry-run path, and a T+1 quote-based shadow execution path. Hosted schedules and the reviewed live Agentic Robinhood broker-write loop remain unfinished.
 
+## Requirements and verification
+
+Ripple needs CPython 3.12 or later and nothing else: the deterministic core, the CLI, and the whole test suite use only the standard library. Operators drive it with [`uv`](https://docs.astral.sh/uv/), which reads `.python-version` and selects that interpreter for you.
+
+```bash
+uv run --no-cache python -m unittest discover -s tests -t .
+uv run --no-cache python -m ripple.mvp validate-configs
+```
+
+The first command runs all 53 tests; the second validates every account configuration and its selected Strategy Spec. Without `uv`, run the same commands with any Python 3.12 interpreter from the repository root. A system Python older than 3.12 fails on import, which is a version problem rather than a missing package.
+
 ## Actual structure
 
 ```mermaid

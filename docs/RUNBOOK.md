@@ -4,6 +4,16 @@ Operational procedures for the account catalog, manual development lane, shadow 
 
 ## Repository verification
 
+Ripple requires CPython 3.12 or later and has no runtime or test dependencies. `pyproject.toml` declares both, and `.python-version` selects the interpreter for `uv run`. Operators use `uv`, but every command below also runs under any Python 3.12 interpreter without it.
+
+Run the complete test suite before trusting a working copy:
+
+```bash
+uv run --no-cache python -m unittest discover -s tests -t .
+```
+
+All 53 tests must pass. The suite uses only the standard library, so a failure to import a package means the interpreter is older than 3.12 rather than that a dependency is missing.
+
 Validate the complete catalog and inspect scheduled membership:
 
 ```bash

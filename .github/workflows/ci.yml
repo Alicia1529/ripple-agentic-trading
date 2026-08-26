@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Tests and catalog validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Operators run Ripple through `uv`, which reads the same .python-version.
+      # CI installs a bare interpreter instead: the suite and the CLI must keep
+      # working with no packaging step and no third-party package at all.
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+
+      # There is deliberately no install step. A dependency added to Ripple
+      # would fail the next step on import rather than pass unnoticed.
+      - name: Run the test suite
+        run: python -m unittest discover -s tests -t .
+
+      - name: Validate the account catalog
+        run: python -m ripple.mvp validate-configs

@@ -1,0 +1,19 @@
+[project]
+name = "ripple"
+version = "0.1.0"
+description = "An account-catalog experiment in AI-native development and agentic trading."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.12"
+
+# Ripple deliberately has no runtime or test dependencies. The deterministic
+# core, the CLI, and the complete unittest suite use only the standard library,
+# so every documented command runs without installing a package. Adding a
+# dependency here is an architecture decision, not a local convenience.
+dependencies = []
+
+[tool.uv]
+# Keep `uv run` from building and installing Ripple itself. The documented
+# commands invoke `python -m ripple.mvp` from the repository root, which is the
+# same path the hosted Decision and Execution routines use.
+package = false
