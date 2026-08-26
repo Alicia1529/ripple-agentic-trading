@@ -100,11 +100,42 @@ Ripple separates **what a run must do** from **who runs it**. The four prompts i
 that executes them is replaceable: Codex scheduled tasks drive the current deployment, but nothing
 in the Python privileges one product over another.
 
-[`docs/RUNNING.md`](docs/RUNNING.md) has the offline demo, the seven requirements any runner must
-satisfy, the prompt library for normal, manual, and historical-backfill runs, and setup for the
-runners known to satisfy the contract. [`routines/SCHEDULE.md`](routines/SCHEDULE.md) is the
-operator-owned schedule manifest, and [`docs/RUNBOOK.md`](docs/RUNBOOK.md) covers operations,
-incidents, and the kill switch.
+[`docs/RUNNING.md`](docs/RUNNING.md) states the seven requirements any runner must satisfy, then
+gives the prompt library and the setup for each runner known to satisfy them.
+[`routines/SCHEDULE.md`](routines/SCHEDULE.md) is the operator-owned schedule manifest.
+
+## Documentation
+
+Each document owns one kind of truth, because what the system *is*, what it must *never* do, what was *decided*, and how to *operate* it all change at different rates. [`docs/README.md`](docs/README.md) is the complete map; this is the short version.
+
+**Understand what it does**
+
+| Document | Answers |
+|---|---|
+| [`docs/ANATOMY_OF_A_CYCLE.md`](docs/ANATOMY_OF_A_CYCLE.md) | What one cycle actually produces, field by field, from a demo you can rerun. The fastest way in |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | How the system works today, and where its boundaries sit |
+| [`docs/INVARIANTS.md`](docs/INVARIANTS.md) | The 14 rules that may never be broken — the checklist every review runs against |
+| [`docs/DECISIONS.md`](docs/DECISIONS.md) | Which durable choices govern this release, and why they were made that way |
+| [`CONTEXT.md`](CONTEXT.md) | What each domain term means, and which tempting synonyms to avoid |
+| [`PROPOSAL.md`](PROPOSAL.md) | Why Ripple exists, what it deliberately is not, and the gates between releases |
+
+**Run it**
+
+| Document | Answers |
+|---|---|
+| [`docs/RUNNING.md`](docs/RUNNING.md) | What any Agent Runner must guarantee, and how to drive Ripple with Codex, Claude Code, or by hand |
+| [`docs/RUNBOOK.md`](docs/RUNBOOK.md) | How to verify a working copy, respond to failures, restart after a tier-two lock, and stop everything |
+| [`routines/`](routines/) | What each of the four scheduled runs must do — the durable prompt contracts themselves |
+| [`docs/TODO.md`](docs/TODO.md) | What is genuinely unfinished, and which gate comes next |
+
+**Change it**
+
+| Document | Answers |
+|---|---|
+| [`docs/WRITING_A_STRATEGY.md`](docs/WRITING_A_STRATEGY.md) | How to add an investment policy in Markdown, what it may decide, and what it can never loosen |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Setup, scope discipline, the contributions most wanted, and the non-goals already settled |
+| [`AGENTS.md`](AGENTS.md) | The working contract for humans and agents alike; read it before changing anything |
+| [`SECURITY.md`](SECURITY.md) | What counts as a security issue here, and what to understand before pointing this at a broker |
 
 ## Repository map
 
@@ -112,18 +143,18 @@ incidents, and the kill switch.
 |---|---|
 | [`config/`](config/) | One filename-identified configuration per Account Lane; [`config/examples/`](config/examples/) holds unscheduled samples |
 | [`strategies/`](strategies/) | Version-named Strategy Specs selected by config |
-| [`ripple/`](ripple/) | Catalog, artifacts, CLI, deterministic risk, and shadow simulation |
+| [`ripple/`](ripple/) | Catalog, artifacts, CLI, trading calendar, deterministic risk, and shadow simulation |
 | [`routines/`](routines/) | Live/shadow Decision and Execution contracts plus schedules |
 | [`fixtures/`](fixtures/) | Credential-free dry and shadow evidence inputs |
-| [`tests/`](tests/) | Catalog, isolation, artifact, risk, timing, and fill coverage |
-| [`docs/`](docs/) | Architecture, decisions, invariants, operations, and unfinished work; [`RUNNING.md`](docs/RUNNING.md) covers runners |
+| [`tests/`](tests/) | Catalog, isolation, artifact, risk, timing, calendar, and fill coverage |
+| [`docs/`](docs/) | Architecture, invariants, decisions, operations, and unfinished work — see [`docs/README.md`](docs/README.md) |
 
 Canonical state uses lowercase config identifiers and groups each prior-evening Decision and next-trading-day Execution under `state/accounts/<account_id>/trading_days/<trade-date>`.
 
-## Current gates
+## What still gates expansion
 
-Before any lane becomes live, Ripple still needs the reviewed Robinhood read/review/place/cancel loop, intended-account binding proof, scheduled hosted acceptance, real cash/position reconciliation, and explicit owner approval. A strategy switch or capital increase remains a separate human decision.
+[`docs/TODO.md`](docs/TODO.md) is the authority on release state, and every live Execution run re-checks its own gate in [`routines/EXECUTION_LIVE.md`](routines/EXECUTION_LIVE.md) before any broker write. Past those, what remains gated is expansion: enough comparable cycles before any claim about relative strategy behavior, a defined review window and after-cost metrics before that comparison means anything, and a reliability review of missed runs, ambiguous outcomes, and prompt drift before a second simultaneous live lane or more capital.
 
-Read [`PROPOSAL.md`](PROPOSAL.md), [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`docs/TODO.md`](docs/TODO.md), and [`docs/RUNBOOK.md`](docs/RUNBOOK.md) for the complete current model.
+No metric in this repository promotes a strategy or moves capital. A strategy switch, a capital increase, and clearing a tier-two restart lock are human decisions, every time.
 
-Ripple is educational software, not financial advice. Live trading and its consequences remain the account owner's responsibility.
+Ripple is educational software, not financial advice. Trading involves risk of loss, and live trading and its consequences remain the account owner's responsibility.
