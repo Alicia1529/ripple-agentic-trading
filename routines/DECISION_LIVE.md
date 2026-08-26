@@ -23,6 +23,22 @@ Broker calls are limited to minimum read-only account, portfolio, position, quot
 
 Gather the selected strategy's required facts for the full configured universe and every held position. Build one credential-free input with exactly `snapshot`, `account_baseline`, and `decision`, using the fixture only for JSON shape. Missing required evidence produces a valid no-trade plan or stops publication rather than authorizing a guess.
 
+For `growth_momentum_v3`, collect normalized, source-attributed raw OHLC,
+quarterly financial, cash-flow, earnings-date, and sector inputs exactly as its
+Strategy Spec requires. Use completed-session broker market data and primary
+company filings or SEC company facts for operating cash flow and capital
+expenditures. Compile them before ranking or research:
+
+```bash
+uv run --no-cache python -m ripple.growth_momentum \
+  --input /tmp/ripple-growth-raw-<account_id>.json \
+  --output /tmp/ripple-growth-facts-<account_id>.json
+```
+
+The compiler must succeed for the complete configured universe. Copy its facts
+and provenance into the DecisionSnapshot; never persist the raw authenticated
+input. A compiler error stops publication instead of becoming a guessed value.
+
 Publish with:
 
 ```bash

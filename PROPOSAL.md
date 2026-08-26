@@ -42,10 +42,10 @@ Each account configuration contains a human-readable description, one Strategy S
 
 | Account Lane | Mode | Strategy | Current role |
 |---|---|---|---|
-| `account_a` | `dry_run` | `growth_momentum_v2` | Manual fixture-backed development and future live candidate; never scheduled in this mode |
+| `account_a` | `dry_run` | `growth_momentum_v3` | Manual fixture-backed development and future live candidate; never scheduled in this mode |
 | `account_b` | `shadow` | `earnings_drift_v1` | Scheduled-cohort candidate producing event-driven earnings evidence and assumed T+1 quote fills without Robinhood writes |
 
-The lanes select different reviewed Strategy Specs: Account A applies Growth Momentum v2 in its manual development lane, while Account B evaluates post-earnings drift with a $1000 initial virtual balance. Strategy attribution and lane isolation allow their evidence to remain distinct; no result automatically promotes a strategy or changes capital.
+The lanes select different reviewed Strategy Specs: Account A applies Growth Momentum v3 with deterministically compiled numeric facts, while Account B evaluates post-earnings drift with a $1000 initial virtual balance. Strategy attribution and lane isolation allow their evidence to remain distinct; no result automatically promotes a strategy or changes capital.
 
 Existing `state/accounts/account_A` artifacts are immutable legacy fixture evidence. Canonical lowercase identifiers start new state under `state/accounts/account_a` and `state/accounts/account_b`; old evidence is not rewritten.
 

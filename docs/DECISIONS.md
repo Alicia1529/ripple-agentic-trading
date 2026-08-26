@@ -16,7 +16,8 @@ Git history retains superseded reasoning. This file summarizes only decisions th
 - The catalog validates every selected `strategies/<strategy_id>.md` file and fails if more than one configuration is live. It returns account-ID-sorted cohorts instead of maintaining an `accounts[]` registry.
 - Strategy Specs remain prompt-defined Markdown policies. Ripple does not add a Python plugin engine. New versioned specs are added as new files rather than changing historical attribution in place.
 - `strategy_id` is frozen into new OrderPlans and execution evidence so later review does not depend on the current config alone.
-- Account A selects `growth_momentum_v2`; its research evaluation and thesis records stay in immutable DecisionSnapshots while its orders use the shared schema. Account B is outside that switch.
+- Account A selects `growth_momentum_v3`; its research evaluation, compiled fact provenance, and thesis records stay in immutable DecisionSnapshots while its orders use the shared schema. Account B is outside that switch.
+- Growth Momentum numeric facts are derived by one checked-in deterministic compiler from normalized source-attributed raw inputs. The compiler owns Decimal formulas, date/session alignment, interpolation rejection, source and freshness checks, and completeness checks; the LLM gathers and normalizes sources but does not recompute compiler output. This is a facts seam, not a Python strategy engine: filtering, ranking, prose research, and portfolio judgment remain in the versioned Strategy Spec.
 
 ## Modes and scheduling
 
@@ -49,6 +50,6 @@ Git history retains superseded reasoning. This file summarizes only decisions th
 
 ## Deterministic safety and non-goals
 
-- Risk remains per lane: 20% maximum position, three new positions per day, 5% daily loss, 10%/15% drawdown tiers, 15-minute quote age, 30-day taxpayer-wide wash-sale lookback, 8% stop loss, and 20% take profit. Planned limits must remain inside a positive per-order price tolerance capped at 10%; Growth Momentum v2 removes v1's fixed 1% policy but does not remove this deterministic cap.
+- Risk remains per lane: 20% maximum position, three new positions per day, 5% daily loss, 10%/15% drawdown tiers, 15-minute quote age, 30-day taxpayer-wide wash-sale lookback, 8% stop loss, and 20% take profit. Planned limits must remain inside a positive per-order price tolerance capped at 10%; Growth Momentum v3 retains v2's removal of v1's fixed 1% policy but does not remove this deterministic cap.
 - Missing or stale facts, baseline mismatch, cross-account mismatch, malformed inputs, or unsafe sizing fail closed. Tier two requires human restart.
 - Current non-goals include a dashboard, automatic strategy ranking/promotion, multiple simultaneous live lanes, additional brokers, intraday trading, a Python strategy engine, transactional persistence, exactly-once submission, automatic reconciliation, and calibrated fee/slippage simulation.

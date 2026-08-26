@@ -4,7 +4,7 @@ This document describes Ripple as implemented today. Durable reasons belong in `
 
 Ripple is an account-catalog MVP for comparing isolated strategy lanes. `account_a` is a manual `dry_run` development lane and `account_b` is a fixture-backed `shadow` lane. The catalog and shadow execution path are implemented. Hosted schedules, Account A acceptance, and the reviewed live Robinhood broker-write loop remain unfinished.
 
-Account A selects `growth_momentum_v2`. Its prose research, candidate rejections,
+Account A selects `growth_momentum_v3`. Its prose research, candidate rejections,
 warnings, and thesis records remain immutable DecisionSnapshot evidence; its
 actual intent still uses the shared OrderPlan schema.
 
@@ -37,7 +37,7 @@ config/<account_id>.json
           after gate    no broker calls
 ```
 
-The LLM supplies bounded fact gathering and investment judgment. Python validates configurations and artifacts, assigns stable IDs, performs deterministic risk calculations, and simulates Shadow Fills. The owner supplies broker binding, funding, live activation, restart, and strategy-switch decisions.
+The LLM supplies bounded fact gathering and investment judgment. Python validates configurations and artifacts, compiles source-attributed Growth Momentum facts, assigns stable IDs, performs deterministic risk calculations, and simulates Shadow Fills. The owner supplies broker binding, funding, live activation, restart, and strategy-switch decisions.
 
 ## Account Catalog interface
 
@@ -72,6 +72,8 @@ The catalog returns deterministic, account-ID-sorted cohorts. A missing strategy
 `strategies/` may contain multiple version-named Strategy Specs. A configuration selects exactly one by identifier. The Decision Routine reads that file completely and applies it to only its assigned lane.
 
 The seam is deliberately small: Strategy Specs are prompt-defined Markdown policies, not Python plugins. The generic publisher and deterministic risk module remain authoritative for shape, sizing, and safety. Adding a new strategy does not require changing Python, but selecting a missing strategy fails catalog validation.
+
+Account A selects `growth_momentum_v3`. Its Decision Routine normalizes source-attributed completed-session OHLC, eight quarterly financial/cash-flow rows, earnings dates, and sectors, then passes that credential-free input through the deterministic Growth Momentum facts compiler. SPY and QQQ are benchmark-only and receive technical facts without impossible corporate-financial requirements. Every security receives complete technical, relative-momentum, earnings-distance, revenue-growth, margin, and free-cash-flow facts or the whole compilation fails. Ranking and prose research begin only after success; raw authenticated responses are never persisted.
 
 Account B currently selects `earnings_drift_v1`, an event-driven policy adapted to the generic publication seam. Its earnings facts, research answers, rejected candidates, warnings, and thesis metadata belong in immutable `DecisionSnapshot.inputs`; its plan still uses the shared `OrderPlan` schema. The first shadow cycle starts from its configured `$1000` virtual balance. Later cycles continue from the latest `ending_account` rather than resetting capital.
 
@@ -143,6 +145,7 @@ The plan's signal time remains Day T and every fill attempt remains Day T+1. Sha
 | Module | Interface responsibility | What stays behind it |
 |---|---|---|
 | Account catalog | Load all lane configs and select one mode cohort | Filename identity, strict schema, strategy existence, live-count validation, deterministic ordering |
+| Growth Momentum facts compiler | Compile one normalized source-attributed document into complete v3 facts | Decimal formulas, session alignment, provenance, interpolation rejection, and fail-closed validation |
 | Decision publisher | Publish one validated Decision Cycle | Timing, universe, target weights, stable IDs, strategy attribution, immutable writes |
 | `DecisionSnapshot` | Represent allowed decision inputs | Strict JSON and immutable nested values |
 | `OrderPlan` | Represent strategy-attributed decision intent | Strict order shape, account baseline, portfolio weights, immutable nested values |
@@ -174,7 +177,7 @@ Execution also checks the decision baseline, universe, price tolerance, cumulati
 
 ## Authority and reliability
 
-Deterministic code controls schemas, IDs, account binding, timing, risk calculations, and Shadow Fill state transitions. Routine prompts control fact gathering and LLM tool use. The owner and platform control credentials, schedules, broker binding, live activation, capital, and restart.
+Deterministic code controls schemas, Growth Momentum numeric fact derivation, IDs, account binding, timing, risk calculations, and Shadow Fill state transitions. Routine prompts control source gathering, normalization, qualitative research, and LLM tool use. The owner and platform control credentials, schedules, broker binding, live activation, capital, and restart.
 
 Git is continuity and audit evidence, not a transactional submission journal or cross-runner lease. Live execution still accepts duplicate-call, ambiguous-timeout, crash-before-log, prompt/tool-use, and model-drift risk at the small canary allocation. Shadow results avoid broker risk but remain assumptions, not evidence that a real limit order would have filled at that price or with zero costs.
 

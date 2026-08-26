@@ -21,7 +21,7 @@ Repository implementation now validates account/strategy configuration, enforces
 
 ## Strategy comparison and replay
 
-- [x] Add reviewed, version-named Strategy Specs; `account_a` now selects `growth_momentum_v2` and `account_b` selects `earnings_drift_v1`.
+- [x] Add reviewed, version-named Strategy Specs; `account_a` now selects `growth_momentum_v3` with deterministically compiled facts and `account_b` selects `earnings_drift_v1`.
 - [ ] Observe enough comparable Account A and Account B cycles before making any claim about relative strategy behavior.
 - [ ] Accumulate enough live/shadow records to define a review window, after-cost metrics, and acceptable incident criteria.
 - [ ] Add replay/reporting only from recorded strategy IDs, plans, T+1 fill assumptions, and ending virtual states; do not retrofit Day T fills.

@@ -18,7 +18,7 @@ class AccountCatalogTests(unittest.TestCase):
         ])
         self.assertEqual(
             [config.account_id for config in catalog.for_mode("live")],
-            [],
+            ["account_a"],
         )
         self.assertEqual(
             [config.account_id for config in catalog.for_mode("shadow")],
@@ -26,12 +26,12 @@ class AccountCatalogTests(unittest.TestCase):
         )
         self.assertEqual(
             [config.account_id for config in catalog.for_mode("dry_run")],
-            ["account_a"],
+            [],
         )
         self.assertEqual(
             {config.account_id: config.strategy_id for config in catalog},
             {
-                "account_a": "growth_momentum_v2",
+                "account_a": "growth_momentum_v3",
                 "account_b": "earnings_drift_v1",
             },
         )

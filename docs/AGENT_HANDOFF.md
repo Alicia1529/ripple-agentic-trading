@@ -2,14 +2,6 @@
 
 Read these rules and the three entries in this file before work. Before handing off, append one chronological entry with local timestamp, outcome, evidence, next action, and only material risk. Keep each entry within 100 words and five bullets, link to authoritative files instead of duplicating them, and retain exactly the latest three entries total.
 
-## 2026-08-25 01:11 PDT — Account A manual Live Decision
-
-- Outcome: published Alicia-authorized manual 2026-08-25 Decision for live `account_a`; plan `b620a6e2-57d5-5a2d-84bc-e31fc946eee9` is 100% cash with zero orders for possible 2026-08-26 Execution.
-- Evidence: confirmed Agent A binding, $1000 equity/buying power, no positions, and official 2026-08-24 closes across the configured universe using read-only Robinhood tools.
-- Safety: missing authoritative precomputed v2 technical and FCF facts failed closed; the snapshot records a `NO_TRADE` result and no broker-write tool was used.
-- Verification: catalog, JSON/schema inspection, credential scan, and `git diff --check` pass; core test baseline remains 9 failures and 8 errors from the config/fixture mismatch.
-- Next/risk: Execution may consume this plan on 2026-08-26; it contains no orders, and the Live Gate remains unfinished.
-
 ## 2026-08-25 06:39 PDT — Account B scheduled Shadow Execution
 
 - Outcome: executed `account_b` plan `a664f9e2-4cec-5a6f-a399-0836dc4ddefa` at 09:39 EDT; deterministic risk allowed zero actions and `fill_status` is `no_actions`.
@@ -23,3 +15,11 @@ Read these rules and the three entries in this file before work. Before handing 
 - Evidence: latest ending account supplied the $1000 baseline; sourced August 21/24/25 universe screen had no eligible completed earnings event, and August 25 SPY facts were recorded.
 - Verification: catalog/cohort checks, artifact/schema inspection, credential scan, and `git diff --check` pass.
 - Tests/risk: 41 core tests retain the documented config/fixture mismatch at 9 failures and 8 errors; 2026-08-26 Shadow Execution may consume this no-action plan.
+
+## 2026-08-25 20:06 PDT — Deterministic Growth Momentum v3 facts
+
+- Outcome: added a source-attributed Decimal facts compiler and selected [`growth_momentum_v3`](../strategies/growth_momentum_v3.md) for Account A; existing v2 decisions remain immutable.
+- Interface: one normalized document produces technical, relative-momentum, earnings, growth, margin, and FCF facts; SPY/QQQ are benchmark-only, while incomplete or unsafe security data fails closed.
+- Architecture: Decision gathers/normalizes sources, checked-in code derives numbers, and qualitative filtering/research remains in the Strategy Spec; no broker-write authority changed.
+- Evidence: 4 compiler and 3 catalog tests, catalog validation, CLI immutability, syntax check, and `git diff --check` pass.
+- Tests/risk: 45 core tests retain the pre-existing config/fixture mismatch at 8 failures and 8 errors; reconcile those fixtures separately before relying on the full suite.
