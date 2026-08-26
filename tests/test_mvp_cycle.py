@@ -361,15 +361,16 @@ class MvpDryCycleTests(unittest.TestCase):
                     context_path.write_text(json.dumps(fixture["execution_context"]))
                     from ripple.mvp import execute_shadow
 
-                    with self.assertRaisesRegex(ValueError, "historical Decision backfills"):
-                        execute_shadow(
-                            config_path,
-                            root / "account_a" / "trading_days" / "2026-08-25"
-                            / "order_plan.json",
-                            context_path,
-                            root / "account_a",
-                            now=datetime.fromisoformat("2026-08-25T09:35:00-04:00"),
-                        )
+                    result = execute_shadow(
+                        config_path,
+                        root / "account_a" / "trading_days" / "2026-08-25"
+                        / "order_plan.json",
+                        context_path,
+                        root / "account_a",
+                        manual=True,
+                    )
+                    self.assertEqual(result["execution_run_kind"], "manual")
+                    self.assertEqual(result["fill_status"], "filled")
 
                 with self.assertRaises(FileExistsError):
                     publish_decision(

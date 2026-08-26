@@ -2,13 +2,6 @@
 
 Read these rules and the three entries in this file before work. Before handing off, append one chronological entry with local timestamp, outcome, evidence, next action, and only material risk. Keep each entry within 100 words and five bullets, link to authoritative files instead of duplicating them, and retain exactly the latest three entries total.
 
-## 2026-08-25 21:48 PDT — Manual Live Decision timing clarified
-
-- Outcome: the Live Decision contract now explicitly permits a designated-owner manual Decision outside the schedule window and clarifies that the Live Gate does not block this broker-write-free phase.
-- Scope: updated [`routines/DECISION_LIVE.md`](../routines/DECISION_LIVE.md) and the current [`account_a`](../config/account_a.json) description; no Execution or broker-write authority changed.
-- Evidence: the existing live-mode manual Decision test passes, while the scheduled Friday/Saturday timing rejection still passes.
-- Risk/next: a manual Decision still requires complete facts and account binding; live Execution remains governed separately.
-
 ## 2026-08-25 22:05 PDT — Decision-only historical backfill
 
 - Outcome: `publish-decision --historical-backfill` now permits explicitly attributed live/shadow historical Decisions while rejecting dry-run, future/off-window timestamps, overwrite, and Execution use.
@@ -22,3 +15,10 @@ Read these rules and the three entries in this file before work. Before handing 
 - Evidence: the complete point-in-time snapshot was restored from commit `1b9d2de`; its SHA-256 matches exactly, and the plan is labeled `backfill`.
 - Verification: catalog/cohort checks, JSON parsing, credential scan, and `git diff --check` pass; the backfill safety tests pass.
 - Tests/risk: full 52-test run retains the known 7 failures/2 errors in legacy dry-run tests against current live/shadow configs; no Execution, fill, broker, or live work occurred.
+
+## 2026-08-25 22:12 PDT — Backfill Execution enabled
+
+- Outcome: removed the blanket Execution rejection for plans with `decision_run_kind=backfill`; matching manual live/shadow Execution may now consume those immutable plans.
+- Safety: normal timing order, deterministic risk, lane/account binding, Live Gate, duplicate, ambiguity, and broker safeguards remain unchanged.
+- Evidence: focused backfill tests pass, including a manual Shadow Execution that records a fill from the historical T+1 context; `git diff --check` passes.
+- Scope/risk: schedules still never backfill automatically, and backfill evidence must not be represented as a contemporaneous signal.

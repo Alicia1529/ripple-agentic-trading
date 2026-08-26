@@ -94,7 +94,7 @@ Ripple uses four non-overlapping schedule triggers:
 | Live Execution | 0..1 live lane | next weekday around 9:35 AM `America/New_York` |
 | Shadow Execution | all shadow lanes | next weekday around 9:35 AM `America/New_York` |
 
-There may be zero live lane while the Live Gate is closed; the live runs then finish without account work. Dry-run lanes are never selected. Schedules never automatically backfill missed cycles. A designated-owner historical backfill is a separate live/shadow Decision-only operation: it requires complete point-in-time inputs, preserves the normal Decision timestamp window, records `decision_run_kind=backfill`, and cannot create Execution or fill evidence.
+There may be zero live lane while the Live Gate is closed; the live runs then finish without account work. Dry-run lanes are never selected. Schedules never automatically backfill missed cycles. A designated-owner historical backfill is a separate live/shadow operation: it requires complete point-in-time Decision inputs, preserves the normal Decision timestamp window, and records `decision_run_kind=backfill`. Its immutable plan may proceed through explicitly authorized manual Execution with the usual deterministic and mode-specific safeguards.
 
 The shadow runs are one scheduled cohort but each lane remains an independent Decision Cycle. One lane's malformed input or failure is reported for that lane and does not authorize, mutate, or suppress another lane's work.
 

@@ -33,7 +33,7 @@ The first command writes Decision artifacts under `trading_days/<trade-date>/`. 
 
 For an explicitly authorized manual Decision or Execution, use the corresponding `publish-decision`, `execute-dry-run`, or `execute-shadow` command with `--manual-run`. Manual mode changes timing validation only: it still requires the canonical state root and, for Execution, the matching co-located snapshot and plan. The OrderPlan records the Decision run kind and `execution.json` records the Execution run kind independently, so a manual phase may safely hand off to a scheduled phase or vice versa.
 
-For a designated-owner live/shadow Decision-only historical backfill, provide complete point-in-time inputs and run `publish-decision` with `--historical-backfill`. The historical `decision_time` must be in the past and retain the normal Sunday–Thursday 8:55–9:15 PM New York window; the command records `decision_run_kind=backfill`. It rejects dry-run lanes and existing cycle artifacts. Do not run Execution, create fill evidence, or describe a backfill as a contemporaneous signal.
+For a designated-owner live/shadow historical backfill, provide complete point-in-time inputs and run `publish-decision` with `--historical-backfill`. The historical `decision_time` must be in the past and retain the normal Sunday–Thursday 8:55–9:15 PM New York window; the command records `decision_run_kind=backfill`. It rejects dry-run lanes and existing cycle artifacts. The resulting plan may be passed to the matching Execution command with `--manual-run`; normal timing order, deterministic risk, account binding, Live Gate, duplicate, and ambiguity checks still apply. Keep its backfill provenance visible and do not describe it as a contemporaneous signal.
 
 ## Hosted schedules
 
@@ -92,7 +92,7 @@ For every hosted run, verify:
 | Missing Strategy Spec or malformed catalog | Stop all cohorts; fix and review configuration before the next normal cycle |
 | Second live configuration | Stop live schedules; restore at most one live lane before any Decision or Execution work |
 | One shadow lane fails | Record and stop that lane; continue only independently validated shadow lanes |
-| Scheduled run is missed | Do not automatically retry or backfill an order; fix the cause for the next normal cycle. Only the designated owner may separately authorize a Decision-only historical backfill from complete point-in-time inputs |
+| Scheduled run is missed | Do not automatically retry. Fix the cause for the next normal cycle; only the designated owner may separately authorize a historical Decision and its manual Execution from complete point-in-time inputs |
 | Git conflict | Stop the affected run and resolve normally; never force-push trading evidence |
 | Missing/stale quote or baseline mismatch | Execute and simulate nothing for the affected planned work |
 | Robinhood authorization request | Stop live work and reconnect interactively; never paste credentials into a prompt or Git |

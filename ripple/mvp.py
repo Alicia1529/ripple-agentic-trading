@@ -66,8 +66,6 @@ def _trade_date(decision_time: str) -> str:
 
 
 def _published_cycle_root(output: Path, plan: OrderPlan) -> Path:
-    if plan.decision_run_kind == "backfill":
-        raise ValueError("Execution does not accept historical Decision backfills")
     cycle_root = output / "trading_days" / _trade_date(plan.decision_time)
     snapshot_path = cycle_root / "decision_snapshot.json"
     plan_path = cycle_root / "order_plan.json"
