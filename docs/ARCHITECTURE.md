@@ -38,11 +38,11 @@ flowchart TD
         EXE --> RISK
     end
 
-    RISK --> LADP["Live adapter — Agentic Robinhood<br/>gated: no broker-write authority<br/>until the Live Gate is complete"]
-    RISK --> SADP["Shadow adapter<br/>T+1 marketability, fill at execution quote<br/>zero fees and slippage, no broker I/O"]
+    RISK --> LADP["Live adapter — Agentic Robinhood<br/>same risk verdict, real broker write<br/>gated: no broker-write authority<br/>until the Live Gate is complete"]
+    RISK --> SADP["Shadow adapter — no Robinhood call, same risk verdict<br/>re-checks the real T+1 9:35 quote against the planned limit<br/>marketable: assumed fill at that quote and as_of<br/>otherwise not_filled, reason_code limit_not_marketable<br/>zero fees and slippage; carries cash, quantity, average cost forward"]
 
-    LADP --> ST
-    SADP --> ST
+    LADP -->|"writes evidence back"| ST
+    SADP -->|"writes evidence back"| ST
     PLAN -.-> ST
     ST["Lane State — state/accounts/&lt;account_id&gt;/trading_days/&lt;trade_date&gt;<br/>decision_snapshot.json, order_plan.json, execution.json, report.md<br/>plus the account-root active_risk_lock.json that persists across dates"]
 

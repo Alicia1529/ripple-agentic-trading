@@ -32,7 +32,11 @@ flowchart TD
 
     RUNS --> RISK["deterministic risk authority"]
     RISK --> L["Robinhood live<br/>after the Live Gate"]
-    RISK --> S["T+1 quote Shadow Fill<br/>with no broker call"]
+    RISK --> S["Shadow Fill — no broker call<br/>the real T+1 quote must still be marketable<br/>against the planned limit, or it is not_filled"]
+
+    L --> ST
+    S --> ST
+    ST["credential-free evidence written back<br/>result, report, and ending account state"]
 
     classDef gated stroke-dasharray: 5 4;
     class L,DRY gated;

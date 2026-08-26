@@ -27,7 +27,11 @@ flowchart TD
     DEC --> EXE["next-weekday Execution, 9:35 AM ET<br/>deterministic risk: allow, clip, reject, abort, Risk Exit"]
 
     EXE --> L["live: Agentic Robinhood after the Live Gate"]
-    EXE --> S["shadow: assumed T+1 quote fill, no broker call"]
+    EXE --> S["shadow: no broker call, but the same risk verdict<br/>and the real 9:35 quote still decide<br/>marketable: assumed fill at that quote, else not_filled"]
+
+    L --> ST
+    S --> ST
+    ST["Lane State: execution.json, report.md, ending virtual account<br/>credential-free evidence written back for every mode"]
 
     classDef gated stroke-dasharray: 5 4;
     class L,DRY gated;
