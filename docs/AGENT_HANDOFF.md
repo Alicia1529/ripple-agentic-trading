@@ -2,13 +2,6 @@
 
 Read these rules and the three entries in this file before work. Before handing off, append one chronological entry with local timestamp, outcome, evidence, next action, and only material risk. Keep each entry within 100 words and five bullets, link to authoritative files instead of duplicating them, and retain exactly the latest three entries total.
 
-## 2026-08-26 00:48 PDT — Compact V2 Lite facts
-
-- Outcome: [`growth_momentum_v2_lite_compact.md`](../strategies/growth_momentum_v2_lite_compact.md) and its [compiler](../ripple/growth_momentum_lite.py) keep bars transient and publish compact facts; `account_a` selects the new version.
-- Safety: structural errors fail closed; unavailable symbols remain explicit, and unavailable held-position facts stop publication. Historical V2 Lite is unchanged.
-- Evidence: 61 tests, catalog validation, bytecode compilation, and `git diff --check` pass; 18-symbol output is 13,545 bytes versus the prior 586,769-byte snapshot.
-- Next/risk: the next live Decision should verify the compact artifact. No Decision, Execution, shadow, state, broker operation, or mutable cache was added.
-
 ## 2026-08-26 01:01 PDT — Runner seam documented and offline demo added
 
 - Outcome: [`RUNNING.md`](RUNNING.md) states the seven-requirement Agent Runner contract and lists Codex scheduled tasks as one implementation rather than the entry point; [`README.md`](../README.md) drops from 179 to 117 lines.
@@ -22,3 +15,10 @@ Read these rules and the three entries in this file before work. Before handing 
 - Positioning: forward shadow lanes are stated as the simulation path in [`PROPOSAL.md`](../PROPOSAL.md) and [`ARCHITECTURE.md`](ARCHITECTURE.md) — same schedule, spec, and deterministic risk as live, differing only in the Shadow Fill assumption.
 - Reversal path: revisiting it requires a new decision, not a local exception.
 - Evidence: 61 tests pass; documentation only, across three files. No `ripple/*.py`, config, state, or `docs/TODO.md` change.
+
+## 2026-08-26 01:05 PDT — Stage lines realigned with TODO
+
+- Outcome: the stage sentences in [`PROPOSAL.md`](../PROPOSAL.md) and [`README.md`](../README.md) no longer claim hosted acceptance and the broker-write loop are unfinished; both now defer to [`TODO.md`](TODO.md) instead of restating status.
+- Neither line names an account, mode, or strategy binding, so `config/*.json` stays the sole deployment authority.
+- Open discrepancy: TODO marks live acceptance complete, but the repository holds no live execution evidence — the only live plan (2026-08-27) was removed by `ffadebd`. Worth an owner check before any live claim is made elsewhere.
+- Evidence: 61 tests pass; documentation only. No `ripple/*.py`, config, or state change.

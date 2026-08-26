@@ -1,6 +1,6 @@
 # Ripple Trading — Proposal
 
-**Current stage:** Ripple has a validated account catalog plus fixture-backed dry-run and shadow paths. The scheduled live/shadow routine topology is specified; hosted acceptance and the reviewed Robinhood broker-write loop remain unfinished.
+**Current stage:** Ripple has a validated account catalog, dry-run and shadow paths, hosted schedules that have produced reviewable prior-evening Decision and next-weekday Shadow Execution cycles, and a reviewed Robinhood broker-write loop. `docs/TODO.md` records hosted shadow acceptance and live acceptance as complete; the remaining work is accumulating comparable cycles, defining a review window and after-cost metrics, and the reliability review that precedes a second live lane or more capital.
 
 `docs/ARCHITECTURE.md` is the current technical design, `docs/DECISIONS.md` records durable choices, and `docs/TODO.md` tracks unfinished work.
 
