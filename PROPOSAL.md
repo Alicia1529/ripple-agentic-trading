@@ -47,7 +47,7 @@ Each account configuration contains a human-readable description, one Strategy S
 
 The lanes select different reviewed Strategy Specs: Account A applies Growth Momentum v3 with deterministically compiled numeric facts, while Account B evaluates post-earnings drift with a $1000 initial virtual balance. Strategy attribution and lane isolation allow their evidence to remain distinct; no result automatically promotes a strategy or changes capital.
 
-Existing `state/accounts/account_A` artifacts are immutable legacy fixture evidence. Canonical lowercase identifiers start new state under `state/accounts/account_a` and `state/accounts/account_b`; old evidence is not rewritten.
+Canonical lowercase identifiers own state under `state/accounts/<account_id>/trading_days/<trade_date>`. The trade date is the intended next-weekday Execution date, so a prior-evening Decision and its Execution evidence stay together.
 
 ## Mode contract
 

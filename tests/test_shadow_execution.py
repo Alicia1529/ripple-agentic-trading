@@ -82,7 +82,7 @@ class ShadowExecutionTests(unittest.TestCase):
                 output,
                 now=datetime.fromisoformat(fixture["decision"]["decision_time"]),
             )
-            plan_path = output / "plans" / "2026-08-24" / "order_plan.json"
+            plan_path = output / "trading_days" / "2026-08-25" / "order_plan.json"
             result = execute_shadow(
                 ROOT / "config" / "account_b.json",
                 plan_path,
@@ -109,17 +109,12 @@ class ShadowExecutionTests(unittest.TestCase):
                 "AAPL": {"quantity": "0.5", "average_cost": "100.5"},
             })
             self.assertTrue(
-                (output / "executions" / "2026-08-25" / "shadow.json").is_file()
+                (output / "trading_days" / "2026-08-25" / "execution.json").is_file()
             )
-            execution_log = json.loads(
-                (output / "logs" / "executions.jsonl").read_text()
-            )
-            self.assertEqual(execution_log["kind"], "shadow_execution_completed")
-            self.assertEqual(execution_log["strategy_id"], "earnings_drift_v1")
-            self.assertEqual(execution_log["fill_count"], 1)
+            self.assertFalse((output / "logs").exists())
             self.assertIn(
                 "No broker write tool was called",
-                (output / "reports" / "2026-08-25.md").read_text(),
+                (output / "trading_days" / "2026-08-25" / "report.md").read_text(),
             )
 
             with self.assertRaises(FileExistsError):
@@ -158,7 +153,7 @@ class ShadowExecutionTests(unittest.TestCase):
             )
             result = execute_shadow(
                 ROOT / "config" / "account_b.json",
-                output / "plans" / "2026-08-24" / "order_plan.json",
+                output / "trading_days" / "2026-08-25" / "order_plan.json",
                 context_input,
                 output,
                 now=datetime.fromisoformat(fixture["execution_context"]["as_of"]),

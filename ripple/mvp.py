@@ -39,12 +39,6 @@ def _write_new_json(path: Path, value: Mapping[str, Any]) -> None:
         output.write("\n")
 
 
-def _append_jsonl(path: Path, value: Mapping[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a") as output:
-        output.write(json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n")
-
-
 def _date(value: str) -> str:
     parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     if parsed.utcoffset() is None:
@@ -65,6 +59,10 @@ def _next_weekday(value: date) -> date:
         candidate = candidate.fromordinal(candidate.toordinal() + 1)
         if candidate.weekday() < 5:
             return candidate
+
+
+def _trade_date(decision_time: str) -> str:
+    return _next_weekday(_new_york_time(decision_time).date()).isoformat()
 
 
 def _validate_state_root(output: Path, config: AccountConfig) -> None:
@@ -194,26 +192,16 @@ def _publish_decision(
     plan = _build_plan(
         decision_input, config, enforce_schedule=run_kind != "manual",
     )
-    decision_date = _date(plan.decision_time)
+    trade_date = _trade_date(plan.decision_time)
+    cycle_root = output / "trading_days" / trade_date
     _write_new_json(
-        output / "snapshots" / decision_date / "decision_snapshot.json",
+        cycle_root / "decision_snapshot.json",
         decision_input["snapshot"],
     )
     _write_new_json(
-        output / "plans" / decision_date / "order_plan.json",
+        cycle_root / "order_plan.json",
         plan.to_dict(),
     )
-    _append_jsonl(output / "logs" / "decisions.jsonl", {
-        "kind": "decision_published",
-        "account_id": plan.account_id,
-        "strategy_id": plan.strategy_id,
-        "order_plan_id": plan.order_plan_id,
-        "decision_snapshot_id": plan.decision_snapshot_id,
-        "decision_time": plan.decision_time,
-        "order_count": len(plan.orders),
-        "plan_uri": f"plans/{decision_date}/order_plan.json",
-        "run_kind": run_kind,
-    })
     return plan
 
 
@@ -288,11 +276,11 @@ def _execute_dry_run(
         execution_context["as_of"],
         enforce_schedule=run_kind != "manual",
     )
-    execution_date = _date(execution_context["as_of"])
-    execution_path = output / "executions" / execution_date / "dry_run.json"
+    cycle_root = output / "trading_days" / _trade_date(plan.decision_time)
+    execution_path = cycle_root / "execution.json"
     if execution_path.exists():
         raise FileExistsError(17, "File exists", execution_path)
-    latch_path = output / "risk" / "drawdown_tier2.lock.json"
+    latch_path = output / "active_risk_lock.json"
     result = evaluate_plan(
         plan.to_dict(), execution_context, config.risk_rules(),
         new_entries_locked=latch_path.is_file(),
@@ -304,19 +292,8 @@ def _execute_dry_run(
             "reason_code": "drawdown_tier2",
         })
     _write_new_json(execution_path, result)
-    _append_jsonl(output / "logs" / "executions.jsonl", {
-        "kind": "dry_run_completed",
-        "account_id": plan.account_id,
-        "strategy_id": plan.strategy_id,
-        "order_plan_id": plan.order_plan_id,
-        "occurred_at": execution_context["as_of"],
-        "status": result["status"],
-        "action_count": len(result["actions"]),
-        "result_uri": f"executions/{execution_date}/dry_run.json",
-        "run_kind": run_kind,
-    })
     _write_report(
-        output / "reports" / f"{execution_date}.md",
+        cycle_root / "report.md",
         plan,
         execution_context,
         result,
@@ -341,11 +318,11 @@ def _execute_shadow(
         execution_context["as_of"],
         enforce_schedule=run_kind != "manual",
     )
-    execution_date = _date(execution_context["as_of"])
-    execution_path = output / "executions" / execution_date / "shadow.json"
+    cycle_root = output / "trading_days" / _trade_date(plan.decision_time)
+    execution_path = cycle_root / "execution.json"
     if execution_path.exists():
         raise FileExistsError(17, "File exists", execution_path)
-    latch_path = output / "risk" / "drawdown_tier2.lock.json"
+    latch_path = output / "active_risk_lock.json"
     risk_result = evaluate_plan(
         plan.to_dict(), execution_context, config.risk_rules(),
         new_entries_locked=latch_path.is_file(),
@@ -361,23 +338,8 @@ def _execute_shadow(
             "reason_code": "drawdown_tier2",
         })
     _write_new_json(execution_path, result)
-    _append_jsonl(output / "logs" / "executions.jsonl", {
-        "kind": "shadow_execution_completed",
-        "account_id": plan.account_id,
-        "strategy_id": plan.strategy_id,
-        "order_plan_id": plan.order_plan_id,
-        "occurred_at": execution_context["as_of"],
-        "status": result["status"],
-        "fill_status": result["fill_status"],
-        "action_count": len(result["actions"]),
-        "fill_count": sum(
-            fill["status"] == "filled" for fill in result["shadow_fills"]
-        ),
-        "result_uri": f"executions/{execution_date}/shadow.json",
-        "run_kind": run_kind,
-    })
     _write_report(
-        output / "reports" / f"{execution_date}.md",
+        cycle_root / "report.md",
         plan,
         execution_context,
         result,

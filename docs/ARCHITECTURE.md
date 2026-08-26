@@ -126,7 +126,7 @@ The published plan remains unchanged. Git carries credential-free artifacts into
 
 ### Next-weekday Execution
 
-Execution loads the prior-trading-day plan, current account state, loss-sale history, and fresh quotes. It then runs the shared deterministic risk module.
+Execution loads the plan from the current trade-date directory, current account state, loss-sale history, and fresh quotes. It then runs the shared deterministic risk module.
 
 Live execution may eventually submit only script-allowed actions exactly as emitted through the reviewed Robinhood read/review/place/cancel loop. That loop is not implemented or approved today, so no configuration is live.
 
@@ -152,7 +152,7 @@ The plan's signal time remains Day T and every fill attempt remains Day T+1. Sha
 | Risk module | Return allowed, clipped, rejected, or aborted actions | Account binding, freshness, sizing, cash reservation, loss/drawdown/wash-sale/exit rules |
 | Shadow adapter | Return fill attempts and ending virtual state | T+1 marketability, quote-price fills, position/cash state transition, no broker I/O |
 | Live adapter | Use deterministic output with Robinhood | Still unfinished and gated |
-| Lane State | Carry credential-free evidence across fresh sessions | Per-lane plans, snapshots, executions, logs, reports, and locks |
+| Lane State | Carry credential-free evidence across fresh sessions | Per-lane trade-date cycles and an optional active risk lock |
 
 ## Artifacts and state
 
@@ -160,14 +160,12 @@ The plan's signal time remains Day T and every fill attempt remains Day T+1. Sha
 |---|---|
 | `DecisionSnapshot` | Immutable allowed facts and universe for review/reproduction |
 | `OrderPlan` | Immutable account-, strategy-, and cycle-attributed decision |
-| Decision JSONL record | One compact append-only-style publication fact |
 | Dry-run result | Manual proposed actions; explicitly not fills |
 | Shadow result | Risk result, fill attempts, assumptions, and ending virtual account state |
-| Execution JSONL record | Mode, strategy, result status, and fill count for monitoring |
 | Report | Human-readable action and Shadow Fill summary |
 | Tier-two lock | Lane-scoped persistent block on new BUYs until owner review |
 
-Canonical new state roots are `state/accounts/<account_id>`. Plans and execution outputs never cross roots. Legacy uppercase `state/accounts/account_A` evidence stays read-only and is not a valid root for the lowercase catalog.
+Canonical state roots are `state/accounts/<account_id>`. Each cycle lives at `trading_days/<trade_date>`, where `trade_date` is the next New York weekday after the Decision. `decision_snapshot.json` and `order_plan.json` are published prior evening; `execution.json` and `report.md` join the same directory after Execution. The optional account-root `active_risk_lock.json` persists across dates. Cycle artifacts never cross roots or overwrite earlier evidence.
 
 ## Deterministic safety
 

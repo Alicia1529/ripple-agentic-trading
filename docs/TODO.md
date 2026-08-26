@@ -6,7 +6,7 @@ Repository implementation now validates account/strategy configuration, enforces
 
 - [ ] Configure the Shadow Decision and Shadow Execution schedules from `routines/SCHEDULE.md`.
 - [ ] Observe one complete `account_b` scheduled Decision → next-weekday Shadow Execution cycle.
-- [ ] Review the strategy-attributed plan, deterministic risk result, Shadow Fill assumptions, ending account, JSONL record, and report.
+- [ ] Review the strategy-attributed plan, deterministic risk result, Shadow Fill assumptions, ending account, and report in one trade-date directory.
 - [ ] Confirm a failed shadow lane does not corrupt or authorize another lane when a second shadow configuration is eventually added.
 
 ## Live acceptance and loop

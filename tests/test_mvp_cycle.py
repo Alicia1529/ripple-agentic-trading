@@ -13,6 +13,37 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class MvpDryCycleTests(unittest.TestCase):
+    def test_cycle_artifacts_share_the_target_trade_date_directory(self):
+        fixture_path = ROOT / "fixtures" / "mvp" / "dry_cycle.json"
+        fixture = json.loads(fixture_path.read_text())
+        config = json.loads((ROOT / "config" / "account_a.json").read_text())
+        config["execution"]["mode"] = "dry_run"
+        config["universe"] = fixture["snapshot"]["universe"]
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            config_root = root / "config"
+            config_root.mkdir()
+            config_path = config_root / "account_a.json"
+            config_path.write_text(json.dumps(config))
+            output = root / "state" / "account_a"
+
+            from ripple.mvp import run_dry_cycle
+
+            run_dry_cycle(config_path, fixture_path, output)
+
+            trade_date_root = output / "trading_days" / "2026-08-25"
+            self.assertEqual(
+                {path.name for path in trade_date_root.iterdir()},
+                {
+                    "decision_snapshot.json",
+                    "execution.json",
+                    "order_plan.json",
+                    "report.md",
+                },
+            )
+            self.assertFalse((output / "logs").exists())
+
     def test_two_account_lanes_produce_isolated_state(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
@@ -41,17 +72,14 @@ class MvpDryCycleTests(unittest.TestCase):
                     cwd=ROOT, text=True, capture_output=True, check=False,
                 )
                 self.assertEqual(completed.returncode, 0, completed.stderr)
-                plan_path = output / "plans" / "2026-08-24" / "order_plan.json"
+                plan_path = output / "trading_days" / "2026-08-25" / "order_plan.json"
                 plans[account_id] = json.loads(plan_path.read_text())
                 self.assertEqual(plans[account_id]["account_id"], account_id)
-                decision_log = json.loads(
-                    (output / "logs" / "decisions.jsonl").read_text()
+                execution = json.loads(
+                    (output / "trading_days" / "2026-08-25" / "execution.json").read_text()
                 )
-                execution_log = json.loads(
-                    (output / "logs" / "executions.jsonl").read_text()
-                )
-                self.assertEqual(decision_log["account_id"], account_id)
-                self.assertEqual(execution_log["account_id"], account_id)
+                self.assertEqual(execution["account_id"], account_id)
+                self.assertFalse((output / "logs").exists())
 
             self.assertNotEqual(
                 plans["account_a"]["order_plan_id"],
@@ -87,16 +115,11 @@ class MvpDryCycleTests(unittest.TestCase):
             self.assertEqual(completed.returncode, 0, completed.stderr)
             self.assertIn("dry_run cycle complete", completed.stdout)
 
-            plan_path = output / "plans" / "2026-08-24" / "order_plan.json"
-            snapshot_path = output / "snapshots" / "2026-08-24" / "decision_snapshot.json"
-            execution_path = output / "executions" / "2026-08-25" / "dry_run.json"
-            report_path = output / "reports" / "2026-08-25.md"
-            decision_log = output / "logs" / "decisions.jsonl"
-            execution_log = output / "logs" / "executions.jsonl"
-            for path in (
-                snapshot_path, plan_path, execution_path, report_path,
-                decision_log, execution_log,
-            ):
+            plan_path = output / "trading_days" / "2026-08-25" / "order_plan.json"
+            snapshot_path = output / "trading_days" / "2026-08-25" / "decision_snapshot.json"
+            execution_path = output / "trading_days" / "2026-08-25" / "execution.json"
+            report_path = output / "trading_days" / "2026-08-25" / "report.md"
+            for path in (snapshot_path, plan_path, execution_path, report_path):
                 self.assertTrue(path.is_file(), path)
 
             plan = json.loads(plan_path.read_text())
@@ -109,15 +132,8 @@ class MvpDryCycleTests(unittest.TestCase):
             self.assertEqual(execution["actions"][0]["side"], "BUY")
             self.assertEqual(execution["actions"][0]["desired_buy_price"], "101.00")
             self.assertIn("Buy reason:", report_path.read_text())
-            self.assertEqual(len(decision_log.read_text().splitlines()), 1)
-            self.assertEqual(len(execution_log.read_text().splitlines()), 1)
-            self.assertEqual(
-                json.loads(decision_log.read_text())["kind"], "decision_published",
-            )
-            self.assertEqual(
-                json.loads(execution_log.read_text())["kind"], "dry_run_completed",
-            )
             self.assertIn("DRY RUN", report_path.read_text())
+            self.assertFalse((output / "logs").exists())
 
             all_output = "\n".join(
                 path.read_text() for path in output.rglob("*") if path.is_file()
@@ -156,12 +172,12 @@ class MvpDryCycleTests(unittest.TestCase):
                 now=datetime.fromisoformat(fixture["decision"]["decision_time"]),
             )
 
-            plan_path = output / "plans" / "2026-08-24" / "order_plan.json"
+            plan_path = output / "trading_days" / "2026-08-25" / "order_plan.json"
             execute_shadow(
                 config, plan_path, context_input, output,
                 now=datetime.fromisoformat(fixture["execution_context"]["as_of"]),
             )
-            self.assertTrue((output / "executions" / "2026-08-25" / "shadow.json").is_file())
+            self.assertTrue((output / "trading_days" / "2026-08-25" / "execution.json").is_file())
 
     def test_sunday_decision_executes_monday(self):
         fixture = json.loads(
@@ -192,7 +208,7 @@ class MvpDryCycleTests(unittest.TestCase):
                 output,
                 now=datetime.fromisoformat(fixture["decision"]["decision_time"]),
             )
-            plan_path = output / "plans" / "2026-08-23" / "order_plan.json"
+            plan_path = output / "trading_days" / "2026-08-24" / "order_plan.json"
             execute_shadow(
                 ROOT / "config" / "account_b.json",
                 plan_path,
@@ -201,7 +217,7 @@ class MvpDryCycleTests(unittest.TestCase):
                 now=datetime.fromisoformat(fixture["execution_context"]["as_of"]),
             )
             self.assertTrue(
-                (output / "executions" / "2026-08-24" / "shadow.json").is_file()
+                (output / "trading_days" / "2026-08-24" / "execution.json").is_file()
             )
 
     def test_friday_and_saturday_decisions_are_rejected(self):
@@ -255,7 +271,7 @@ class MvpDryCycleTests(unittest.TestCase):
                 cwd=ROOT, text=True, capture_output=True, check=False,
             )
             self.assertEqual(publish.returncode, 0, publish.stderr)
-            plan_path = output / "plans" / "2026-08-24" / "order_plan.json"
+            plan_path = output / "trading_days" / "2026-08-25" / "order_plan.json"
             execute = subprocess.run(
                 [
                     "python3.12", "-m", "ripple.mvp", "execute-dry-run",
@@ -269,10 +285,9 @@ class MvpDryCycleTests(unittest.TestCase):
             )
             self.assertEqual(execute.returncode, 0, execute.stderr)
 
-            decision_log = json.loads((output / "logs" / "decisions.jsonl").read_text())
-            execution_log = json.loads((output / "logs" / "executions.jsonl").read_text())
-            self.assertEqual(decision_log["run_kind"], "manual")
-            self.assertEqual(execution_log["run_kind"], "manual")
+            self.assertTrue(
+                (output / "trading_days" / "2026-08-25" / "execution.json").is_file()
+            )
 
     def test_manual_decision_is_allowed_for_live_mode(self):
         fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
@@ -295,14 +310,14 @@ class MvpDryCycleTests(unittest.TestCase):
                 config_path, input_path, root / "account_a", manual=True,
             )
             self.assertEqual(plan.account_id, "account_a")
-            self.assertEqual(
-                json.loads(
-                    (root / "account_a" / "logs" / "decisions.jsonl").read_text()
-                )["run_kind"],
-                "manual",
+            self.assertTrue(
+                (
+                    root / "account_a" / "trading_days" / "2026-08-25"
+                    / "order_plan.json"
+                ).is_file()
             )
 
-    def test_first_execution_record_wins_between_manual_and_scheduled_runs(self):
+    def test_first_execution_artifact_wins_between_manual_and_scheduled_runs(self):
         fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
         config_path = ROOT / "config" / "account_a.json"
 
@@ -325,7 +340,7 @@ class MvpDryCycleTests(unittest.TestCase):
                 output,
                 manual=True,
             )
-            plan_path = output / "plans" / "2026-08-24" / "order_plan.json"
+            plan_path = output / "trading_days" / "2026-08-25" / "order_plan.json"
             execute_dry_run(
                 config_path, plan_path, context_input, output, manual=True,
             )
@@ -338,10 +353,8 @@ class MvpDryCycleTests(unittest.TestCase):
                     output,
                     now=datetime.fromisoformat(fixture["execution_context"]["as_of"]),
                 )
-            execution_log = output / "logs" / "executions.jsonl"
-            self.assertEqual(len(execution_log.read_text().splitlines()), 1)
-            self.assertEqual(
-                json.loads(execution_log.read_text())["run_kind"], "manual",
+            self.assertTrue(
+                (output / "trading_days" / "2026-08-25" / "execution.json").is_file()
             )
 
     def test_new_york_trading_date_is_used_for_utc_documents(self):
@@ -369,11 +382,18 @@ class MvpDryCycleTests(unittest.TestCase):
 
             self.assertEqual(completed.returncode, 0, completed.stderr)
             self.assertTrue(
-                (output / "plans" / "2026-08-24" / "order_plan.json").is_file()
+                (output / "trading_days" / "2026-08-25" / "order_plan.json").is_file()
             )
             self.assertTrue(
-                (output / "executions" / "2026-08-25" / "dry_run.json").is_file()
+                (output / "trading_days" / "2026-08-25" / "execution.json").is_file()
             )
+
+    def test_trade_date_is_next_new_york_weekday(self):
+        from ripple.mvp import _trade_date
+
+        self.assertEqual(_trade_date("2026-08-24T21:00:00-04:00"), "2026-08-25")
+        self.assertEqual(_trade_date("2026-08-23T21:00:00-04:00"), "2026-08-24")
+        self.assertEqual(_trade_date("2026-08-25T01:00:00Z"), "2026-08-25")
 
     def test_scheduled_dry_run_and_same_day_execution_fail_closed(self):
         fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
@@ -481,7 +501,7 @@ class MvpDryCycleTests(unittest.TestCase):
             first_context["account"]["equity"] = "850"
             first_result = _execute_dry_run(config, first_plan, first_context, output)
             self.assertTrue(first_result["manual_restart_required"])
-            self.assertTrue((output / "risk" / "drawdown_tier2.lock.json").is_file())
+            self.assertTrue((output / "active_risk_lock.json").is_file())
 
             second_input = {
                 "snapshot": json.loads(json.dumps(fixture["snapshot"])),

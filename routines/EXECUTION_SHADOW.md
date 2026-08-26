@@ -17,13 +17,13 @@ Run:
 ```bash
 uv run --no-cache python -m ripple.mvp execute-shadow \
   --config config/<account_id>.json \
-  --plan state/accounts/<account_id>/plans/<decision-date>/order_plan.json \
+  --plan state/accounts/<account_id>/trading_days/<trade-date>/order_plan.json \
   --context /tmp/ripple-shadow-execution-<account_id>.json \
   --output state/accounts/<account_id>
 ```
 
-Inspect `executions/<date>/shadow.json`. Risk-allowed marketable limits are assumed filled at the T+1 quote with zero fees and slippage; unmarketable limits say `not_filled`. `ending_account` becomes the continuity source for the next Decision Cycle after fresh mark-to-market. A Shadow Fill is never described as a broker fill.
+Inspect `trading_days/<trade-date>/execution.json`. Risk-allowed marketable limits are assumed filled at the T+1 quote with zero fees and slippage; unmarketable limits say `not_filled`. `ending_account` becomes the continuity source for the next Decision Cycle after fresh mark-to-market. A Shadow Fill is never described as a broker fill.
 
 If a tier-two lock exists, new BUYs remain blocked until Alicia removes that exact lock after review. Routines never edit or delete it.
 
-After all lanes, run core tests, inspect results/logs/reports for credentials, commit only new state with an `Execution: shadow YYYY-MM-DD` subject, and push normally. Report every account, strategy, risk status, fill status, fill/rejection, ending cash/positions, tests, and commit.
+After all lanes, run core tests, inspect cycle artifacts for credentials, commit only new state with an `Execution: shadow YYYY-MM-DD` subject, and push normally. Report every account, strategy, risk status, fill status, fill/rejection, ending cash/positions, tests, and commit.

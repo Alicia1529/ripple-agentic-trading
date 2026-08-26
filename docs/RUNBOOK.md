@@ -29,7 +29,7 @@ uv run --no-cache python -m ripple.mvp run-shadow-cycle \
   --output /tmp/ripple-mvp/account_b
 ```
 
-The first command writes proposed dry-run actions only. The second writes `executions/<date>/shadow.json`, including deterministic risk, Shadow Fill attempts, and `ending_account`. Neither command calls a broker. Re-running the same cycle fails instead of overwriting evidence.
+The first command writes Decision artifacts under `trading_days/<trade-date>/`. The second adds `execution.json` and `report.md` to that same directory, including deterministic risk, Shadow Fill attempts, and `ending_account`. Neither command calls a broker. Re-running the same cycle fails instead of overwriting evidence.
 
 ## Hosted schedules
 
@@ -98,7 +98,7 @@ For every hosted run, verify:
 
 ## Tier-two restart
 
-`<state-root>/risk/drawdown_tier2.lock.json` blocks new BUYs until Alicia reviews and removes that exact lane's lock. Equity recovery cannot clear it. Inspect the relevant real or virtual account evidence, resolve discrepancies, and run a fresh reviewed cycle before restoring entries.
+`<state-root>/active_risk_lock.json` blocks new BUYs until Alicia reviews and removes that exact lane's lock. Equity recovery cannot clear it. Inspect the relevant real or virtual account evidence, resolve discrepancies, and run a fresh reviewed cycle before restoring entries.
 
 ## Known limits
 

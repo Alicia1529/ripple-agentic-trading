@@ -13,7 +13,7 @@ This is the non-negotiable review checklist. Implementation status belongs in `d
 9. **Funding and activation remain human decisions.** The system cannot enable live mode, select a replacement live strategy, open or fund an account, reconcile a shadow portfolio into a real account, increase capital, or clear a restart lock.
 10. **Mode selection is deterministic.** The catalog permits at most one live configuration, selects all shadow configurations in account-ID order, and excludes dry-run configurations from every scheduled cohort.
 11. **Routine errors do not broaden authority.** An MCP error, malformed result, ambiguous outcome, or one shadow lane's failure authorizes no retry, cross-lane state change, or additional order. Independent shadow lanes may continue their own cycles.
-12. **Git is continuity, not transactional state.** Plans, configurations, JSONL logs, results, and reports pass between fresh sessions. V1 has no transactional append-only store, cross-runner lease, or exactly-once guarantee.
+12. **Git is continuity, not transactional state.** Trade-date cycle artifacts and configurations pass between fresh sessions. V1 has no transactional append-only store, cross-runner lease, or exactly-once guarantee.
 13. **Shadow evidence stays explicit.** A Shadow Fill requires deterministic risk permission and a marketable T+1 quote, records zero-fee/zero-slippage assumptions, and is never represented as a broker fill.
 14. **Tier-two drawdown requires human restart.** A lane-scoped tier-two lock blocks new BUYs until Alicia reviews and removes that exact lock. Equity recovery cannot clear it; safely computable exits remain allowed.
 

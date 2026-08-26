@@ -44,8 +44,10 @@ Git history retains superseded reasoning. This file summarizes only decisions th
 ## State and isolation
 
 - Every lane owns its configuration, state root, plan, virtual or real account facts, risk state, execution evidence, and restart lock. Taxpayer-wide loss-sale history remains the only documented cross-lane input.
-- Existing uppercase `state/accounts/account_A` artifacts are immutable legacy fixture evidence. Lowercase catalog identifiers start new canonical roots; historical plans are not rewritten.
-- Private Git stores credential-free plans, compact JSONL facts, results, reports, and locks. Platform-managed Robinhood authorization remains outside the repository.
+- Each lowercase lane stores one complete cycle under `state/accounts/<account_id>/trading_days/<trade_date>`. The trade date is the intended next-weekday Execution date, not the prior-evening Decision date.
+- A cycle publishes `decision_snapshot.json` and `order_plan.json` before Execution; `execution.json` and `report.md` are added to that same directory afterward. Repeated publication or execution fails instead of overwriting evidence.
+- JSONL indexes are not stored; the trade-date directories are the sole cycle index. A lane-wide tier-two block is the optional account-root `active_risk_lock.json` because it persists across trade dates.
+- The state layout reset removed prior checked-in state artifacts before hosted acceptance. Private Git stores only new credential-free cycles and locks. Platform-managed Robinhood authorization remains outside the repository.
 - Git is not a transactional submission journal or cross-runner lease. The live canary still accepts crash-before-log, duplicate-call, ambiguous-timeout, prompt/tool-use, configuration, and model-drift risks.
 
 ## Deterministic safety and non-goals
