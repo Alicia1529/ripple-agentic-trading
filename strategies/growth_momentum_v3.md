@@ -153,8 +153,10 @@ price, stop without publishing instead of clipping or dropping it.
 Preserve every holding in `target_portfolio`, set exits to `"0"`, trims to
 `"0.15"`, a selected BUY to `"0.10"`, and exact remainder to cash. Store sell
 classes, triggers, research, thesis records, compiler provenance, rejections,
-and warnings in `DecisionSnapshot.inputs`; the shared OrderPlan schema remains
-unchanged.
+and warnings in `DecisionSnapshot.inputs`. Include a concise
+`decision_rationale` explaining why the final portfolio and orders follow this
+policy. For a no-trade cycle, state the decisive regime, eligibility, exit, or
+evidence reason rather than copying `warnings`.
 
 ## Self-check
 

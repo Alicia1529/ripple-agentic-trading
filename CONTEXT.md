@@ -36,6 +36,10 @@ _Avoid_: Prompt context, market snapshot
 The immutable, strategy-attributed decision-stage instruction for one Account Lane and Decision Cycle.
 _Avoid_: Trade result, execution plan
 
+**Decision Rationale**:
+The concise, human-readable explanation for an OrderPlan's final target portfolio and orders, including a no-trade result. It is investment judgment, not a data-quality warning or deterministic risk result.
+_Avoid_: Warning, rejection reason, execution reason code
+
 **Execution Routine**:
 The isolated role that applies deterministic risk output to a published OrderPlan without forming a new investment view.
 _Avoid_: Portfolio manager, independent trading agent

@@ -99,6 +99,7 @@ class MvpDryCycleTests(unittest.TestCase):
             self.assertFalse((root / "crossed").exists())
 
     def test_cli_produces_one_reviewable_credential_free_cycle(self):
+        fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
         with tempfile.TemporaryDirectory() as temporary_directory:
             output = Path(temporary_directory) / "account_a"
             command = [
@@ -124,6 +125,10 @@ class MvpDryCycleTests(unittest.TestCase):
 
             plan = json.loads(plan_path.read_text())
             OrderPlan.from_dict(plan)
+            self.assertEqual(
+                plan["decision_rationale"],
+                fixture["decision"]["decision_rationale"],
+            )
             execution = json.loads(execution_path.read_text())
             self.assertEqual(execution["mode"], "dry_run")
             self.assertEqual(execution["status"], "allowed")
@@ -146,6 +151,62 @@ class MvpDryCycleTests(unittest.TestCase):
             )
             self.assertNotEqual(repeated.returncode, 0)
             self.assertIn("already exists", repeated.stderr)
+
+    def test_new_decision_requires_a_rationale(self):
+        fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
+        rationale = fixture["decision"]["decision_rationale"]
+        fixture["decision"].pop("decision_rationale")
+        config = json.loads((ROOT / "config" / "account_a.json").read_text())
+        config["execution"]["mode"] = "live"
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            config_path = root / "account_a.json"
+            input_path = root / "decision.json"
+            config_path.write_text(json.dumps(config))
+            input_path.write_text(json.dumps({
+                "snapshot": fixture["snapshot"],
+                "account_baseline": fixture["account_baseline"],
+                "decision": fixture["decision"],
+            }))
+            completed = subprocess.run(
+                [
+                    "python3.12", "-m", "ripple.mvp", "publish-decision",
+                    "--config", str(config_path),
+                    "--input", str(input_path),
+                    "--output", str(root / "account_a"),
+                    "--manual-run",
+                ],
+                cwd=ROOT, text=True, capture_output=True, check=False,
+            )
+
+            self.assertEqual(completed.returncode, 2)
+            self.assertIn("decision fields do not match", completed.stderr)
+
+            fixture["decision"]["decision_rationale"] = rationale
+            input_path.write_text(json.dumps({
+                "snapshot": fixture["snapshot"],
+                "account_baseline": fixture["account_baseline"],
+                "decision": fixture["decision"],
+            }))
+            completed = subprocess.run(
+                [
+                    "python3.12", "-m", "ripple.mvp", "publish-decision",
+                    "--config", str(config_path),
+                    "--input", str(input_path),
+                    "--output", str(root / "account_a"),
+                    "--manual-run",
+                ],
+                cwd=ROOT, text=True, capture_output=True, check=False,
+            )
+
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertIn(f"decision rationale: {rationale}", completed.stdout)
+            plan = json.loads((
+                root / "account_a" / "trading_days" / "2026-08-25"
+                / "order_plan.json"
+            ).read_text())
+            self.assertEqual(plan["decision_rationale"], rationale)
 
     def test_scheduled_shadow_commands_handoff_through_published_plan(self):
         fixture = json.loads(

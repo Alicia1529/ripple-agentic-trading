@@ -36,6 +36,7 @@
   },
   "decision": {
     "decision_time": "2026-08-24T21:00:00-04:00",
+    "decision_rationale": "AAPL is the selected eligible strategy candidate; target a 15% position and retain the balance in cash.",
     "model_config_version": "mvp_fixture_v1",
     "target_portfolio": {
       "AAPL": "0.15",

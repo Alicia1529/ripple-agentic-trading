@@ -71,7 +71,7 @@ The seam is deliberately small: Strategy Specs are prompt-defined Markdown polic
 
 A Strategy Spec may require checked-in deterministic preprocessing before ranking or research. Such a compiler reads the selected lane configuration, requires its symbol set to match the configured universe exactly, and emits credential-free facts and provenance for `DecisionSnapshot.inputs`; incomplete compilation stops publication. Qualitative research, candidate rejection, warnings, and thesis metadata remain Strategy Spec responsibilities, while every strategy publishes through the shared `OrderPlan` schema. Raw authenticated responses are never persisted.
 
-Every new `OrderPlan`, Decision record, deterministic result, execution record, and report carries `strategy_id`. New OrderPlans also freeze whether Decision was `fixture`, `manual`, `scheduled`, or `backfill`; execution evidence independently freezes its own run kind. Historical plans without Decision run provenance remain readable as legacy evidence. A versioned Strategy Spec should not be edited in place after it has produced decisions; create a new identifier so historical attribution stays meaningful. Git history retains its exact checked-in content.
+Every new `OrderPlan`, Decision record, deterministic result, execution record, and report carries `strategy_id`. New OrderPlans also carry a concise `decision_rationale` explaining the final target portfolio and orders, and freeze whether Decision was `fixture`, `manual`, `scheduled`, or `backfill`; execution evidence independently freezes its own run kind. Historical plans without rationale or Decision run provenance remain readable as legacy evidence. A versioned Strategy Spec should not be edited in place after it has produced decisions; create a new identifier so historical attribution stays meaningful. Git history retains its exact checked-in content.
 
 ## Execution modes and scheduled cohorts
 
@@ -107,7 +107,7 @@ The Decision Routine:
 1. validates the complete catalog and selects its live or shadow cohort;
 2. isolates one lane's configuration, state root, and selected Strategy Spec;
 3. gathers allowed market and account facts;
-4. prepares one strict `DecisionSnapshot`, account baseline, target portfolio, and zero or more proposed orders; and
+4. prepares one strict `DecisionSnapshot`, account baseline, Decision Rationale, target portfolio, and zero or more proposed orders; and
 5. publishes one immutable, strategy-attributed `OrderPlan`.
 
 Decision never reviews, places, cancels, or changes a broker order. Missing facts produce no trade or stop that lane rather than authorizing a guess. A second publication for the same lane and date fails instead of overwriting evidence.
@@ -142,7 +142,7 @@ The plan's signal time remains Day T and every fill attempt remains Day T+1. Sha
 | Strategy facts compiler | Compile one normalized source-attributed document when required by a Strategy Spec | Decimal formulas, session alignment, provenance, interpolation rejection, and fail-closed validation |
 | Decision publisher | Publish one validated Decision Cycle | Timing, universe, target weights, stable IDs, strategy attribution, immutable writes |
 | `DecisionSnapshot` | Represent allowed decision inputs | Strict JSON and immutable nested values |
-| `OrderPlan` | Represent strategy-attributed decision intent | Strict order shape, account baseline, portfolio weights, immutable nested values |
+| `OrderPlan` | Represent strategy-attributed decision intent | Decision rationale, strict order shape, account baseline, portfolio weights, immutable nested values |
 | Risk module | Return allowed, clipped, rejected, or aborted actions | Account binding, freshness, sizing, cash reservation, loss/drawdown/wash-sale/exit rules |
 | Shadow adapter | Return fill attempts and ending virtual state | T+1 marketability, quote-price fills, position/cash state transition, no broker I/O |
 | Live adapter | Use deterministic output with Robinhood | Still unfinished and gated |

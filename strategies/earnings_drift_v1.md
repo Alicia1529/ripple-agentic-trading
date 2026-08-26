@@ -186,8 +186,11 @@ the source policy are research concepts, not Ripple's wire format. Build one
 temporary input with exactly `snapshot`, `account_baseline`, and `decision`, as
 required by the selected Decision Routine and fixture shape. In `decision`:
 
-- include `decision_time`, a versioned `model_config_version`,
-  `target_portfolio`, and `orders` only;
+- include `decision_time`, a concise `decision_rationale`, a versioned
+  `model_config_version`, `target_portfolio`, and `orders` only;
+- make `decision_rationale` explain why the final portfolio and orders follow
+  this policy; for a no-trade cycle, state the decisive eligibility, exit, or
+  evidence reason rather than copying `warnings`;
 - represent every selected BUY, full SELL, or trim as one planned order;
 - preserve held symbols in `target_portfolio`, set full exits to `"0"`, apply
   the chosen BUY base weight or trim weight, and place the remainder in `cash`;

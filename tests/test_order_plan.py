@@ -80,6 +80,8 @@ class OrderPlanTests(unittest.TestCase):
         legacy = OrderPlan.from_dict(self.valid_document())
         self.assertIsNone(legacy.decision_run_kind)
         self.assertNotIn("decision_run_kind", legacy.to_dict())
+        self.assertIsNone(legacy.decision_rationale)
+        self.assertNotIn("decision_rationale", legacy.to_dict())
 
         manual_document = self.valid_document()
         manual_document["decision_run_kind"] = "manual"
@@ -97,6 +99,23 @@ class OrderPlanTests(unittest.TestCase):
         invalid["decision_run_kind"] = "bypass"
         with self.assertRaisesRegex(ValueError, "decision_run_kind"):
             OrderPlan.from_dict(invalid)
+
+        explained_document = self.valid_document()
+        explained_document["decision_rationale"] = "No eligible candidate; retain cash."
+        explained = OrderPlan.from_dict(explained_document)
+        self.assertEqual(
+            explained.decision_rationale,
+            "No eligible candidate; retain cash.",
+        )
+        self.assertEqual(
+            explained.to_dict()["decision_rationale"],
+            "No eligible candidate; retain cash.",
+        )
+
+        invalid_rationale = self.valid_document()
+        invalid_rationale["decision_rationale"] = ""
+        with self.assertRaisesRegex(ValueError, "decision_rationale"):
+            OrderPlan.from_dict(invalid_rationale)
 
     def test_malformed_or_execution_bearing_plans_fail_closed(self):
         invalid_documents = []

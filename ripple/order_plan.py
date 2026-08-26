@@ -27,7 +27,7 @@ _REQUIRED_FIELDS = {
     "target_portfolio",
     "orders",
 }
-_OPTIONAL_FIELDS = {"decision_run_kind"}
+_OPTIONAL_FIELDS = {"decision_rationale", "decision_run_kind"}
 _RUN_KINDS = {"backfill", "fixture", "manual", "scheduled"}
 
 _REQUIRED_ORDER_FIELDS = {
@@ -125,6 +125,7 @@ class OrderPlan:
     account_baseline: Mapping[str, Any]
     target_portfolio: Mapping[str, Any]
     orders: tuple[Mapping[str, Any], ...]
+    decision_rationale: str | None
     decision_run_kind: str | None
 
     @classmethod
@@ -163,6 +164,11 @@ class OrderPlan:
             )
             if decision_run_kind not in _RUN_KINDS:
                 raise ValueError("decision_run_kind is not supported")
+        decision_rationale = None
+        if "decision_rationale" in document:
+            decision_rationale = require_nonempty_string(
+                document["decision_rationale"], "decision_rationale",
+            )
         account_baseline = _validate_account_baseline(document["account_baseline"])
         target_portfolio = document["target_portfolio"]
         orders = document["orders"]
@@ -201,6 +207,7 @@ class OrderPlan:
         object.__setattr__(plan, "account_baseline", freeze_json(account_baseline))
         object.__setattr__(plan, "target_portfolio", freeze_json(target_portfolio))
         object.__setattr__(plan, "orders", freeze_json(orders))
+        object.__setattr__(plan, "decision_rationale", decision_rationale)
         object.__setattr__(plan, "decision_run_kind", decision_run_kind)
         return plan
 
@@ -219,4 +226,6 @@ class OrderPlan:
         }
         if self.decision_run_kind is not None:
             document["decision_run_kind"] = self.decision_run_kind
+        if self.decision_rationale is not None:
+            document["decision_rationale"] = self.decision_rationale
         return document

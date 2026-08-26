@@ -20,7 +20,8 @@ from .shadow import simulate_shadow_fills
 _CYCLE_FIELDS = {"snapshot", "account_baseline", "decision", "execution_context"}
 _DECISION_INPUT_FIELDS = {"snapshot", "account_baseline", "decision"}
 _DECISION_FIELDS = {
-    "decision_time", "model_config_version", "target_portfolio", "orders",
+    "decision_time", "decision_rationale", "model_config_version",
+    "target_portfolio", "orders",
 }
 _NEW_YORK = ZoneInfo("America/New_York")
 
@@ -190,6 +191,7 @@ def _build_plan(
         "model_config_version": decision["model_config_version"],
         "decision_snapshot_id": snapshot.snapshot_id,
         "market_snapshot_as_of": snapshot.as_of,
+        "decision_rationale": decision["decision_rationale"],
         "decision_run_kind": decision_run_kind,
         "account_baseline": account_baseline,
         "target_portfolio": decision["target_portfolio"],
@@ -558,6 +560,7 @@ def main(argv: list[str] | None = None) -> int:
                 historical_backfill=args.historical_backfill,
             )
             print(f"decision published: {plan.order_plan_id}")
+            print(f"decision rationale: {plan.decision_rationale}")
             return 0
         if args.command == "execute-dry-run":
             result = execute_dry_run(
