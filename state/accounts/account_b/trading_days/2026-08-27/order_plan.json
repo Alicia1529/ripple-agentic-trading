@@ -1,0 +1,18 @@
+{
+  "account_baseline": {
+    "cash": "1000",
+    "positions": {}
+  },
+  "account_id": "account_b",
+  "decision_run_kind": "manual",
+  "decision_snapshot_id": "3e558bb1-1960-4140-838a-37bfad38ce4e",
+  "decision_time": "2026-08-26T00:32:33-04:00",
+  "market_snapshot_as_of": "2026-08-26T00:32:00-04:00",
+  "model_config_version": "earnings_drift_v1_manual_2026_08_26",
+  "order_plan_id": "aa3216bc-58a3-59c3-8b0e-c505eb076ab4",
+  "orders": [],
+  "strategy_id": "earnings_drift_v1",
+  "target_portfolio": {
+    "cash": "1"
+  }
+}
