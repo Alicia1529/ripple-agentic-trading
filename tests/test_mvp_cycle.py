@@ -325,6 +325,125 @@ class MvpDryCycleTests(unittest.TestCase):
                 ).is_file()
             )
 
+    def test_historical_decision_backfill_is_explicit_for_live_and_shadow(self):
+        fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
+        decision_input = {
+            "snapshot": fixture["snapshot"],
+            "account_baseline": fixture["account_baseline"],
+            "decision": fixture["decision"],
+        }
+
+        for mode in ("live", "shadow"):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as temporary_directory:
+                root = Path(temporary_directory)
+                config = json.loads((ROOT / "config" / "account_a.json").read_text())
+                config["execution"]["mode"] = mode
+                if mode == "shadow":
+                    config["shadow"] = {"initial_cash": "1000"}
+                config_path = root / "account_a.json"
+                input_path = root / "decision.json"
+                config_path.write_text(json.dumps(config))
+                input_path.write_text(json.dumps(decision_input))
+
+                from ripple.mvp import publish_decision
+
+                plan = publish_decision(
+                    config_path,
+                    input_path,
+                    root / "account_a",
+                    now=datetime.fromisoformat("2026-08-25T12:00:00-04:00"),
+                    historical_backfill=True,
+                )
+                self.assertEqual(plan.decision_run_kind, "backfill")
+
+                if mode == "shadow":
+                    context_path = root / "context.json"
+                    context_path.write_text(json.dumps(fixture["execution_context"]))
+                    from ripple.mvp import execute_shadow
+
+                    with self.assertRaisesRegex(ValueError, "historical Decision backfills"):
+                        execute_shadow(
+                            config_path,
+                            root / "account_a" / "trading_days" / "2026-08-25"
+                            / "order_plan.json",
+                            context_path,
+                            root / "account_a",
+                            now=datetime.fromisoformat("2026-08-25T09:35:00-04:00"),
+                        )
+
+                with self.assertRaises(FileExistsError):
+                    publish_decision(
+                        config_path,
+                        input_path,
+                        root / "account_a",
+                        now=datetime.fromisoformat("2026-08-25T12:00:00-04:00"),
+                        historical_backfill=True,
+                    )
+
+    def test_historical_decision_backfill_rejects_unsafe_scope_and_timing(self):
+        fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            input_path = root / "decision.json"
+            input_path.write_text(json.dumps({
+                "snapshot": fixture["snapshot"],
+                "account_baseline": fixture["account_baseline"],
+                "decision": fixture["decision"],
+            }))
+            from ripple.mvp import publish_decision
+
+            dry_config = json.loads((ROOT / "config" / "account_a.json").read_text())
+            dry_config["execution"]["mode"] = "dry_run"
+            dry_config_path = root / "dry" / "account_a.json"
+            dry_config_path.parent.mkdir()
+            dry_config_path.write_text(json.dumps(dry_config))
+            with self.assertRaisesRegex(ValueError, "live or shadow"):
+                publish_decision(
+                    dry_config_path,
+                    input_path,
+                    root / "account_a",
+                    historical_backfill=True,
+                )
+
+            config = json.loads((ROOT / "config" / "account_a.json").read_text())
+            config["execution"]["mode"] = "live"
+            config_path = root / "live" / "account_a.json"
+            config_path.parent.mkdir()
+            config_path.write_text(json.dumps(config))
+            with self.assertRaisesRegex(ValueError, "past decision_time"):
+                publish_decision(
+                    config_path,
+                    input_path,
+                    root / "future" / "account_a",
+                    now=datetime.fromisoformat("2026-08-24T20:00:00-04:00"),
+                    historical_backfill=True,
+                )
+            off_schedule = json.loads(json.dumps({
+                "snapshot": fixture["snapshot"],
+                "account_baseline": fixture["account_baseline"],
+                "decision": fixture["decision"],
+            }))
+            off_schedule["snapshot"]["as_of"] = "2026-08-24T19:59:00-04:00"
+            off_schedule["decision"]["decision_time"] = "2026-08-24T20:00:00-04:00"
+            off_schedule_path = root / "off-schedule.json"
+            off_schedule_path.write_text(json.dumps(off_schedule))
+            with self.assertRaisesRegex(ValueError, "decision time"):
+                publish_decision(
+                    config_path,
+                    off_schedule_path,
+                    root / "off-schedule" / "account_a",
+                    now=datetime.fromisoformat("2026-08-25T12:00:00-04:00"),
+                    historical_backfill=True,
+                )
+            with self.assertRaisesRegex(ValueError, "mutually exclusive"):
+                publish_decision(
+                    config_path,
+                    input_path,
+                    root / "exclusive" / "account_a",
+                    manual=True,
+                    historical_backfill=True,
+                )
+
     def test_first_execution_artifact_wins_between_manual_and_scheduled_runs(self):
         fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
         config_path = ROOT / "config" / "account_a.json"

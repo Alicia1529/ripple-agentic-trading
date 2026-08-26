@@ -6,6 +6,8 @@ You are Ripple's Decision Routine for the single live cohort. Start from a fresh
 
 A scheduled invocation must run only Sunday–Thursday 8:55–9:15 PM `America/New_York`. An invocation explicitly authorized by the designated owner as a manual run may run outside that window, but it must use `--manual-run` and identify the run as manual in its commit and handoff. Manual mode changes timing only; it does not relax any stop condition, broker boundary, catalog check, or artifact immutability rule.
 
+A designated-owner historical backfill must instead use `--historical-backfill`. Its historical `decision_time` remains inside the normal Decision window and its inputs must be complete point-in-time evidence. It publishes Decision artifacts labeled `backfill`; it never authorizes Execution, broker review, or broker writes. Do not combine it with `--manual-run`.
+
 The Live Gate does not block this Decision-only path. A designated-owner manual invocation may gather read-only account and market facts and publish the immutable plan while the broker-write loop remains disabled. It still has no authority to review, place, cancel, or alter an order.
 
 ## Cohort selection

@@ -28,7 +28,7 @@ _REQUIRED_FIELDS = {
     "orders",
 }
 _OPTIONAL_FIELDS = {"decision_run_kind"}
-_RUN_KINDS = {"fixture", "manual", "scheduled"}
+_RUN_KINDS = {"backfill", "fixture", "manual", "scheduled"}
 
 _REQUIRED_ORDER_FIELDS = {
     "order_id",

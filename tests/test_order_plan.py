@@ -87,6 +87,12 @@ class OrderPlanTests(unittest.TestCase):
         self.assertEqual(manual.decision_run_kind, "manual")
         self.assertEqual(manual.to_dict()["decision_run_kind"], "manual")
 
+        backfill_document = self.valid_document()
+        backfill_document["decision_run_kind"] = "backfill"
+        backfill = OrderPlan.from_dict(backfill_document)
+        self.assertEqual(backfill.decision_run_kind, "backfill")
+        self.assertEqual(backfill.to_dict()["decision_run_kind"], "backfill")
+
         invalid = self.valid_document()
         invalid["decision_run_kind"] = "bypass"
         with self.assertRaisesRegex(ValueError, "decision_run_kind"):

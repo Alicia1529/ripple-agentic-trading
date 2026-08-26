@@ -71,7 +71,7 @@ The seam is deliberately small: Strategy Specs are prompt-defined Markdown polic
 
 A Strategy Spec may require checked-in deterministic preprocessing before ranking or research. Such a compiler reads the selected lane configuration, requires its symbol set to match the configured universe exactly, and emits credential-free facts and provenance for `DecisionSnapshot.inputs`; incomplete compilation stops publication. Qualitative research, candidate rejection, warnings, and thesis metadata remain Strategy Spec responsibilities, while every strategy publishes through the shared `OrderPlan` schema. Raw authenticated responses are never persisted.
 
-Every new `OrderPlan`, Decision record, deterministic result, execution record, and report carries `strategy_id`. New OrderPlans also freeze whether Decision was `fixture`, `manual`, or `scheduled`; execution evidence independently freezes its own run kind. Historical plans without Decision run provenance remain readable as legacy evidence. A versioned Strategy Spec should not be edited in place after it has produced decisions; create a new identifier so historical attribution stays meaningful. Git history retains its exact checked-in content.
+Every new `OrderPlan`, Decision record, deterministic result, execution record, and report carries `strategy_id`. New OrderPlans also freeze whether Decision was `fixture`, `manual`, `scheduled`, or `backfill`; execution evidence independently freezes its own run kind. Historical plans without Decision run provenance remain readable as legacy evidence. A versioned Strategy Spec should not be edited in place after it has produced decisions; create a new identifier so historical attribution stays meaningful. Git history retains its exact checked-in content.
 
 ## Execution modes and scheduled cohorts
 
@@ -94,7 +94,7 @@ Ripple uses four non-overlapping schedule triggers:
 | Live Execution | 0..1 live lane | next weekday around 9:35 AM `America/New_York` |
 | Shadow Execution | all shadow lanes | next weekday around 9:35 AM `America/New_York` |
 
-There may be zero live lane while the Live Gate is closed; the live runs then finish without account work. Dry-run lanes are never selected. Missed cycles are not backfilled.
+There may be zero live lane while the Live Gate is closed; the live runs then finish without account work. Dry-run lanes are never selected. Schedules never automatically backfill missed cycles. A designated-owner historical backfill is a separate live/shadow Decision-only operation: it requires complete point-in-time inputs, preserves the normal Decision timestamp window, records `decision_run_kind=backfill`, and cannot create Execution or fill evidence.
 
 The shadow runs are one scheduled cohort but each lane remains an independent Decision Cycle. One lane's malformed input or failure is reported for that lane and does not authorize, mutate, or suppress another lane's work.
 

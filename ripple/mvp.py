@@ -66,6 +66,8 @@ def _trade_date(decision_time: str) -> str:
 
 
 def _published_cycle_root(output: Path, plan: OrderPlan) -> Path:
+    if plan.decision_run_kind == "backfill":
+        raise ValueError("Execution does not accept historical Decision backfills")
     cycle_root = output / "trading_days" / _trade_date(plan.decision_time)
     snapshot_path = cycle_root / "decision_snapshot.json"
     plan_path = cycle_root / "order_plan.json"
@@ -384,21 +386,34 @@ def publish_decision(
     *,
     now: datetime | None = None,
     manual: bool = False,
+    historical_backfill: bool = False,
 ) -> OrderPlan:
     config = load_account_config(config_path)
     decision_input = _read_json(input_path)
     decision = decision_input.get("decision")
     if not isinstance(decision, Mapping) or not isinstance(decision.get("decision_time"), str):
         raise ValueError("decision input is missing decision_time")
-    if not manual and config.mode == "dry_run":
+    if manual and historical_backfill:
+        raise ValueError("manual and historical backfill modes are mutually exclusive")
+    if historical_backfill and config.mode not in {"live", "shadow"}:
+        raise ValueError("historical Decision backfill requires live or shadow mode")
+    if not manual and not historical_backfill and config.mode == "dry_run":
         raise ValueError("dry_run accounts are excluded from scheduled Decision runs")
-    if not manual:
+    runtime_now = now or datetime.now(timezone.utc)
+    if historical_backfill:
+        if runtime_now.utcoffset() is None:
+            raise ValueError("runtime clock must include a timezone offset")
+        if _new_york_time(decision["decision_time"]) >= runtime_now.astimezone(_NEW_YORK):
+            raise ValueError("historical Decision backfill must use a past decision_time")
+    elif not manual:
         _validate_runtime_clock(
-            now or datetime.now(timezone.utc), decision["decision_time"], "decision",
+            runtime_now, decision["decision_time"], "decision",
         )
     return _publish_decision(
         config, decision_input, output,
-        run_kind="manual" if manual else "scheduled",
+        run_kind=(
+            "manual" if manual else "backfill" if historical_backfill else "scheduled"
+        ),
     )
 
 
@@ -488,7 +503,9 @@ def _parser() -> argparse.ArgumentParser:
     publish.add_argument("--config", type=Path, required=True)
     publish.add_argument("--input", type=Path, required=True)
     publish.add_argument("--output", type=Path, required=True)
-    publish.add_argument("--manual-run", action="store_true")
+    publish_mode = publish.add_mutually_exclusive_group()
+    publish_mode.add_argument("--manual-run", action="store_true")
+    publish_mode.add_argument("--historical-backfill", action="store_true")
 
     execute = subparsers.add_parser("execute-dry-run")
     execute.add_argument("--config", type=Path, required=True)
@@ -540,6 +557,7 @@ def main(argv: list[str] | None = None) -> int:
             plan = publish_decision(
                 args.config, args.input, args.output,
                 manual=args.manual_run,
+                historical_backfill=args.historical_backfill,
             )
             print(f"decision published: {plan.order_plan_id}")
             return 0

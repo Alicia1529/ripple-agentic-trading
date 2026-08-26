@@ -28,10 +28,10 @@ Git history retains superseded reasoning. This file summarizes only decisions th
 
 ## Decision and execution
 
-- Decision runs Sunday–Thursday around 9:00 PM `America/New_York`; Execution runs the next weekday around 9:35 AM. Missed cycles are not backfilled.
+- Decision runs Sunday–Thursday around 9:00 PM `America/New_York`; Execution runs the next weekday around 9:35 AM. Schedules never automatically backfill missed cycles. The designated owner may publish a live/shadow Decision-only historical backfill from complete point-in-time inputs; it retains the normal Decision window, is labeled `backfill`, and grants no Execution or broker authority.
 - The Decision Routine publishes one immutable `DecisionSnapshot` and strategy-attributed `OrderPlan`. It never uses broker write tools.
 - The Execution Routine performs no new investment reasoning. It may execute, scale down, reject, or abort after deterministic revalidation. Script-emitted full-position stop-loss/take-profit Risk Exits are the sole unplanned-order exception.
-- Stable IDs and first-success ownership reduce duplicates. Each new OrderPlan freezes its Decision run kind, each execution result independently freezes its Execution run kind, and explicitly authorized manual runs remain accepted without relaxing safety checks. Historical plans without this field remain readable. Ambiguous live broker outcomes stop without blind retry.
+- Stable IDs and first-success ownership reduce duplicates. Each new OrderPlan freezes its Decision run kind (`scheduled`, `manual`, or `backfill`), each execution result independently freezes its Execution run kind, and explicitly authorized manual runs remain accepted without relaxing safety checks. Historical plans without this field remain readable. Ambiguous live broker outcomes stop without blind retry.
 - A BUY may freeze an optional `gap_cancel_above` price. That order requires the actual regular-session open at Execution and is rejected only when the open is strictly above the threshold; a missing required open fails closed. Existing plans without the field remain valid.
 
 ## Shadow execution
