@@ -2,13 +2,6 @@
 
 Read these rules and the three entries in this file before work. Before handing off, append one chronological entry with local timestamp, outcome, evidence, next action, and only material risk. Keep each entry within 100 words and five bullets, link to authoritative files instead of duplicating them, and retain exactly the latest three entries total.
 
-## 2026-08-25 23:12 PDT — Dry-run tests isolated from deployment mode
-
-- Outcome: legacy MVP dry-run tests now create a test-owned temporary `dry_run` configuration instead of reading the live mode from `config/account_a.json`.
-- Scope: changed only [`tests/test_mvp_cycle.py`](../tests/test_mvp_cycle.py); production configuration, Decision, Execution, risk, and state behavior are unchanged.
-- Evidence: all 19 MVP cycle tests and the complete 53-test suite pass; compileall and `git diff --check` pass.
-- Risk: one previously false-positive timing test now reaches the intended dry-run timing guard rather than passing on an unrelated live-mode error.
-
 ## 2026-08-26 00:01 PDT — Shadow branch corrected in the system diagrams
 
 - Outcome: the Mermaid diagrams in [`ARCHITECTURE.md`](ARCHITECTURE.md), [`README.md`](../README.md), and [`PROPOSAL.md`](../PROPOSAL.md) now show shadow skipping only the Robinhood call, not the risk verdict or the T+1 marketability check.
@@ -23,3 +16,10 @@ Read these rules and the three entries in this file before work. Before handing 
 - Scope: policy and routine text only; no schema, risk, config, Decision, Execution, or broker write changed.
 - Evidence: all 53 tests and `git diff --check` pass.
 - Next/risk: a future live Decision may use this basis; if Robinhood reduces early access before Execution, baseline matching safely aborts the plan.
+
+## 2026-08-26 00:22 PDT — Account A manual Live Decision
+
+- Outcome: manual `growth_momentum_v2_lite` Decision published plan `7c532d74-af10-5285-ba6f-49cad0c388f6` for trade date 2026-08-27 with zero orders and 100% cash.
+- Rationale: Robinhood returned the expected 2026-08-25 daily bar as interpolated with zero volume across the universe, so the SPY regime and candidate eligibility were not verifiable.
+- Evidence: [`2026-08-27`](../state/accounts/account_a/trading_days/2026-08-27) is credential-free, schema-valid, and strategy/account bound; 53 tests pass.
+- Scope/risk: Decision only; no Execution, shadow, review, placement, cancellation, or broker write occurred. A later Execution still requires separate authority and current baseline matching.

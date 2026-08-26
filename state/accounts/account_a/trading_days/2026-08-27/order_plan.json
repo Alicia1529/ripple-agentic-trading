@@ -1,0 +1,19 @@
+{
+  "account_baseline": {
+    "cash": "1000.0000",
+    "positions": {}
+  },
+  "account_id": "account_a",
+  "decision_rationale": "NO_TRADE: the expected 2026-08-25 regular-session bar was interpolated with zero volume for the complete universe, so the SPY regime and current candidate eligibility cannot be verified. The live account has no positions; retain 100% cash and propose no orders.",
+  "decision_run_kind": "manual",
+  "decision_snapshot_id": "644bfd26-329a-4c9f-ab61-36f81da0cbef",
+  "decision_time": "2026-08-26T07:22:06.825Z",
+  "market_snapshot_as_of": "2026-08-26T07:22:06.825Z",
+  "model_config_version": "growth_momentum_v2_lite",
+  "order_plan_id": "7c532d74-af10-5285-ba6f-49cad0c388f6",
+  "orders": [],
+  "strategy_id": "growth_momentum_v2_lite",
+  "target_portfolio": {
+    "cash": "1"
+  }
+}
