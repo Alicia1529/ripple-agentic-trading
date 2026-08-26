@@ -29,4 +29,4 @@ uv run --no-cache python -m ripple.mvp publish-decision \
 
 A lane with missing facts, an existing plan, or malformed state stops only that lane and is reported as failed; it does not authorize or mutate another lane. After all lanes, run the core tests, inspect new files for secrets, commit new credential-free state in one `Decision: shadow YYYY-MM-DD` commit, and push normally. Report every account ID, strategy ID, plan ID or failure, order count, tests, and commit. Do not perform Execution work.
 
-The publisher writes both Decision artifacts under `state/accounts/<account_id>/trading_days/<trade-date>`, where the trade date is the next New York weekday after the Decision.
+The publisher writes both Decision artifacts under `state/accounts/<account_id>/trading_days/<trade-date>`, where the trade date is the next New York trading day after the Decision. When this evening does not precede a trading day, the publisher reports `no trading session` and exits successfully; that is the expected holiday-eve result, so publish nothing, commit nothing, and report the no-op.

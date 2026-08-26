@@ -32,7 +32,7 @@ flowchart TD
 
     PLAN ==>|"overnight boundary: the plan is unchanged and Git carries credential-free evidence"| EXE
 
-    subgraph EXE_G["Execution — next weekday, ~9:35 AM America/New_York"]
+    subgraph EXE_G["Execution — next trading day, ~9:35 AM America/New_York"]
         EXE["Execution Routine, one isolated lane at a time<br/>binds that trade date's immutable snapshot and plan<br/>loads state, loss-sale history, fresh quotes; forms no new thesis"]
         RISK["Deterministic risk module<br/>allow, clip, reject, or abort each action<br/>plus full-position stop-loss / take-profit Risk Exits<br/>fails closed on missing, stale, or mismatched facts"]
         EXE --> RISK
@@ -108,10 +108,10 @@ Ripple uses four non-overlapping schedule triggers:
 |---|---|---|
 | Live Decision | 0..1 live lane | Sunday–Thursday around 9:00 PM `America/New_York` |
 | Shadow Decision | all shadow lanes | Sunday–Thursday around 9:00 PM `America/New_York` |
-| Live Execution | 0..1 live lane | next weekday around 9:35 AM `America/New_York` |
-| Shadow Execution | all shadow lanes | next weekday around 9:35 AM `America/New_York` |
+| Live Execution | 0..1 live lane | next trading day around 9:35 AM `America/New_York` |
+| Shadow Execution | all shadow lanes | next trading day around 9:35 AM `America/New_York` |
 
-There may be zero live lane while the Live Gate is closed; the live runs then finish without account work. Dry-run lanes are never selected. Schedules never automatically backfill missed cycles. A designated-owner historical backfill is a separate live/shadow operation: it requires complete point-in-time Decision inputs, preserves the normal Decision timestamp window, and records `decision_run_kind=backfill`. Its immutable plan may proceed through explicitly authorized manual Execution with the usual deterministic and mode-specific safeguards.
+A scheduled trigger that lands outside a trading session is a successful no-op: a Decision evening that does not precede a trading day, or an Execution morning on a market holiday, publishes and executes nothing and reports why. There may be zero live lane while the Live Gate is closed; the live runs then finish without account work. Dry-run lanes are never selected. Schedules never automatically backfill missed cycles. A designated-owner historical backfill is a separate live/shadow operation: it requires complete point-in-time Decision inputs, preserves the normal Decision timestamp window, and records `decision_run_kind=backfill`. Its immutable plan may proceed through explicitly authorized manual Execution with the usual deterministic and mode-specific safeguards.
 
 The shadow runs are one scheduled cohort but each lane remains an independent Decision Cycle. One lane's malformed input or failure is reported for that lane and does not authorize, mutate, or suppress another lane's work.
 
@@ -135,7 +135,7 @@ For a shadow lane, the Decision baseline comes from its latest prior `ending_acc
 
 The published plan remains unchanged. Git carries credential-free artifacts into the next fresh routine. Execution receives no new investment thesis and does not rewrite Decision content.
 
-### Next-weekday Execution
+### Next-trading-day Execution
 
 Execution loads the plan from the current trade-date directory, current account state, loss-sale history, and fresh quotes. Before risk evaluation, it requires that directory's immutable `decision_snapshot.json` and `order_plan.json` to exist and match the execution input. This binding applies equally to scheduled and explicitly authorized manual runs. It then runs the shared deterministic risk module.
 
@@ -156,6 +156,7 @@ The plan's signal time remains Day T and every fill attempt remains Day T+1. Sha
 | Module | Interface responsibility | What stays behind it |
 |---|---|---|
 | Account catalog | Load all lane configs and select one mode cohort | Filename identity, strict schema, strategy existence, live-count validation, deterministic ordering |
+| Trading calendar | Answer whether a New York regular session exists and which session follows a date | Checked-in NYSE closures, coverage bounds, and a fail-closed refusal to extrapolate |
 | Strategy facts compiler | Compile one normalized source-attributed document when required by a Strategy Spec | Decimal formulas, session alignment, provenance, interpolation rejection, and fail-closed validation |
 | Decision publisher | Publish one validated Decision Cycle | Timing, universe, target weights, stable IDs, strategy attribution, immutable writes |
 | `DecisionSnapshot` | Represent allowed decision inputs | Strict JSON and immutable nested values |
@@ -176,7 +177,7 @@ The plan's signal time remains Day T and every fill attempt remains Day T+1. Sha
 | Report | Human-readable action and Shadow Fill summary |
 | Tier-two lock | Lane-scoped persistent block on new BUYs until owner review |
 
-Canonical state roots are `state/accounts/<account_id>`. Each cycle lives at `trading_days/<trade_date>`, where `trade_date` is the next New York weekday after the Decision. `decision_snapshot.json` and `order_plan.json` are published prior evening; `execution.json` and `report.md` join the same directory after Execution. The optional account-root `active_risk_lock.json` persists across dates. Cycle artifacts never cross roots or overwrite earlier evidence.
+Canonical state roots are `state/accounts/<account_id>`. Each cycle lives at `trading_days/<trade_date>`, where `trade_date` is the next New York trading day after the Decision. `decision_snapshot.json` and `order_plan.json` are published prior evening; `execution.json` and `report.md` join the same directory after Execution. The optional account-root `active_risk_lock.json` persists across dates. Cycle artifacts never cross roots or overwrite earlier evidence.
 
 ## Deterministic safety
 

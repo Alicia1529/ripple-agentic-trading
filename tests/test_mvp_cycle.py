@@ -1,3 +1,5 @@
+import contextlib
+import io
 import json
 from datetime import datetime
 from pathlib import Path
@@ -673,7 +675,7 @@ class MvpDryCycleTests(unittest.TestCase):
             context_path = root / "context.json"
             context_path.write_text(json.dumps(context))
             from ripple.mvp import _execute_dry_run
-            with self.assertRaisesRegex(ValueError, "next weekday"):
+            with self.assertRaisesRegex(ValueError, "next trading day"):
                 _execute_dry_run(
                     config, plan, _read_json(context_path), output,
                 )
@@ -773,3 +775,121 @@ class MvpDryCycleTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def _write_shadow_config(root: Path) -> Path:
+    config = json.loads((ROOT / "config" / "account_a.json").read_text())
+    config["execution"]["mode"] = "shadow"
+    config["shadow"] = {"initial_cash": "1000"}
+    config_path = root / "account_a.json"
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(json.dumps(config))
+    return config_path
+
+
+class TradingCalendarTimingTests(unittest.TestCase):
+    """Decision and Execution timing follow the NYSE calendar, not the weekday."""
+
+    def _decision_input(self, decision_time: str) -> dict:
+        fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
+        decision_input = {
+            "snapshot": json.loads(json.dumps(fixture["snapshot"])),
+            "account_baseline": fixture["account_baseline"],
+            "decision": json.loads(json.dumps(fixture["decision"])),
+        }
+        decision_input["snapshot"]["as_of"] = decision_time
+        decision_input["decision"]["decision_time"] = decision_time
+        return decision_input
+
+    def test_decision_the_evening_before_a_holiday_is_rejected(self):
+        from ripple.mvp import _build_plan
+
+        config = load_account_config(ROOT / "config" / "account_a.json")
+        for decision_time in (
+            "2026-11-25T21:00:00-05:00",  # Thanksgiving eve
+            "2026-12-24T21:00:00-05:00",  # Christmas eve, holiday falls on Friday
+            "2026-09-06T21:00:00-04:00",  # Sunday before Labor Day
+        ):
+            with self.subTest(decision_time=decision_time):
+                with self.assertRaisesRegex(ValueError, "does not precede a New York trading day"):
+                    _build_plan(self._decision_input(decision_time), config)
+
+    def test_scheduled_decision_on_a_holiday_eve_publishes_nothing(self):
+        from ripple.calendar import NoTradingSession
+        from ripple.mvp import publish_decision
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            config_path = _write_shadow_config(root / "config")
+            input_path = root / "decision.json"
+            input_path.write_text(json.dumps(self._decision_input("2026-11-25T21:00:00-05:00")))
+            output = root / "state" / "account_a"
+
+            with self.assertRaisesRegex(NoTradingSession, "2026-11-26"):
+                publish_decision(
+                    config_path, input_path, output,
+                    now=datetime.fromisoformat("2026-11-25T21:00:00-05:00"),
+                )
+            self.assertFalse(output.exists())
+
+    def test_scheduled_execution_on_a_holiday_stops_before_reading_the_plan(self):
+        from ripple.calendar import NoTradingSession
+        from ripple.mvp import execute_shadow
+
+        fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            config_path = _write_shadow_config(root / "config")
+            context = fixture["execution_context"]
+            context["as_of"] = "2026-11-26T09:35:00-05:00"
+            context_path = root / "context.json"
+            context_path.write_text(json.dumps(context))
+
+            with self.assertRaisesRegex(NoTradingSession, "2026-11-26"):
+                execute_shadow(
+                    config_path,
+                    root / "missing" / "order_plan.json",
+                    context_path,
+                    root / "state" / "account_a",
+                    now=datetime.fromisoformat("2026-11-26T09:35:00-05:00"),
+                )
+
+    def test_no_trading_session_is_a_successful_command_no_op(self):
+        from unittest import mock
+
+        from ripple.calendar import NoTradingSession
+        from ripple.mvp import main
+
+        reported = io.StringIO()
+        with mock.patch(
+            "ripple.mvp.publish_decision",
+            side_effect=NoTradingSession(
+                "decision runtime has no New York trading session on 2026-11-26"
+            ),
+        ), contextlib.redirect_stdout(reported):
+            exit_code = main([
+                "publish-decision",
+                "--config", str(ROOT / "config" / "account_a.json"),
+                "--input", str(ROOT / "fixtures" / "mvp" / "dry_cycle.json"),
+                "--output", "state/accounts/account_a",
+            ])
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("no trading session", reported.getvalue())
+        self.assertIn("nothing published or executed", reported.getvalue())
+
+    def test_manual_decision_before_a_holiday_targets_the_next_session(self):
+        from ripple.mvp import publish_decision
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            config_path = _write_dry_run_config(root / "config")
+            input_path = root / "decision.json"
+            input_path.write_text(json.dumps(self._decision_input("2026-11-25T21:00:00-05:00")))
+            output = root / "state" / "account_a"
+
+            plan = publish_decision(config_path, input_path, output, manual=True)
+
+            self.assertTrue((output / "trading_days" / "2026-11-27" / "order_plan.json").is_file())
+            self.assertFalse((output / "trading_days" / "2026-11-26").exists())
+            self.assertEqual(plan.decision_run_kind, "manual")

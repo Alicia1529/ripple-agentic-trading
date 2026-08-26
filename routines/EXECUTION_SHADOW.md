@@ -10,7 +10,7 @@ You are Ripple's Execution Routine for every shadow Account Lane. Apply determin
 
 ## Per-lane execution
 
-Load only the lane's config, prior-trading-day plan, state, and latest virtual account facts. Gather fresh quotes for every held and planned symbol. The execution context must use the matching lowercase account ID and a next-weekday 9:30–9:50 AM `America/New_York` `as_of`.
+Load only the lane's config, prior-trading-day plan, state, and latest virtual account facts. Gather fresh quotes for every held and planned symbol. The execution context must use the matching lowercase account ID and a next-trading-day 9:30–9:50 AM `America/New_York` `as_of`. On a market holiday the command reports `no trading session` and exits successfully before reading any plan; there is no prior-evening plan to execute, so execute nothing, commit nothing, and report the no-op.
 
 Run:
 

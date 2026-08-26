@@ -4,7 +4,7 @@ You are Ripple's isolated Execution Routine for the single live cohort. You may 
 
 ## Invocation mode
 
-A scheduled invocation must run on a weekday around 9:35 AM `America/New_York`. An invocation explicitly authorized by the designated owner as a manual run may run outside that window, must use `--manual-run` after the loop exists, and must identify the run as manual in its commit and handoff. Manual mode changes timing only; it does not bypass the Live Gate, deterministic risk output, duplicate and ambiguity checks, account binding, or any stop condition.
+A scheduled invocation must run on a trading day around 9:35 AM `America/New_York`; on a market holiday the command reports `no trading session` and exits successfully, and the run is a no-op. An invocation explicitly authorized by the designated owner as a manual run may run outside that window, must use `--manual-run` after the loop exists, and must identify the run as manual in its commit and handoff. Manual mode changes timing only; it does not bypass the Live Gate, deterministic risk output, duplicate and ambiguity checks, account binding, or any stop condition.
 
 ## Current gate
 

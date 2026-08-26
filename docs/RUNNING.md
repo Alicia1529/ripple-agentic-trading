@@ -81,7 +81,7 @@ Send the Decision prompt during the normal Decision window:
 Run Ripple's normal [live|shadow] Decision now. Read AGENTS.md and routines/DECISION_[LIVE|SHADOW].md completely and follow them exactly. Use the current validated cohort and selected Strategy Spec. This is a normal scheduled-style run, not manual and not a backfill. Stop after publishing and verifying the Decision artifacts; do not perform Execution.
 ```
 
-On the next weekday, send the matching Execution prompt:
+On the next trading day, send the matching Execution prompt:
 
 ```text
 Run Ripple's normal [live|shadow] Execution now. Read AGENTS.md and routines/EXECUTION_[LIVE|SHADOW].md completely and follow them exactly. Execute only the matching published plans through deterministic risk. This is a normal scheduled-style run, not manual and not a backfill. Do not perform new Decision work.
@@ -140,7 +140,7 @@ The desktop workflow is:
 1. Open a Codex chat for this local repository and ask it to create the standalone scheduled task with the name, saved prompt, recurrence, and time zone above. You can also create and later manage it from **Scheduled** in the desktop sidebar.
 2. Before enabling recurrence, run each saved prompt once in a normal Codex chat. Record the validated catalog output and verify that every selected lane is authorized for the task's cohort.
 3. Enable Shadow Decision first. After its first successful scheduled run, inspect `state/accounts/<account_id>/trading_days/<trade-date>/order_plan.json` for each selected lane and its `Decision: shadow <date>` commit.
-4. Enable Shadow Execution. After the next-weekday run, inspect `execution.json` and `report.md` in that same trade-date directory, including the ending virtual account, and its `Execution: shadow <date>` commit. Confirm no broker call occurred.
+4. Enable Shadow Execution. After the next-trading-day run, inspect `execution.json` and `report.md` in that same trade-date directory, including the ending virtual account, and its `Execution: shadow <date>` commit. Confirm no broker call occurred.
 5. Review the first few runs in **Scheduled**. Pause a task after a failed precondition, Git conflict, unexpected artifact, credential finding, or timing error; scheduled tasks never automatically backfill a missed cycle. A designated-owner historical Decision and any following Execution are separate, explicitly labeled manual operations.
 
 Do not create or enable the two live tasks yet. They become eligible only after the live tasks in [`docs/TODO.md`](TODO.md) are complete and the designated owner explicitly approves the mode change and allocation. Editing a routine changes what the next scheduled run reads; changing a trigger or enabling live remains an operator action in the Scheduled interface and must stay aligned with [`routines/SCHEDULE.md`](../routines/SCHEDULE.md).

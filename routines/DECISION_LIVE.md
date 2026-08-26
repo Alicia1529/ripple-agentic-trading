@@ -40,6 +40,6 @@ uv run --no-cache python -m ripple.mvp publish-decision \
 
 For an explicitly authorized manual invocation, append `--manual-run` to that command. Omit it for the scheduled routine.
 
-The publisher writes `decision_snapshot.json` and `order_plan.json` under `state/accounts/<account_id>/trading_days/<trade-date>`, where the trade date is the next New York weekday after the Decision.
+The publisher writes `decision_snapshot.json` and `order_plan.json` under `state/accounts/<account_id>/trading_days/<trade-date>`, where the trade date is the next New York trading day after the Decision. When this evening does not precede a trading day, the publisher reports `no trading session` and exits successfully; that is the expected holiday-eve result, so publish nothing, commit nothing, and report the no-op.
 
 Run the core tests, inspect artifacts for secrets, commit only new credential-free lane state with a `Decision:` subject, and push normally. Never force-push. Finish with the account ID, strategy ID, plan ID, order count, tests, and commit. Do not perform Execution work.

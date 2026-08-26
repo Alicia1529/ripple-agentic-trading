@@ -1,7 +1,7 @@
 """Commands for the fixture-backed Decision and Execution Routines."""
 
 import argparse
-from datetime import date, datetime, time, timezone
+from datetime import datetime, time, timedelta, timezone
 from decimal import Decimal
 import json
 from pathlib import Path
@@ -11,6 +11,7 @@ from uuid import NAMESPACE_URL, uuid5
 from zoneinfo import ZoneInfo
 
 from .account_config import AccountConfig, load_account_catalog, load_account_config
+from .calendar import NoTradingSession, is_trading_day, next_trading_day
 from .decision_snapshot import DecisionSnapshot
 from .order_plan import OrderPlan
 from .risk import evaluate_plan
@@ -24,6 +25,7 @@ _DECISION_FIELDS = {
     "target_portfolio", "orders",
 }
 _NEW_YORK = ZoneInfo("America/New_York")
+_ONE_DAY = timedelta(days=1)
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -54,16 +56,8 @@ def _new_york_time(value: str) -> datetime:
     return parsed.astimezone(_NEW_YORK)
 
 
-def _next_weekday(value: date) -> date:
-    candidate = value
-    while True:
-        candidate = candidate.fromordinal(candidate.toordinal() + 1)
-        if candidate.weekday() < 5:
-            return candidate
-
-
 def _trade_date(decision_time: str) -> str:
-    return _next_weekday(_new_york_time(decision_time).date()).isoformat()
+    return next_trading_day(_new_york_time(decision_time).date()).isoformat()
 
 
 def _published_cycle_root(output: Path, plan: OrderPlan) -> Path:
@@ -93,10 +87,9 @@ def _validate_decision_timing(
 ) -> None:
     decision_at = _new_york_time(decision_time)
     snapshot_at = _new_york_time(snapshot_time)
-    if enforce_schedule and (
-        decision_at.weekday() not in {0, 1, 2, 3, 6}
-        or not time(20, 55) <= decision_at.time() <= time(21, 15)
-    ):
+    if enforce_schedule and not is_trading_day(decision_at.date() + _ONE_DAY):
+        raise ValueError("decision time does not precede a New York trading day")
+    if enforce_schedule and not time(20, 55) <= decision_at.time() <= time(21, 15):
         raise ValueError("decision time is outside the allowed America/New_York window")
     if enforce_schedule and snapshot_at.date() != decision_at.date():
         raise ValueError("snapshot and decision must use the same New York date")
@@ -114,8 +107,8 @@ def _validate_execution_timing(
         if execution_at <= decision_at:
             raise ValueError("manual execution must occur after the decision")
         return
-    if execution_at.date() != _next_weekday(decision_at.date()):
-        raise ValueError("execution must occur on the next weekday after the decision")
+    if execution_at.date() != next_trading_day(decision_at.date()):
+        raise ValueError("execution must occur on the next trading day after the decision")
     if not time(9, 30) <= execution_at.time() <= time(9, 50):
         raise ValueError("execution time is outside the allowed America/New_York window")
 
@@ -128,8 +121,12 @@ def _validate_runtime_clock(now: datetime, expected_time: str, phase: str) -> No
     window = (time(20, 55), time(21, 15)) if phase == "decision" else (
         time(9, 30), time(9, 50)
     )
-    allowed_days = {0, 1, 2, 3, 6} if phase == "decision" else {0, 1, 2, 3, 4}
-    if actual.weekday() not in allowed_days or actual.date() != expected.date():
+    session = actual.date() + _ONE_DAY if phase == "decision" else actual.date()
+    if not is_trading_day(session):
+        raise NoTradingSession(
+            f"{phase} runtime has no New York trading session on {session.isoformat()}"
+        )
+    if actual.date() != expected.date():
         raise ValueError(f"{phase} runtime date does not match America/New_York now")
     if not window[0] <= actual.time() <= window[1]:
         raise ValueError(f"{phase} runtime is outside the America/New_York window")
@@ -576,6 +573,9 @@ def main(argv: list[str] | None = None) -> int:
             result = run_shadow_cycle(args.config, args.fixture, args.output)
         else:
             result = run_dry_cycle(args.config, args.fixture, args.output)
+    except NoTradingSession as error:
+        print(f"no trading session: {error}; nothing published or executed")
+        return 0
     except FileExistsError as error:
         print(f"command failed: output already exists: {error.filename}", file=sys.stderr)
         return 2

@@ -48,7 +48,7 @@ flowchart TD
     DRY -.->|"manual only"| DEC
 
     DEC["prior-evening Decision<br/>immutable DecisionSnapshot and strategy-attributed OrderPlan"]
-    DEC --> EXE["next-weekday Execution, 9:35 AM ET<br/>deterministic risk: allow, clip, reject, abort, Risk Exit"]
+    DEC --> EXE["next-trading-day Execution, 9:35 AM ET<br/>deterministic risk: allow, clip, reject, abort, Risk Exit"]
 
     EXE --> L["live: Agentic Robinhood after the Live Gate"]
     EXE --> S["shadow: no broker call, but the same risk verdict<br/>and the real 9:35 quote still decide<br/>marketable: assumed fill at that quote, else not_filled"]
@@ -79,7 +79,7 @@ The Decision Routine gathers allowed facts, follows only the selected Strategy S
 
 The separate Execution Routine gathers current account facts and quotes and runs deterministic risk code. It can allow, scale down, reject, or abort planned actions; it cannot form a new thesis. A deterministic full-position stop-loss/take-profit Risk Exit is the only unplanned-order exception.
 
-For shadow execution, a risk-allowed BUY limit is marketable when the next-weekday quote is at or below the limit; a SELL limit is marketable when the quote is at or above it. A marketable action is assumed filled at that quote with zero fees and zero slippage. The result records fill attempts and ending virtual account state. These are explicit assumptions, not broker fills.
+For shadow execution, a risk-allowed BUY limit is marketable when the next-trading-day quote is at or below the limit; a SELL limit is marketable when the quote is at or above it. A marketable action is assumed filled at that quote with zero fees and zero slippage. The result records fill attempts and ending virtual account state. These are explicit assumptions, not broker fills.
 
 ### Why Decision is prior-evening and Execution is at 9:35 AM
 
@@ -118,7 +118,7 @@ incidents, and the kill switch.
 | [`tests/`](tests/) | Catalog, isolation, artifact, risk, timing, and fill coverage |
 | [`docs/`](docs/) | Architecture, decisions, invariants, operations, and unfinished work; [`RUNNING.md`](docs/RUNNING.md) covers runners |
 
-Canonical state uses lowercase config identifiers and groups each prior-evening Decision and next-weekday Execution under `state/accounts/<account_id>/trading_days/<trade-date>`.
+Canonical state uses lowercase config identifiers and groups each prior-evening Decision and next-trading-day Execution under `state/accounts/<account_id>/trading_days/<trade-date>`.
 
 ## Current gates
 

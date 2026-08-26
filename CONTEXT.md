@@ -12,6 +12,10 @@ _Avoid_: Broker account, account worker, strategy instance
 A checked-in, version-named investment policy selected by an Account Lane and applied only by its Decision Routine.
 _Avoid_: Plugin, strategy engine, trading bot
 
+**Trading Day**:
+A date with a regular `America/New_York` session, decided by the checked-in trading calendar rather than by weekday arithmetic. A Decision Cycle's trade date is always one.
+_Avoid_: Weekday, business day, market day
+
 **Execution Mode**:
 The human-owned classification of an Account Lane as `live`, `shadow`, or `dry_run`.
 _Avoid_: Environment, automatic promotion state
@@ -21,7 +25,7 @@ The Account Lanes selected for one scheduled run by Execution Mode. The live coh
 _Avoid_: Shared account pool, batch account
 
 **Decision Cycle**:
-One prior-evening decision and its corresponding next-weekday execution attempt for a single Account Lane.
+One prior-evening decision and its corresponding next-trading-day execution attempt for a single Account Lane. The decision evening is the calendar evening immediately before its Trading Day.
 _Avoid_: Trading session, daily batch
 
 **Decision Routine**:
@@ -45,7 +49,7 @@ The isolated role that applies deterministic risk output to a published OrderPla
 _Avoid_: Portfolio manager, independent trading agent
 
 **Shadow Fill**:
-A credential-free assumption that a deterministic-risk-allowed order filled at its documented next-weekday quote when its limit was marketable. It is evidence, never a broker fill.
+A credential-free assumption that a deterministic-risk-allowed order filled at its documented next-trading-day quote when its limit was marketable. It is evidence, never a broker fill.
 _Avoid_: Paper broker confirmation, backdated fill
 
 **Risk Exit**:
