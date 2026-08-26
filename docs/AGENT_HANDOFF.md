@@ -2,14 +2,6 @@
 
 Read these rules and the three entries in this file before work. Before handing off, append one chronological entry with local timestamp, outcome, evidence, next action, and only material risk. Keep each entry within 100 words and five bullets, link to authoritative files instead of duplicating them, and retain exactly the latest three entries total.
 
-## 2026-08-26 12:40 PDT — T+1 timing resolved against a trading calendar
-
-- Outcome: new [`ripple/calendar.py`](../ripple/calendar.py) holds the NYSE closures for 2026–2027, transcribed from nyse.com; `_next_weekday` is gone from [`mvp.py`](../ripple/mvp.py). Trade dates, decision eves, execution dates, and both runtime clocks now resolve against it.
-- Before: a Sunday 2026-09-06 Decision published `trading_days/2026-09-07` (Labor Day) and refused execution on 09-08, orphaning the plan. All ten 2026 closures fall on a scheduled cycle.
-- Contract change: a scheduled run outside a trading session prints `no trading session` and exits 0; manual and backfill still fail loudly. Dates outside coverage raise.
-- Evidence: 72 tests pass; `validate-configs` reports two accounts. No config or state change.
-- Risk: coverage ends 2027-12-31 and holds no unscheduled closures.
-
 ## 2026-08-26 01:22 PDT — README introduces the documentation set
 
 - Outcome: [`README.md`](../README.md) now groups every document by the question it answers — understand it, run it, change it — so the three new pages and the existing set are reachable from the front page.
@@ -24,3 +16,10 @@ Read these rules and the three entries in this file before work. Before handing 
 - Scope: prompt and documentation only; no code, strategy, configuration, state, schedule trigger, broker connection, or allocation changed.
 - Evidence: full tests pass; stale stop-contract search and `git diff --check` are clean.
 - Risk: live v1 retains the reliability limits documented in [`RUNBOOK.md`](RUNBOOK.md); ambiguous outcomes still require human inspection and never authorize retry.
+
+## 2026-08-26 06:40 PDT — Shadow execution preserved cash
+
+- Outcome: the selected shadow lane executed its [`2026-08-26` cycle](../state/accounts/account_b/trading_days/2026-08-26/execution.json) with deterministic status `allowed`, no actions, and no Shadow Fills.
+- Evidence: ending state is $1000 cash with no positions; the credential scan, JSON validation, and all 72 core tests passed.
+- Provenance: the immutable Decision is `backfill`; Execution is `scheduled` at 09:37 EDT. No quotes were required because the lane held and planned no symbols.
+- Next: use this ending account as the next Decision continuity source. Material risk remains the documented zero-cost Shadow Fill model.
