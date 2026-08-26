@@ -6,31 +6,48 @@ Ripple is an account-catalog MVP for comparing isolated strategy lanes. The cata
 
 ## System at a glance
 
-```text
-strategies/<strategy_id>.md
-             ▲
-             │ selected by
-config/<account_id>.json
-             │
-             ▼
-       Account Catalog
-  validates every config and strategy
-  enforces at most one live lane
-        ┌────┴─────┐
-        ▼          ▼
-   live cohort   shadow cohort       dry_run
-     0..1          0..N              manual only
-        │          │
-        ├── Decision Routine(s), prior evening
-        │      produce strategy-attributed immutable plans
-        └── Execution Routine(s), next weekday
-                     │
-              deterministic risk
-                ┌────┴────┐
-                ▼         ▼
-          live adapter  shadow adapter
-          Robinhood     T+1 quote assumption
-          after gate    no broker calls
+```mermaid
+flowchart TD
+    CFG["config/&lt;account_id&gt;.json<br/>one Account Lane<br/>filename is its identity"]
+    SPEC["strategies/&lt;strategy_id&gt;.md<br/>version-named Strategy Spec<br/>prompt-defined policy, not a plugin"]
+    CAT["Account Catalog<br/>validates every config and Strategy Spec<br/>enforces at most one live lane<br/>returns account-ID-sorted cohorts"]
+
+    CFG -->|"selects exactly one"| SPEC
+    CFG --> CAT
+
+    CAT --> LIVE["live cohort<br/>0..1 lane"]
+    CAT --> SHDW["shadow cohort<br/>0..N lanes"]
+    CAT --> DRY["dry_run<br/>never scheduled"]
+
+    subgraph DEC_G["Decision — prior evening, ~9:00 PM America/New_York"]
+        DEC["Decision Routine, one isolated lane at a time<br/>gather allowed facts, apply the selected Strategy Spec<br/>no order review, place, cancel, or modify authority"]
+        SNAP["DecisionSnapshot — immutable allowed inputs"]
+        PLAN["OrderPlan — immutable decision intent<br/>strategy_id, decision_rationale, decision_run_kind"]
+        DEC --> SNAP --> PLAN
+    end
+
+    LIVE --> DEC
+    SHDW --> DEC
+    DRY -.->|"manual fixture run only"| DEC
+
+    PLAN ==>|"overnight boundary: the plan is unchanged and Git carries credential-free evidence"| EXE
+
+    subgraph EXE_G["Execution — next weekday, ~9:35 AM America/New_York"]
+        EXE["Execution Routine, one isolated lane at a time<br/>binds that trade date's immutable snapshot and plan<br/>loads state, loss-sale history, fresh quotes; forms no new thesis"]
+        RISK["Deterministic risk module<br/>allow, clip, reject, or abort each action<br/>plus full-position stop-loss / take-profit Risk Exits<br/>fails closed on missing, stale, or mismatched facts"]
+        EXE --> RISK
+    end
+
+    RISK --> LADP["Live adapter — Agentic Robinhood<br/>gated: no broker-write authority<br/>until the Live Gate is complete"]
+    RISK --> SADP["Shadow adapter<br/>T+1 marketability, fill at execution quote<br/>zero fees and slippage, no broker I/O"]
+
+    LADP --> ST
+    SADP --> ST
+    PLAN -.-> ST
+    ST["Lane State — state/accounts/&lt;account_id&gt;/trading_days/&lt;trade_date&gt;<br/>decision_snapshot.json, order_plan.json, execution.json, report.md<br/>plus the account-root active_risk_lock.json that persists across dates"]
+
+    classDef gated stroke-dasharray: 5 4;
+    class LADP,DRY gated;
 ```
 
 The LLM supplies bounded fact gathering and investment judgment. Python validates configurations and artifacts, compiles any strategy-required deterministic facts, assigns stable IDs, performs deterministic risk calculations, and simulates Shadow Fills. The owner supplies broker binding, funding, live activation, restart, and strategy-switch decisions.

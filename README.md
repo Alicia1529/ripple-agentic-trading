@@ -6,23 +6,31 @@ The repository now implements a validated account catalog, a manual dry-run path
 
 ## Actual structure
 
-```text
-strategies/*.md
-       ↑ config selects one strategy
-config/<account_id>.json
-       │ filename is the identifier
-       ▼
- Account Catalog
- ├─ live:    zero or one lane
- ├─ shadow:  every shadow lane
- └─ dry_run: manual development only
-       │
-       ├─ prior-evening Decision
-       │    → immutable strategy-attributed OrderPlan
-       └─ next-weekday Execution
-            → deterministic risk
-               ├─ live: Agentic Robinhood after Live Gate
-               └─ shadow: assumed T+1 quote fill, no broker call
+```mermaid
+flowchart TD
+    CFG["config/&lt;account_id&gt;.json<br/>filename is the Account Lane identity"]
+    SPEC["strategies/&lt;strategy_id&gt;.md"]
+    CAT["Account Catalog<br/>rejects a missing Strategy Spec, malformed config,<br/>invalid filename identifier, or a second live lane"]
+
+    CFG -->|"selects one strategy"| SPEC
+    CFG --> CAT
+
+    CAT --> LIVE["live: zero or one lane"]
+    CAT --> SHDW["shadow: every shadow lane"]
+    CAT --> DRY["dry_run: manual development, never scheduled"]
+
+    LIVE --> DEC
+    SHDW --> DEC
+    DRY -.->|"manual only"| DEC
+
+    DEC["prior-evening Decision<br/>immutable DecisionSnapshot and strategy-attributed OrderPlan"]
+    DEC --> EXE["next-weekday Execution, 9:35 AM ET<br/>deterministic risk: allow, clip, reject, abort, Risk Exit"]
+
+    EXE --> L["live: Agentic Robinhood after the Live Gate"]
+    EXE --> S["shadow: assumed T+1 quote fill, no broker call"]
+
+    classDef gated stroke-dasharray: 5 4;
+    class L,DRY gated;
 ```
 
 Daily hosting uses four schedule triggers: one live Decision run, one all-shadow Decision run, one live Execution run, and one all-shadow Execution run. A live run may have no selected account; dry-run configurations are never scheduled.

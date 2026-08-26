@@ -15,25 +15,27 @@ Ripple does not claim that an AI can beat the market. A shadow result is an expl
 
 ## Target structure now represented in the repository
 
-```text
-strategies/*.md
-       ↑ selected by strategy identifier
-config/<account_id>.json
-       │ filename is the account identifier
-       ▼
-validated Account Catalog
- ├── live cohort: 0 or 1 Account Lane
- ├── shadow cohort: every shadow Account Lane
- └── dry_run: manual development only
-       │
-       ├── Decision: one live run + one shadow run
-       └── Execution: one live run + one shadow run
-                    │
-           deterministic risk authority
-             ┌──────┴──────┐
-             ▼             ▼
-        Robinhood live   T+1 quote Shadow Fill
-        after Live Gate  with no broker call
+```mermaid
+flowchart TD
+    SPEC["strategies/*.md"]
+    CFG["config/&lt;account_id&gt;.json<br/>filename is the account identifier"]
+    CFG -->|"selected by strategy identifier"| SPEC
+    CFG --> CAT["validated Account Catalog"]
+
+    CAT --> LIVE["live cohort<br/>0 or 1 Account Lane"]
+    CAT --> SHDW["shadow cohort<br/>every shadow Account Lane"]
+    CAT --> DRY["dry_run<br/>manual development only"]
+
+    LIVE --> RUNS
+    SHDW --> RUNS
+    RUNS["Decision: one live run + one shadow run<br/>Execution: one live run + one shadow run"]
+
+    RUNS --> RISK["deterministic risk authority"]
+    RISK --> L["Robinhood live<br/>after the Live Gate"]
+    RISK --> S["T+1 quote Shadow Fill<br/>with no broker call"]
+
+    classDef gated stroke-dasharray: 5 4;
+    class L,DRY gated;
 ```
 
 Each account configuration contains a human-readable description, one Strategy Spec identifier, an execution mode, a symbol universe, and risk limits. Adding a Strategy Spec means adding a version-named Markdown file and selecting it from an account configuration; catalog validation fails when that file does not exist or more than one configuration is live.
