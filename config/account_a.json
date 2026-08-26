@@ -2,7 +2,7 @@
   "description": "Development lane for the small Account A validation portfolio. It uses Growth Momentum v3 with deterministically compiled facts over a fixed liquid large-cap and index universe, with deterministic position, loss, drawdown, quote-freshness, wash-sale, stop-loss, take-profit, price-tolerance, and opening-gap constraints. It is not selected by scheduled runs until the owner opens the Live Gate.",
   "strategy": "growth_momentum_v3",
   "execution": {
-    "mode": "dry_run"
+    "mode": "live"
   },
   "universe": [
     "AAPL",
