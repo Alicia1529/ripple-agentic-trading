@@ -194,6 +194,6 @@ Credentials, tokens, cookies, account numbers, and raw authenticated responses n
 
 ## Current non-goals
 
-The implemented architecture does not include automatic strategy scoring/promotion, a dashboard, multiple simultaneous live lanes, a Python strategy engine, transactional persistence, exactly-once broker execution, automatic reconciliation, intraday trading, additional brokers, tax-lot optimization, or a calibrated slippage/fee model.
+The implemented architecture does not include automatic strategy scoring/promotion, a dashboard, multiple simultaneous live lanes, a Python strategy engine, transactional persistence, exactly-once broker execution, automatic reconciliation, intraday trading, additional brokers, tax-lot optimization, a calibrated slippage/fee model, or historical backtesting and the market-data replay layer it would require. Forward shadow lanes are the simulation path; see `docs/DECISIONS.md`.
 
 Operational procedures belong in `docs/RUNBOOK.md`. Remaining hosted and live work belongs in `docs/TODO.md`.

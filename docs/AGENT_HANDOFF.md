@@ -2,13 +2,6 @@
 
 Read these rules and the three entries in this file before work. Before handing off, append one chronological entry with local timestamp, outcome, evidence, next action, and only material risk. Keep each entry within 100 words and five bullets, link to authoritative files instead of duplicating them, and retain exactly the latest three entries total.
 
-## 2026-08-26 00:26 PDT — Toolchain declared and CI added
-
-- Outcome: [`pyproject.toml`](../pyproject.toml) now declares `requires-python >=3.12` and an empty dependency set, and [`ci.yml`](../.github/workflows/ci.yml) runs the suite and catalog validation on every push and pull request.
-- Gap closed: no document previously named a way to run the tests; `uv run python -m unittest discover -s tests -t .` is now in [`RUNBOOK.md`](RUNBOOK.md) and [`README.md`](../README.md).
-- Risk checked: `[tool.uv] package = false` keeps `uv run --no-cache python -m ripple.mvp ...` behaving exactly as the hosted routines expect; only a gitignored `.venv/` is new.
-- Evidence: 53 tests and `validate-configs` pass under both `uv` and a bare 3.12 interpreter with no install step. No `ripple/*.py`, CLI, config, or state change.
-
 ## 2026-08-26 00:48 PDT — Compact V2 Lite facts
 
 - Outcome: [`growth_momentum_v2_lite_compact.md`](../strategies/growth_momentum_v2_lite_compact.md) and its [compiler](../ripple/growth_momentum_lite.py) keep bars transient and publish compact facts; `account_a` selects the new version.
@@ -22,3 +15,10 @@ Read these rules and the three entries in this file before work. Before handing 
 - Demo: `run-shadow-cycle` over [`demo_lane.json`](../config/examples/demo_lane.json) and its fixture produces a full cycle with no model, key, broker, or network.
 - Isolation: `config/examples/` sits outside the `config/*.json` glob, so the demo lane cannot join a scheduled cohort; `validate-configs` still reports two accounts.
 - Evidence: 61 tests pass, both documented demo commands run verbatim, no broken relative links, and no `ripple/*.py`, config, or state change.
+
+## 2026-08-26 01:03 PDT — Backtesting recorded as a current non-goal
+
+- Outcome: [`DECISIONS.md`](DECISIONS.md) now records historical backtesting as a current non-goal, because a Decision is a single non-replayable model call and no MarketData port or historical bar source exists.
+- Positioning: forward shadow lanes are stated as the simulation path in [`PROPOSAL.md`](../PROPOSAL.md) and [`ARCHITECTURE.md`](ARCHITECTURE.md) — same schedule, spec, and deterministic risk as live, differing only in the Shadow Fill assumption.
+- Reversal path: revisiting it requires a new decision, not a local exception.
+- Evidence: 61 tests pass; documentation only, across three files. No `ripple/*.py`, config, state, or `docs/TODO.md` change.

@@ -68,6 +68,8 @@ Changing a shadow lane to live is not an automatic promotion. The owner must rec
 
 ## Boundaries
 
-The current release is long-only, prior-evening Decision and next-weekday Execution. It does not include a dashboard, automated strategy ranking or promotion, intraday trading, multiple simultaneous live accounts, transactional submission state, exactly-once broker execution, automatic reconciliation, sophisticated slippage/fee models, or a Python strategy plugin engine.
+The current release is long-only, prior-evening Decision and next-weekday Execution. It does not include a dashboard, automated strategy ranking or promotion, intraday trading, multiple simultaneous live accounts, transactional submission state, exactly-once broker execution, automatic reconciliation, sophisticated slippage/fee models, a Python strategy plugin engine, or historical backtesting.
+
+Shadow lanes are the simulation path instead of a backtester. A shadow lane runs forward on the same schedule, the same Strategy Spec, and the same deterministic risk authority as a live lane, and differs only in the documented Shadow Fill assumption. Backtesting is a current non-goal because a Decision is a single non-replayable model call and no historical bar source exists; comparable evidence accumulates cycle by cycle instead.
 
 Live trading and its consequences remain the account owner's responsibility. Read `docs/ARCHITECTURE.md` for the system walkthrough and `docs/INVARIANTS.md` for the safety contract.
