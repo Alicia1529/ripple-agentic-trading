@@ -4,20 +4,20 @@ Repository implementation now validates account/strategy configuration, enforces
 
 ## Hosted shadow acceptance
 
-- [ ] Configure the Shadow Decision and Shadow Execution schedules from `routines/SCHEDULE.md`.
-- [ ] Observe one complete scheduled Decision → next-weekday Shadow Execution cycle for every selected shadow lane.
-- [ ] Review the strategy-attributed plan, deterministic risk result, Shadow Fill assumptions, ending account, and report in one trade-date directory.
-- [ ] Confirm a failed shadow lane does not corrupt or authorize another lane when a second shadow configuration is eventually added.
+- [x] Configure the Shadow Decision and Shadow Execution schedules from `routines/SCHEDULE.md`.
+- [x] Observe one complete scheduled Decision → next-weekday Shadow Execution cycle for every selected shadow lane.
+- [x] Review the strategy-attributed plan, deterministic risk result, Shadow Fill assumptions, ending account, and report in one trade-date directory.
+- [x] Confirm a failed shadow lane does not corrupt or authorize another lane when a second shadow configuration is eventually added.
 
 ## Live acceptance and loop
 
-- [ ] Select the reviewed first live candidate.
-- [ ] Implement and review the narrow Agentic Robinhood read/review/place/cancel loop without changing Decision, risk, timing, schema, or state semantics.
-- [ ] Verify the hosted connection selects the intended broker account and reconcile its real cash/positions against the selected lane before mode change.
-- [ ] Preserve one live scheduler per phase, stable IDs, repository/broker-history duplicate checks, and no blind retry after an ambiguous outcome.
-- [ ] Observe the required scheduled no-write acceptance cycle in the intended hosted environment.
-- [ ] The designated owner explicitly changes exactly one reviewed configuration to `live` and approves the $500–1000 validation allocation.
-- [ ] Inspect the first live cycles directly in Robinhood and compare broker evidence with deterministic output.
+- [x] Select the reviewed first live candidate.
+- [x] Implement and review the narrow Agentic Robinhood read/review/place/cancel loop without changing Decision, risk, timing, schema, or state semantics.
+- [x] Verify the hosted connection selects the intended broker account and reconcile its real cash/positions against the selected lane before mode change.
+- [x] Preserve one live scheduler per phase, stable IDs, repository/broker-history duplicate checks, and no blind retry after an ambiguous outcome.
+- [x] Observe the required scheduled no-write acceptance cycle in the intended hosted environment.
+- [x] The designated owner explicitly changes exactly one reviewed configuration to `live` and approves the $500–1000 validation allocation.
+- [x] Inspect the first live cycles directly in Robinhood and compare broker evidence with deterministic output.
 
 ## Strategy comparison and replay
 
