@@ -2,13 +2,6 @@
 
 Read these rules and the three entries in this file before work. Before handing off, append one chronological entry with local timestamp, outcome, evidence, next action, and only material risk. Keep each entry within 100 words and five bullets, link to authoritative files instead of duplicating them, and retain exactly the latest three entries total.
 
-## 2026-08-25 22:19 PDT — README manual and backfill commands
-
-- Outcome: expanded [`README.md`](../README.md#manual-runs) with copyable manual Decision/Shadow Execution and historical Decision/Execution examples.
-- Contract: documented input shapes, canonical plan paths, run provenance, backfill timing/mode/overwrite limits, and unchanged safety checks.
-- Evidence: every shown flag matches current CLI help and `git diff --check` passes.
-- Scope/risk: documentation only; no runtime, configuration, routine, or state artifact changed.
-
 ## 2026-08-25 22:23 PDT — Decision rationale published
 
 - Outcome: every new Decision now requires a concise `decision_rationale`; the OrderPlan persists it and `publish-decision` prints it after the plan ID.
@@ -22,3 +15,10 @@ Read these rules and the three entries in this file before work. Before handing 
 - Clarity: distinguished fixture-only wiring demos from real point-in-time research inputs and explained that `/tmp` paths are caller-created, not repository fixtures.
 - Evidence: both documented command sequences ran end to end and produced an allowed one-action Shadow cycle; `git diff --check` passes.
 - Scope/risk: documentation only; examples write under fresh `/tmp` directories and do not modify canonical state.
+
+## 2026-08-25 22:29 PDT — README prompt-only run guide
+
+- Outcome: replaced local CLI, fixture, `jq`, and `/tmp` walkthroughs with copyable Codex prompts for normal, manual, and historical backfill runs.
+- Contract: Decision and Execution remain separate tasks; prompts carry explicit mode, account/date authority, provenance, routine selection, and safety boundaries.
+- Evidence: prompt paths and flags match the current routines and implementation; `git diff --check` passes.
+- Scope/risk: documentation only; no runtime, configuration, routine, or state changed.
