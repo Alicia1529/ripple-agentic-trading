@@ -27,6 +27,8 @@ _REQUIRED_FIELDS = {
     "target_portfolio",
     "orders",
 }
+_OPTIONAL_FIELDS = {"decision_run_kind"}
+_RUN_KINDS = {"fixture", "manual", "scheduled"}
 
 _REQUIRED_ORDER_FIELDS = {
     "order_id",
@@ -123,10 +125,15 @@ class OrderPlan:
     account_baseline: Mapping[str, Any]
     target_portfolio: Mapping[str, Any]
     orders: tuple[Mapping[str, Any], ...]
+    decision_run_kind: str | None
 
     @classmethod
     def from_dict(cls, document: Mapping[str, Any]) -> "OrderPlan":
-        if not isinstance(document, Mapping) or set(document) != _REQUIRED_FIELDS:
+        if (
+            not isinstance(document, Mapping)
+            or not _REQUIRED_FIELDS <= set(document)
+            or not set(document) <= _REQUIRED_FIELDS | _OPTIONAL_FIELDS
+        ):
             raise ValueError("OrderPlan fields do not match the schema")
         values = {
             "order_plan_id": require_canonical_uuid(document["order_plan_id"], "order_plan_id"),
@@ -149,6 +156,13 @@ class OrderPlan:
         )
         if snapshot_at > decision_at:
             raise ValueError("market_snapshot_as_of must not be after decision_time")
+        decision_run_kind = None
+        if "decision_run_kind" in document:
+            decision_run_kind = require_nonempty_string(
+                document["decision_run_kind"], "decision_run_kind",
+            )
+            if decision_run_kind not in _RUN_KINDS:
+                raise ValueError("decision_run_kind is not supported")
         account_baseline = _validate_account_baseline(document["account_baseline"])
         target_portfolio = document["target_portfolio"]
         orders = document["orders"]
@@ -187,10 +201,11 @@ class OrderPlan:
         object.__setattr__(plan, "account_baseline", freeze_json(account_baseline))
         object.__setattr__(plan, "target_portfolio", freeze_json(target_portfolio))
         object.__setattr__(plan, "orders", freeze_json(orders))
+        object.__setattr__(plan, "decision_run_kind", decision_run_kind)
         return plan
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        document = {
             "order_plan_id": self.order_plan_id,
             "decision_time": self.decision_time,
             "account_id": self.account_id,
@@ -202,3 +217,6 @@ class OrderPlan:
             "target_portfolio": thaw_json(self.target_portfolio),
             "orders": thaw_json(self.orders),
         }
+        if self.decision_run_kind is not None:
+            document["decision_run_kind"] = self.decision_run_kind
+        return document

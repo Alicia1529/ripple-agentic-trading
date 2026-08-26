@@ -73,11 +73,11 @@ The catalog returns deterministic, account-ID-sorted cohorts. A missing strategy
 
 The seam is deliberately small: Strategy Specs are prompt-defined Markdown policies, not Python plugins. The generic publisher and deterministic risk module remain authoritative for shape, sizing, and safety. Adding a new strategy does not require changing Python, but selecting a missing strategy fails catalog validation.
 
-Account A selects `growth_momentum_v3`. Its Decision Routine normalizes source-attributed completed-session OHLC, eight quarterly financial/cash-flow rows, earnings dates, and sectors, then passes that credential-free input through the deterministic Growth Momentum facts compiler. SPY and QQQ are benchmark-only and receive technical facts without impossible corporate-financial requirements. Every security receives complete technical, relative-momentum, earnings-distance, revenue-growth, margin, and free-cash-flow facts or the whole compilation fails. Ranking and prose research begin only after success; raw authenticated responses are never persisted.
+Account A selects `growth_momentum_v3`. Its Decision Routine normalizes source-attributed completed-session OHLC, eight quarterly financial/cash-flow rows, earnings dates, and sectors, then passes that credential-free input and the selected account configuration through the deterministic Growth Momentum facts compiler. The compiler requires its symbol set to match the configured universe exactly. SPY and QQQ are benchmark-only and receive technical facts without impossible corporate-financial requirements. Every security receives complete technical, relative-momentum, earnings-distance, revenue-growth, margin, and free-cash-flow facts or the whole compilation fails. Ranking and prose research begin only after success; raw authenticated responses are never persisted.
 
 Account B currently selects `earnings_drift_v1`, an event-driven policy adapted to the generic publication seam. Its earnings facts, research answers, rejected candidates, warnings, and thesis metadata belong in immutable `DecisionSnapshot.inputs`; its plan still uses the shared `OrderPlan` schema. The first shadow cycle starts from its configured `$1000` virtual balance. Later cycles continue from the latest `ending_account` rather than resetting capital.
 
-Every new `OrderPlan`, Decision record, deterministic result, execution record, and report carries `strategy_id`. A versioned Strategy Spec should not be edited in place after it has produced decisions; create a new identifier so historical attribution stays meaningful. Git history retains its exact checked-in content.
+Every new `OrderPlan`, Decision record, deterministic result, execution record, and report carries `strategy_id`. New OrderPlans also freeze whether Decision was `fixture`, `manual`, or `scheduled`; execution evidence independently freezes its own run kind. Historical plans without Decision run provenance remain readable as legacy evidence. A versioned Strategy Spec should not be edited in place after it has produced decisions; create a new identifier so historical attribution stays meaningful. Git history retains its exact checked-in content.
 
 ## Execution modes and scheduled cohorts
 
@@ -126,7 +126,7 @@ The published plan remains unchanged. Git carries credential-free artifacts into
 
 ### Next-weekday Execution
 
-Execution loads the plan from the current trade-date directory, current account state, loss-sale history, and fresh quotes. It then runs the shared deterministic risk module.
+Execution loads the plan from the current trade-date directory, current account state, loss-sale history, and fresh quotes. Before risk evaluation, it requires that directory's immutable `decision_snapshot.json` and `order_plan.json` to exist and match the execution input. This binding applies equally to scheduled and explicitly authorized manual runs. It then runs the shared deterministic risk module.
 
 Live execution may eventually submit only script-allowed actions exactly as emitted through the reviewed Robinhood read/review/place/cancel loop. That loop is not implemented or approved today, so no configuration is live.
 
@@ -159,9 +159,9 @@ The plan's signal time remains Day T and every fill attempt remains Day T+1. Sha
 | Artifact | Mutability and use |
 |---|---|
 | `DecisionSnapshot` | Immutable allowed facts and universe for review/reproduction |
-| `OrderPlan` | Immutable account-, strategy-, and cycle-attributed decision |
-| Dry-run result | Manual proposed actions; explicitly not fills |
-| Shadow result | Risk result, fill attempts, assumptions, and ending virtual account state |
+| `OrderPlan` | Immutable account-, strategy-, cycle-, and Decision-run-attributed decision |
+| Dry-run result | Proposed actions plus Execution run provenance; explicitly not fills |
+| Shadow result | Risk result, fill attempts, assumptions, ending virtual account state, and Execution run provenance |
 | Report | Human-readable action and Shadow Fill summary |
 | Tier-two lock | Lane-scoped persistent block on new BUYs until owner review |
 

@@ -65,6 +65,20 @@ def _trade_date(decision_time: str) -> str:
     return _next_weekday(_new_york_time(decision_time).date()).isoformat()
 
 
+def _published_cycle_root(output: Path, plan: OrderPlan) -> Path:
+    cycle_root = output / "trading_days" / _trade_date(plan.decision_time)
+    snapshot_path = cycle_root / "decision_snapshot.json"
+    plan_path = cycle_root / "order_plan.json"
+    if not snapshot_path.is_file() or not plan_path.is_file():
+        raise ValueError("execution requires the published decision cycle")
+    snapshot = DecisionSnapshot.from_dict(_read_json(snapshot_path))
+    if snapshot.snapshot_id != plan.decision_snapshot_id:
+        raise ValueError("published decision snapshot does not match the order plan")
+    if _read_json(plan_path) != plan.to_dict():
+        raise ValueError("published order plan does not match the execution input")
+    return cycle_root
+
+
 def _validate_state_root(output: Path, config: AccountConfig) -> None:
     if output.name != config.account_id:
         raise ValueError("state root must end with the configured account_id")
@@ -125,6 +139,7 @@ def _build_plan(
     config: AccountConfig,
     *,
     enforce_schedule: bool = True,
+    decision_run_kind: str = "fixture",
 ) -> OrderPlan:
     if set(decision_input) != _DECISION_INPUT_FIELDS:
         raise ValueError("decision input fields do not match the schema")
@@ -175,6 +190,7 @@ def _build_plan(
         "model_config_version": decision["model_config_version"],
         "decision_snapshot_id": snapshot.snapshot_id,
         "market_snapshot_as_of": snapshot.as_of,
+        "decision_run_kind": decision_run_kind,
         "account_baseline": account_baseline,
         "target_portfolio": decision["target_portfolio"],
         "orders": orders,
@@ -190,7 +206,10 @@ def _publish_decision(
 ) -> OrderPlan:
     _validate_state_root(output, config)
     plan = _build_plan(
-        decision_input, config, enforce_schedule=run_kind != "manual",
+        decision_input,
+        config,
+        enforce_schedule=run_kind != "manual",
+        decision_run_kind=run_kind,
     )
     trade_date = _trade_date(plan.decision_time)
     cycle_root = output / "trading_days" / trade_date
@@ -248,6 +267,8 @@ def _write_report(
             f"- Strategy: `{plan.strategy_id}`\n"
             f"- Order plan: `{plan.order_plan_id}`\n"
             f"- Decision: `{plan.decision_time}`\n"
+            f"- Decision run: `{plan.decision_run_kind or 'legacy'}`\n"
+            f"- Execution run: `{result['execution_run_kind']}`\n"
             f"- Execution check: `{execution_context['as_of']}`\n"
             f"- Result: **{result['status']}**\n\n"
             "## Proposed actions\n\n"
@@ -276,15 +297,20 @@ def _execute_dry_run(
         execution_context["as_of"],
         enforce_schedule=run_kind != "manual",
     )
-    cycle_root = output / "trading_days" / _trade_date(plan.decision_time)
+    if plan.account_id != config.account_id:
+        raise ValueError("plan account_id does not match configured account_id")
+    cycle_root = _published_cycle_root(output, plan)
     execution_path = cycle_root / "execution.json"
     if execution_path.exists():
         raise FileExistsError(17, "File exists", execution_path)
     latch_path = output / "active_risk_lock.json"
-    result = evaluate_plan(
-        plan.to_dict(), execution_context, config.risk_rules(),
-        new_entries_locked=latch_path.is_file(),
-    )
+    result = {
+        **evaluate_plan(
+            plan.to_dict(), execution_context, config.risk_rules(),
+            new_entries_locked=latch_path.is_file(),
+        ),
+        "execution_run_kind": run_kind,
+    }
     if result["manual_restart_required"] and not latch_path.exists():
         _write_new_json(latch_path, {
             "account_id": plan.account_id,
@@ -318,7 +344,9 @@ def _execute_shadow(
         execution_context["as_of"],
         enforce_schedule=run_kind != "manual",
     )
-    cycle_root = output / "trading_days" / _trade_date(plan.decision_time)
+    if plan.account_id != config.account_id:
+        raise ValueError("plan account_id does not match configured account_id")
+    cycle_root = _published_cycle_root(output, plan)
     execution_path = cycle_root / "execution.json"
     if execution_path.exists():
         raise FileExistsError(17, "File exists", execution_path)
@@ -330,6 +358,7 @@ def _execute_shadow(
     result = {
         **risk_result,
         **simulate_shadow_fills(risk_result, execution_context),
+        "execution_run_kind": run_kind,
     }
     if result["manual_restart_required"] and not latch_path.exists():
         _write_new_json(latch_path, {

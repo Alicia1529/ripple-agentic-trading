@@ -17,7 +17,7 @@ Git history retains superseded reasoning. This file summarizes only decisions th
 - Strategy Specs remain prompt-defined Markdown policies. Ripple does not add a Python plugin engine. New versioned specs are added as new files rather than changing historical attribution in place.
 - `strategy_id` is frozen into new OrderPlans and execution evidence so later review does not depend on the current config alone.
 - Account A selects `growth_momentum_v3`; its research evaluation, compiled fact provenance, and thesis records stay in immutable DecisionSnapshots while its orders use the shared schema. Account B is outside that switch.
-- Growth Momentum numeric facts are derived by one checked-in deterministic compiler from normalized source-attributed raw inputs. The compiler owns Decimal formulas, date/session alignment, interpolation rejection, source and freshness checks, and completeness checks; the LLM gathers and normalizes sources but does not recompute compiler output. This is a facts seam, not a Python strategy engine: filtering, ranking, prose research, and portfolio judgment remain in the versioned Strategy Spec.
+- Growth Momentum numeric facts are derived by one checked-in deterministic compiler from normalized source-attributed raw inputs. The compiler reads the selected account configuration and requires the input symbol set to match its universe exactly. It owns Decimal formulas, date/session alignment, interpolation rejection, source and freshness checks, and completeness checks; the LLM gathers and normalizes sources but does not recompute compiler output. This is a facts seam, not a Python strategy engine: filtering, ranking, prose research, and portfolio judgment remain in the versioned Strategy Spec.
 
 ## Modes and scheduling
 
@@ -31,7 +31,7 @@ Git history retains superseded reasoning. This file summarizes only decisions th
 - Decision runs Sunday–Thursday around 9:00 PM `America/New_York`; Execution runs the next weekday around 9:35 AM. Missed cycles are not backfilled.
 - The Decision Routine publishes one immutable `DecisionSnapshot` and strategy-attributed `OrderPlan`. It never uses broker write tools.
 - The Execution Routine performs no new investment reasoning. It may execute, scale down, reject, or abort after deterministic revalidation. Script-emitted full-position stop-loss/take-profit Risk Exits are the sole unplanned-order exception.
-- Stable IDs and first-success ownership reduce duplicates. Manual runs are labeled; ambiguous live broker outcomes stop without blind retry.
+- Stable IDs and first-success ownership reduce duplicates. Each new OrderPlan freezes its Decision run kind, each execution result independently freezes its Execution run kind, and explicitly authorized manual runs remain accepted without relaxing safety checks. Historical plans without this field remain readable. Ambiguous live broker outcomes stop without blind retry.
 - A BUY may freeze an optional `gap_cancel_above` price. That order requires the actual regular-session open at Execution and is rejected only when the open is strictly above the threshold; a missing required open fails closed. Existing plans without the field remain valid.
 
 ## Shadow execution
@@ -45,7 +45,7 @@ Git history retains superseded reasoning. This file summarizes only decisions th
 
 - Every lane owns its configuration, state root, plan, virtual or real account facts, risk state, execution evidence, and restart lock. Taxpayer-wide loss-sale history remains the only documented cross-lane input.
 - Each lowercase lane stores one complete cycle under `state/accounts/<account_id>/trading_days/<trade_date>`. The trade date is the intended next-weekday Execution date, not the prior-evening Decision date.
-- A cycle publishes `decision_snapshot.json` and `order_plan.json` before Execution; `execution.json` and `report.md` are added to that same directory afterward. Repeated publication or execution fails instead of overwriting evidence.
+- A cycle publishes `decision_snapshot.json` and `order_plan.json` before Execution; `execution.json` and `report.md` are added to that same directory afterward. Execution requires the co-located snapshot and plan to exist and match its input. Repeated publication or execution fails instead of overwriting evidence.
 - JSONL indexes are not stored; the trade-date directories are the sole cycle index. A lane-wide tier-two block is the optional account-root `active_risk_lock.json` because it persists across trade dates.
 - The state layout reset removed prior checked-in state artifacts before hosted acceptance. Private Git stores only new credential-free cycles and locks. Platform-managed Robinhood authorization remains outside the repository.
 - Git is not a transactional submission journal or cross-runner lease. The live canary still accepts crash-before-log, duplicate-call, ambiguous-timeout, prompt/tool-use, configuration, and model-drift risks.

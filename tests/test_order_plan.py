@@ -76,6 +76,22 @@ class OrderPlanTests(unittest.TestCase):
         self.assertEqual(plan.to_dict()["orders"][0]["quantity"], "12")
         self.assertNotIn("execution_status", plan.to_dict())
 
+    def test_decision_run_kind_is_optional_for_history_and_strict_when_present(self):
+        legacy = OrderPlan.from_dict(self.valid_document())
+        self.assertIsNone(legacy.decision_run_kind)
+        self.assertNotIn("decision_run_kind", legacy.to_dict())
+
+        manual_document = self.valid_document()
+        manual_document["decision_run_kind"] = "manual"
+        manual = OrderPlan.from_dict(manual_document)
+        self.assertEqual(manual.decision_run_kind, "manual")
+        self.assertEqual(manual.to_dict()["decision_run_kind"], "manual")
+
+        invalid = self.valid_document()
+        invalid["decision_run_kind"] = "bypass"
+        with self.assertRaisesRegex(ValueError, "decision_run_kind"):
+            OrderPlan.from_dict(invalid)
+
     def test_malformed_or_execution_bearing_plans_fail_closed(self):
         invalid_documents = []
 

@@ -9,6 +9,8 @@ from decimal import Decimal, InvalidOperation, localcontext
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+from .account_config import load_account_config
+
 
 _SYMBOL_FIELDS = {
     "bars",
@@ -211,13 +213,26 @@ def _fundamental_facts(financials: Sequence[Mapping[str, Any]]) -> dict[str, Any
     }
 
 
-def compile_growth_momentum_facts(document: Mapping[str, Any]) -> dict[str, Any]:
+def compile_growth_momentum_facts(
+    document: Mapping[str, Any],
+    expected_symbols: Sequence[str],
+) -> dict[str, Any]:
     """Return complete strategy facts from normalized, source-attributed raw inputs."""
     if not isinstance(document, Mapping) or set(document) != {"as_of", "symbols"}:
         raise ValueError("facts input fields do not match the schema")
     as_of = _date(document["as_of"], "as_of")
     symbols = document["symbols"]
-    if not isinstance(symbols, Mapping) or "QQQ" not in symbols or "SPY" not in symbols:
+    if (
+        isinstance(expected_symbols, (str, bytes))
+        or not isinstance(expected_symbols, Sequence)
+        or not expected_symbols
+        or any(not isinstance(symbol, str) or not symbol for symbol in expected_symbols)
+        or len(expected_symbols) != len(set(expected_symbols))
+    ):
+        raise ValueError("configured universe must contain unique symbols")
+    if not isinstance(symbols, Mapping) or set(symbols) != set(expected_symbols):
+        raise ValueError("symbols must exactly match the configured universe")
+    if "QQQ" not in symbols or "SPY" not in symbols:
         raise ValueError("symbols must include SPY and QQQ")
 
     normalized = {}
@@ -301,12 +316,14 @@ def compile_growth_momentum_facts(document: Mapping[str, Any]) -> dict[str, Any]
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Compile Growth Momentum Decision facts")
+    parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     try:
+        config = load_account_config(args.config)
         document = json.loads(args.input.read_text())
-        result = compile_growth_momentum_facts(document)
+        result = compile_growth_momentum_facts(document, config.universe)
         args.output.parent.mkdir(parents=True, exist_ok=True)
         with args.output.open("x") as output:
             json.dump(result, output, indent=2, sort_keys=True)

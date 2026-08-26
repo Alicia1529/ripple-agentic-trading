@@ -8,7 +8,7 @@ A scheduled invocation must run on a weekday around 9:35 AM `America/New_York`. 
 
 ## Current gate
 
-The reviewed Agentic Robinhood read/review/place/cancel loop is not implemented. Although the current catalog selects `account_a` as live, until `docs/TODO.md` records that gate as complete every invocation must stop before any broker write.
+The reviewed Agentic Robinhood read/review/place/cancel loop is not implemented, and the current catalog selects no live account. Until `docs/TODO.md` records that gate as complete and Alicia explicitly changes one reviewed configuration to `live`, every invocation must remain a no-op and stop before any broker write.
 
 ## Cohort selection
 

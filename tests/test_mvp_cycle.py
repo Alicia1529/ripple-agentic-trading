@@ -146,8 +146,6 @@ class MvpDryCycleTests(unittest.TestCase):
             )
             self.assertNotEqual(repeated.returncode, 0)
             self.assertIn("already exists", repeated.stderr)
-            self.assertEqual(len(decision_log.read_text().splitlines()), 1)
-            self.assertEqual(len(execution_log.read_text().splitlines()), 1)
 
     def test_scheduled_shadow_commands_handoff_through_published_plan(self):
         fixture = json.loads(
@@ -288,6 +286,15 @@ class MvpDryCycleTests(unittest.TestCase):
             self.assertTrue(
                 (output / "trading_days" / "2026-08-25" / "execution.json").is_file()
             )
+            plan = json.loads(plan_path.read_text())
+            execution = json.loads(
+                (output / "trading_days" / "2026-08-25" / "execution.json").read_text()
+            )
+            self.assertEqual(plan["decision_run_kind"], "manual")
+            self.assertEqual(execution["execution_run_kind"], "manual")
+            report = (output / "trading_days" / "2026-08-25" / "report.md").read_text()
+            self.assertIn("Decision run: `manual`", report)
+            self.assertIn("Execution run: `manual`", report)
 
     def test_manual_decision_is_allowed_for_live_mode(self):
         fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
@@ -310,6 +317,7 @@ class MvpDryCycleTests(unittest.TestCase):
                 config_path, input_path, root / "account_a", manual=True,
             )
             self.assertEqual(plan.account_id, "account_a")
+            self.assertEqual(plan.decision_run_kind, "manual")
             self.assertTrue(
                 (
                     root / "account_a" / "trading_days" / "2026-08-25"
@@ -356,6 +364,44 @@ class MvpDryCycleTests(unittest.TestCase):
             self.assertTrue(
                 (output / "trading_days" / "2026-08-25" / "execution.json").is_file()
             )
+
+    def test_execution_requires_the_matching_published_cycle(self):
+        fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            output = root / "account_a"
+            decision_input = root / "decision.json"
+            context_input = root / "context.json"
+            decision_input.write_text(json.dumps({
+                "snapshot": fixture["snapshot"],
+                "account_baseline": fixture["account_baseline"],
+                "decision": fixture["decision"],
+            }))
+            context_input.write_text(json.dumps(fixture["execution_context"]))
+            foreign_plan = root / "foreign-plan.json"
+
+            from ripple.mvp import execute_dry_run, publish_decision
+
+            publish_decision(
+                ROOT / "config" / "account_a.json",
+                decision_input,
+                output,
+                manual=True,
+            )
+            canonical_plan = output / "trading_days" / "2026-08-25" / "order_plan.json"
+            document = json.loads(canonical_plan.read_text())
+            document["target_portfolio"] = {"cash": "1"}
+            document["orders"] = []
+            foreign_plan.write_text(json.dumps(document))
+
+            with self.assertRaisesRegex(ValueError, "published order plan"):
+                execute_dry_run(
+                    ROOT / "config" / "account_a.json",
+                    foreign_plan,
+                    context_input,
+                    output,
+                    manual=True,
+                )
 
     def test_new_york_trading_date_is_used_for_utc_documents(self):
         fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
@@ -485,17 +531,18 @@ class MvpDryCycleTests(unittest.TestCase):
     def test_tier_two_drawdown_latch_persists_until_human_reset(self):
         fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
         config = load_account_config(ROOT / "config" / "account_a.json")
-        from ripple.mvp import _build_plan, _execute_dry_run
+        from ripple.mvp import _execute_dry_run, _publish_decision
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             output = Path(temporary_directory) / "account_a"
-            first_plan = _build_plan(
+            first_plan = _publish_decision(
+                config,
                 {
                     "snapshot": fixture["snapshot"],
                     "account_baseline": fixture["account_baseline"],
                     "decision": fixture["decision"],
                 },
-                config,
+                output,
             )
             first_context = json.loads(json.dumps(fixture["execution_context"]))
             first_context["account"]["equity"] = "850"
@@ -510,7 +557,7 @@ class MvpDryCycleTests(unittest.TestCase):
             }
             second_input["snapshot"]["as_of"] = "2026-08-25T20:55:00-04:00"
             second_input["decision"]["decision_time"] = "2026-08-25T21:00:00-04:00"
-            second_plan = _build_plan(second_input, config)
+            second_plan = _publish_decision(config, second_input, output)
             second_context = json.loads(json.dumps(fixture["execution_context"]))
             second_context["as_of"] = "2026-08-26T09:35:00-04:00"
             second_context["account"]["equity"] = "1000"

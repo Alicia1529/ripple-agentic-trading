@@ -95,6 +95,7 @@ Run the tests:
 env PYTHONDONTWRITEBYTECODE=1 uv run --no-cache python -m unittest \
   tests.test_account_config \
   tests.test_decision_snapshot \
+  tests.test_growth_momentum \
   tests.test_order_plan \
   tests.test_risk \
   tests.test_shadow_execution \

@@ -31,6 +31,7 @@ expenditures. Compile them before ranking or research:
 
 ```bash
 uv run --no-cache python -m ripple.growth_momentum \
+  --config config/<account_id>.json \
   --input /tmp/ripple-growth-raw-<account_id>.json \
   --output /tmp/ripple-growth-facts-<account_id>.json
 ```

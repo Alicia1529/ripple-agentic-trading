@@ -76,11 +76,11 @@ class ShadowExecutionTests(unittest.TestCase):
             context_input.write_text(json.dumps(fixture["execution_context"]))
             from ripple.mvp import execute_shadow, publish_decision
 
-            publish_decision(
+            plan = publish_decision(
                 ROOT / "config" / "account_b.json",
                 decision_input,
                 output,
-                now=datetime.fromisoformat(fixture["decision"]["decision_time"]),
+                manual=True,
             )
             plan_path = output / "trading_days" / "2026-08-25" / "order_plan.json"
             result = execute_shadow(
@@ -92,6 +92,8 @@ class ShadowExecutionTests(unittest.TestCase):
             )
 
             self.assertEqual(result["mode"], "shadow")
+            self.assertEqual(plan.decision_run_kind, "manual")
+            self.assertEqual(result["execution_run_kind"], "scheduled")
             self.assertEqual(result["strategy_id"], "earnings_drift_v1")
             self.assertEqual(result["fill_status"], "filled")
             self.assertEqual(result["shadow_fills"], [{

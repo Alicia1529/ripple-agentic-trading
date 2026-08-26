@@ -31,6 +31,8 @@ uv run --no-cache python -m ripple.mvp run-shadow-cycle \
 
 The first command writes Decision artifacts under `trading_days/<trade-date>/`. The second adds `execution.json` and `report.md` to that same directory, including deterministic risk, Shadow Fill attempts, and `ending_account`. Neither command calls a broker. Re-running the same cycle fails instead of overwriting evidence.
 
+For an explicitly authorized manual Decision or Execution, use the corresponding `publish-decision`, `execute-dry-run`, or `execute-shadow` command with `--manual-run`. Manual mode changes timing validation only: it still requires the canonical state root and, for Execution, the matching co-located snapshot and plan. The OrderPlan records the Decision run kind and `execution.json` records the Execution run kind independently, so a manual phase may safely hand off to a scheduled phase or vice versa.
+
 ## Hosted schedules
 
 Configure exactly the four cohort triggers in `routines/SCHEDULE.md`: live Decision, shadow Decision, live Execution, and shadow Execution. Never schedule dry-run lanes.

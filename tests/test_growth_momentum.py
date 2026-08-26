@@ -13,6 +13,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class GrowthMomentumFactsTests(unittest.TestCase):
+    EXPECTED_SYMBOLS = ("AAPL", "QQQ", "SPY")
+
     def symbol(self, symbol, start, *, step="1"):
         bars = []
         start_date = date(2026, 4, 1)
@@ -72,7 +74,7 @@ class GrowthMomentumFactsTests(unittest.TestCase):
         return document
 
     def test_compiles_complete_deterministic_facts(self):
-        result = compile_growth_momentum_facts(self.document())
+        result = compile_growth_momentum_facts(self.document(), self.EXPECTED_SYMBOLS)
         facts = result["facts"]["AAPL"]
 
         self.assertEqual(facts["close"], "238")
@@ -121,13 +123,24 @@ class GrowthMomentumFactsTests(unittest.TestCase):
         for document, message in cases:
             with self.subTest(message=message):
                 with self.assertRaisesRegex(ValueError, message):
-                    compile_growth_momentum_facts(document)
+                    compile_growth_momentum_facts(document, self.EXPECTED_SYMBOLS)
+
+    def test_input_symbols_must_exactly_match_the_configured_universe(self):
+        missing = self.document()
+        del missing["symbols"]["AAPL"]
+        unexpected = self.document()
+        unexpected["symbols"]["MSFT"] = self.symbol("MSFT", "150")
+
+        for document in (missing, unexpected):
+            with self.subTest(symbols=sorted(document["symbols"])):
+                with self.assertRaisesRegex(ValueError, "configured universe"):
+                    compile_growth_momentum_facts(document, self.EXPECTED_SYMBOLS)
 
     def test_relative_momentum_streak_is_capped_at_policy_threshold(self):
         document = self.document()
         document["symbols"]["AAPL"] = self.symbol("AAPL", "100", step="0.1")
 
-        result = compile_growth_momentum_facts(document)
+        result = compile_growth_momentum_facts(document, self.EXPECTED_SYMBOLS)
 
         self.assertEqual(result["facts"]["AAPL"]["rel_mom_streak"], 5)
 
@@ -136,10 +149,15 @@ class GrowthMomentumFactsTests(unittest.TestCase):
             root = Path(temporary_directory)
             input_path = root / "raw.json"
             output_path = root / "facts.json"
+            config_path = root / "account_a.json"
             input_path.write_text(json.dumps(self.document()))
+            config = json.loads((ROOT / "config" / "account_a.json").read_text())
+            config["universe"] = list(self.EXPECTED_SYMBOLS)
+            config_path.write_text(json.dumps(config))
             completed = subprocess.run(
                 [
                     "python3.12", "-m", "ripple.growth_momentum",
+                    "--config", str(config_path),
                     "--input", str(input_path), "--output", str(output_path),
                 ],
                 cwd=ROOT,
@@ -153,6 +171,7 @@ class GrowthMomentumFactsTests(unittest.TestCase):
             second = subprocess.run(
                 [
                     "python3.12", "-m", "ripple.growth_momentum",
+                    "--config", str(config_path),
                     "--input", str(input_path), "--output", str(output_path),
                 ],
                 cwd=ROOT,
