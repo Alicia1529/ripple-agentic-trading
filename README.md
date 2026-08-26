@@ -84,6 +84,58 @@ uv run --no-cache python -m ripple.mvp run-shadow-cycle \
   --output /tmp/ripple-mvp/<shadow_account_id>
 ```
 
+### Manual runs
+
+Use `--manual-run` when the designated owner intentionally runs a Decision or Execution outside its scheduled runtime. It bypasses only the runtime schedule check; schemas, lane binding, immutable output, deterministic risk, Live Gate, duplicate checks, and all other safety rules still apply.
+
+Publish a manual Decision from an input containing exactly `snapshot`, `account_baseline`, and `decision`:
+
+```bash
+uv run --no-cache python -m ripple.mvp publish-decision \
+  --config config/<account_id>.json \
+  --input /tmp/ripple-decision-<account_id>.json \
+  --output state/accounts/<account_id> \
+  --manual-run
+```
+
+The publisher writes `decision_snapshot.json` and `order_plan.json` under `state/accounts/<account_id>/trading_days/<trade_date>/`. To manually execute a published shadow plan, provide the appropriate execution context and use the plan from that same directory:
+
+```bash
+uv run --no-cache python -m ripple.mvp execute-shadow \
+  --config config/<shadow_account_id>.json \
+  --plan state/accounts/<shadow_account_id>/trading_days/<trade_date>/order_plan.json \
+  --context /tmp/ripple-execution-<shadow_account_id>.json \
+  --output state/accounts/<shadow_account_id> \
+  --manual-run
+```
+
+For a `dry_run` lane, replace `execute-shadow` with `execute-dry-run`. Live Execution follows the reviewed live routine and Live Gate; `execute-shadow` never submits a broker order. Decision and Execution independently record their run kind, so either phase may be manual without changing the other phase's provenance.
+
+### Historical backfill
+
+Historical backfill recreates a missed live or shadow Decision from complete point-in-time inputs. The historical `decision_time` must be in the past and still fall within the normal Sunday–Thursday 8:55–9:15 PM `America/New_York` Decision window. Backfill is rejected for `dry_run`, cannot overwrite an existing cycle, and cannot be combined with `--manual-run` on the Decision command.
+
+```bash
+uv run --no-cache python -m ripple.mvp publish-decision \
+  --config config/<live_or_shadow_account_id>.json \
+  --input /tmp/ripple-historical-decision-<live_or_shadow_account_id>.json \
+  --output state/accounts/<live_or_shadow_account_id> \
+  --historical-backfill
+```
+
+The resulting OrderPlan records `decision_run_kind: backfill`. It may be executed through the matching manual Execution path. For shadow:
+
+```bash
+uv run --no-cache python -m ripple.mvp execute-shadow \
+  --config config/<shadow_account_id>.json \
+  --plan state/accounts/<shadow_account_id>/trading_days/<trade_date>/order_plan.json \
+  --context /tmp/ripple-historical-execution-<shadow_account_id>.json \
+  --output state/accounts/<shadow_account_id> \
+  --manual-run
+```
+
+The historical execution context must be later than the Decision and contain the matching account state and required quotes. Normal deterministic risk and fill rules remain active. Keep `backfill` provenance visible in reviews; scheduled tasks never create backfills automatically.
+
 Run the tests:
 
 ```bash
