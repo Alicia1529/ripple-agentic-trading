@@ -119,7 +119,7 @@ Backfill is unavailable for `dry_run`, never overwrites an existing cycle, and i
 
 OpenAI currently exposes Codex automations as **Scheduled tasks** in the ChatGPT desktop app. A scheduled task created from Codex can work in a local Git project, while a web-only task cannot directly access a folder on this computer. See the official [Scheduled tasks documentation](https://developers.openai.com/codex/app/automations).
 
-The files in [`routines/`](../routines/) are the durable prompts that a scheduled task reads; they are not executable schedules and are not registered automatically. [`routines/SCHEDULE.md`](../routines/SCHEDULE.md) is the operator-owned target schedule manifest. It documents the eventual four-task live/shadow topology; hosted shadow acceptance uses the two shadow tasks below, while live tasks remain disabled until the broker-write loop and Live Gate are complete.
+The files in [`routines/`](../routines/) are the durable prompts that a scheduled task reads; they are not executable schedules and are not registered automatically. [`routines/SCHEDULE.md`](../routines/SCHEDULE.md) is the operator-owned four-task live/shadow schedule manifest. The table below records the shadow-task setup; live tasks use the matching live routines and remain operator-controlled in the Scheduled interface.
 
 Before creating the tasks:
 
@@ -128,7 +128,7 @@ Before creating the tasks:
 - keep the computer on, the desktop app running, and the repository available at each trigger time; and
 - grant only repository write and network access needed for Git and market facts. Shadow tasks need no Robinhood connection or broker-write permission.
 
-Create two **standalone** scheduled tasks. Choose this local project, not an isolated worktree, so Decision and Execution use the same checked-out branch and credential-free state history. Leave model and reasoning settings at their defaults unless an observed run requires a reviewed change.
+For the shadow cohort, create these two **standalone** scheduled tasks. Choose this local project, not an isolated worktree, so Decision and Execution use the same checked-out branch and credential-free state history. Leave model and reasoning settings at their defaults unless an observed run requires a reviewed change.
 
 | Task name | Time zone and recurrence | Saved prompt |
 |---|---|---|
@@ -143,7 +143,7 @@ The desktop workflow is:
 4. Enable Shadow Execution. After the next-trading-day run, inspect `execution.json` and `report.md` in that same trade-date directory, including the ending virtual account, and its `Execution: shadow <date>` commit. Confirm no broker call occurred.
 5. Review the first few runs in **Scheduled**. Pause a task after a failed precondition, Git conflict, unexpected artifact, credential finding, or timing error; scheduled tasks never automatically backfill a missed cycle. A designated-owner historical Decision and any following Execution are separate, explicitly labeled manual operations.
 
-Do not create or enable the two live tasks yet. They become eligible only after the live tasks in [`docs/TODO.md`](TODO.md) are complete and the designated owner explicitly approves the mode change and allocation. Editing a routine changes what the next scheduled run reads; changing a trigger or enabling live remains an operator action in the Scheduled interface and must stay aligned with [`routines/SCHEDULE.md`](../routines/SCHEDULE.md).
+Live task triggers and the broker connection remain operator-controlled. Current catalog membership comes only from `config/*.json`, and [`docs/TODO.md`](TODO.md) records release-gate completion; a routine cannot create or enable a trigger, change execution mode, or expand the owner-approved allocation. Editing a routine changes what the next scheduled run reads, so prompt and trigger changes must stay aligned with [`routines/SCHEDULE.md`](../routines/SCHEDULE.md).
 
 ## Runner: Claude Code, or any other agent
 

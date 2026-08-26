@@ -2,7 +2,7 @@
 
 This document describes Ripple as implemented today. Durable reasons belong in `docs/DECISIONS.md`; unfinished work belongs in `docs/TODO.md`.
 
-Ripple is an account-catalog MVP for comparing isolated strategy lanes. The catalog, manual dry-run path, and shadow execution path are implemented. Hosted schedules, hosted acceptance, and the reviewed live Robinhood broker-write loop remain unfinished. Current lane membership and bindings are read from `config/*.json`, not restated in architecture documentation.
+Ripple is an account-catalog MVP for comparing isolated strategy lanes. The catalog, manual dry-run path, shadow execution path, hosted schedules and acceptance, and reviewed live Robinhood broker-write loop are implemented. Current lane membership and bindings are read from `config/*.json`, not restated in architecture documentation.
 
 ## System at a glance
 
@@ -38,7 +38,7 @@ flowchart TD
         EXE --> RISK
     end
 
-    RISK --> LADP["Live adapter — Agentic Robinhood<br/>same risk verdict, real broker write<br/>gated: no broker-write authority<br/>until the Live Gate is complete"]
+    RISK --> LADP["Live adapter — Agentic Robinhood<br/>same risk verdict, real broker write<br/>owner-enabled small-canary authority"]
     RISK --> SADP["Shadow adapter — no Robinhood call, same risk verdict<br/>re-checks the real T+1 9:35 quote against the planned limit<br/>marketable: assumed fill at that quote and as_of<br/>otherwise not_filled, reason_code limit_not_marketable<br/>zero fees and slippage; carries cash, quantity, average cost forward"]
 
     LADP -->|"writes evidence back"| ST
@@ -111,7 +111,7 @@ Ripple uses four non-overlapping schedule triggers:
 | Live Execution | 0..1 live lane | next trading day around 9:35 AM `America/New_York` |
 | Shadow Execution | all shadow lanes | next trading day around 9:35 AM `America/New_York` |
 
-A scheduled trigger that lands outside a trading session is a successful no-op: a Decision evening that does not precede a trading day, or an Execution morning on a market holiday, publishes and executes nothing and reports why. There may be zero live lane while the Live Gate is closed; the live runs then finish without account work. Dry-run lanes are never selected. Schedules never automatically backfill missed cycles. A designated-owner historical backfill is a separate live/shadow operation: it requires complete point-in-time Decision inputs, preserves the normal Decision timestamp window, and records `decision_run_kind=backfill`. Its immutable plan may proceed through explicitly authorized manual Execution with the usual deterministic and mode-specific safeguards.
+A scheduled trigger that lands outside a trading session is a successful no-op: a Decision evening that does not precede a trading day, or an Execution morning on a market holiday, publishes and executes nothing and reports why. There may be zero live lane; the live runs then finish without account work. Dry-run lanes are never selected. Schedules never automatically backfill missed cycles. A designated-owner historical backfill is a separate live/shadow operation: it requires complete point-in-time Decision inputs, preserves the normal Decision timestamp window, and records `decision_run_kind=backfill`. Its immutable plan may proceed through explicitly authorized manual Execution with the usual deterministic and mode-specific safeguards.
 
 The shadow runs are one scheduled cohort but each lane remains an independent Decision Cycle. One lane's malformed input or failure is reported for that lane and does not authorize, mutate, or suppress another lane's work.
 
@@ -139,7 +139,7 @@ The published plan remains unchanged. Git carries credential-free artifacts into
 
 Execution loads the plan from the current trade-date directory, current account state, loss-sale history, and fresh quotes. Before risk evaluation, it requires that directory's immutable `decision_snapshot.json` and `order_plan.json` to exist and match the execution input. This binding applies equally to scheduled and explicitly authorized manual runs. It then runs the shared deterministic risk module.
 
-Live execution may eventually submit only script-allowed actions exactly as emitted through the reviewed Robinhood read/review/place/cancel loop. That loop remains gated and cannot receive broker-write authority before the Live Gate is complete.
+Live execution submits only script-allowed actions exactly as emitted through the reviewed Robinhood read/review/place/cancel loop. A selected `live` configuration records owner activation for its reviewed small-canary allocation; routines cannot enable a lane, change strategy or capital, clear a tier-two lock, or retry an ambiguous broker outcome.
 
 Shadow execution uses the same risk output but never calls Robinhood. For each allowed action:
 
@@ -163,7 +163,7 @@ The plan's signal time remains Day T and every fill attempt remains Day T+1. Sha
 | `OrderPlan` | Represent strategy-attributed decision intent | Decision rationale, strict order shape, account baseline, portfolio weights, immutable nested values |
 | Risk module | Return allowed, clipped, rejected, or aborted actions | Account binding, freshness, sizing, cash reservation, loss/drawdown/wash-sale/exit rules |
 | Shadow adapter | Return fill attempts and ending virtual state | T+1 marketability, quote-price fills, position/cash state transition, no broker I/O |
-| Live adapter | Use deterministic output with Robinhood | Still unfinished and gated |
+| Live adapter | Use deterministic output with Robinhood | Account binding, duplicate/history checks, review/place fidelity, ambiguity stop, credential-free evidence |
 | Lane State | Carry credential-free evidence across fresh sessions | Per-lane trade-date cycles and an optional active risk lock |
 
 ## Artifacts and state

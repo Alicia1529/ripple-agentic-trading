@@ -15,4 +15,4 @@ Every trigger validates the full catalog before selecting its cohort. A live run
 
 If the scheduler cannot express an IANA timezone, trigger within a wider UTC window and retain each routine's `America/New_York` self-check. Do not configure overlapping copies of the same cohort phase.
 
-Hosted shadow acceptance requires one reviewed Day T → T+1 cycle for every selected shadow lane. A live trigger with an empty cohort remains a successful no-op, and the live Execution prompt remains a stop contract until the broker loop and Live Gate tasks in `docs/TODO.md` are complete.
+Hosted acceptance requires reviewable Day T → T+1 evidence for every selected lane. A live trigger with an empty cohort remains a successful no-op; a selected live lane follows `EXECUTION_LIVE.md` under its deterministic, account-binding, duplicate, ambiguity, and owner-controlled allocation safeguards.
