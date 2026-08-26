@@ -88,32 +88,36 @@ uv run --no-cache python -m ripple.mvp run-shadow-cycle \
 
 Use `--manual-run` when the designated owner intentionally runs a Decision or Execution outside its scheduled runtime. It bypasses only the runtime schedule check; schemas, lane binding, immutable output, deterministic risk, Live Gate, duplicate checks, and all other safety rules still apply.
 
-Publish a manual Decision from an input containing exactly `snapshot`, `account_baseline`, and `decision`:
+The `--input` and `--context` arguments are files you create before invoking the CLI; Ripple does not ship account-specific files under `/tmp`. A Decision input contains exactly `snapshot`, `account_baseline`, and `decision`. An Execution context contains the matching `account_id`, account state, quotes, and execution `as_of` time.
+
+This credential-free example creates both files from the checked-in fixture, then runs a complete manual shadow cycle in a new temporary directory:
 
 ```bash
+manual_root=$(mktemp -d /tmp/ripple-manual.XXXXXX)
+jq '{snapshot, account_baseline, decision}' \
+  fixtures/mvp/dry_cycle.json > "$manual_root/decision.json"
+jq '.execution_context | .account_id = "account_b"' \
+  fixtures/mvp/dry_cycle.json > "$manual_root/execution.json"
+
 uv run --no-cache python -m ripple.mvp publish-decision \
-  --config config/<account_id>.json \
-  --input /tmp/ripple-decision-<account_id>.json \
-  --output state/accounts/<account_id> \
+  --config config/account_b.json \
+  --input "$manual_root/decision.json" \
+  --output "$manual_root/account_b" \
   --manual-run
-```
 
-The publisher writes `decision_snapshot.json` and `order_plan.json` under `state/accounts/<account_id>/trading_days/<trade_date>/`. To manually execute a published shadow plan, provide the appropriate execution context and use the plan from that same directory:
-
-```bash
 uv run --no-cache python -m ripple.mvp execute-shadow \
-  --config config/<shadow_account_id>.json \
-  --plan state/accounts/<shadow_account_id>/trading_days/<trade_date>/order_plan.json \
-  --context /tmp/ripple-execution-<shadow_account_id>.json \
-  --output state/accounts/<shadow_account_id> \
+  --config config/account_b.json \
+  --plan "$manual_root/account_b/trading_days/2026-08-25/order_plan.json" \
+  --context "$manual_root/execution.json" \
+  --output "$manual_root/account_b" \
   --manual-run
 ```
 
-For a `dry_run` lane, replace `execute-shadow` with `execute-dry-run`. Live Execution follows the reviewed live routine and Live Gate; `execute-shadow` never submits a broker order. Decision and Execution independently record their run kind, so either phase may be manual without changing the other phase's provenance.
+For real state, the Decision routine gathers the strategy-required facts and creates the temporary Decision input before calling the same publisher with `--output state/accounts/<account_id>`. The publisher writes `decision_snapshot.json` and `order_plan.json` under `trading_days/<trade_date>/`; Execution then uses the matching plan and a separately gathered context. For a `dry_run` lane, replace `execute-shadow` with `execute-dry-run`. Live Execution follows the reviewed live routine and Live Gate; `execute-shadow` never submits a broker order. Decision and Execution independently record their run kind.
 
 ### Historical backfill
 
-Historical backfill recreates a missed live or shadow Decision from complete point-in-time inputs. The historical `decision_time` must be in the past and still fall within the normal Sunday–Thursday 8:55–9:15 PM `America/New_York` Decision window. Backfill is rejected for `dry_run`, cannot overwrite an existing cycle, and cannot be combined with `--manual-run` on the Decision command.
+Historical backfill recreates a missed live or shadow Decision from complete point-in-time inputs. Those inputs must first be gathered for the historical date according to the selected Strategy Spec; the `/tmp` filename below is an output of that research step, not a pre-existing repository file. The historical `decision_time` must be in the past and still fall within the normal Sunday–Thursday 8:55–9:15 PM `America/New_York` Decision window. Backfill is rejected for `dry_run`, cannot overwrite an existing cycle, and cannot be combined with `--manual-run` on the Decision command.
 
 ```bash
 uv run --no-cache python -m ripple.mvp publish-decision \
@@ -135,6 +139,31 @@ uv run --no-cache python -m ripple.mvp execute-shadow \
 ```
 
 The historical execution context must be later than the Decision and contain the matching account state and required quotes. Normal deterministic risk and fill rules remain active. Keep `backfill` provenance visible in reviews; scheduled tasks never create backfills automatically.
+
+To exercise the backfill commands without first doing historical research, this fixture-backed example creates every referenced file and writes only under a new `/tmp` directory:
+
+```bash
+backfill_root=$(mktemp -d /tmp/ripple-backfill.XXXXXX)
+jq '{snapshot, account_baseline, decision}' \
+  fixtures/mvp/dry_cycle.json > "$backfill_root/decision.json"
+jq '.execution_context | .account_id = "account_b"' \
+  fixtures/mvp/dry_cycle.json > "$backfill_root/execution.json"
+
+uv run --no-cache python -m ripple.mvp publish-decision \
+  --config config/account_b.json \
+  --input "$backfill_root/decision.json" \
+  --output "$backfill_root/account_b" \
+  --historical-backfill
+
+uv run --no-cache python -m ripple.mvp execute-shadow \
+  --config config/account_b.json \
+  --plan "$backfill_root/account_b/trading_days/2026-08-25/order_plan.json" \
+  --context "$backfill_root/execution.json" \
+  --output "$backfill_root/account_b" \
+  --manual-run
+```
+
+The fixture example proves the CLI wiring only. It is not evidence for a real historical strategy decision because its facts come from `fixtures/mvp/dry_cycle.json` rather than date-specific research.
 
 Run the tests:
 
