@@ -12,7 +12,7 @@ Run the complete test suite before trusting a working copy:
 uv run --no-cache python -m unittest discover -s tests -t .
 ```
 
-All 53 tests must pass. The suite uses only the standard library, so a failure to import a package means the interpreter is older than 3.12 rather than that a dependency is missing.
+The whole suite must pass. It uses only the standard library, so a failure to import a package means the interpreter is older than 3.12 rather than that a dependency is missing.
 
 Validate the complete catalog and inspect scheduled membership:
 

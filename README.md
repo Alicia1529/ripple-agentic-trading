@@ -13,7 +13,20 @@ uv run --no-cache python -m unittest discover -s tests -t .
 uv run --no-cache python -m ripple.mvp validate-configs
 ```
 
-The first command runs all 53 tests; the second validates every account configuration and its selected Strategy Spec. Without `uv`, run the same commands with any Python 3.12 interpreter from the repository root. A system Python older than 3.12 fails on import, which is a version problem rather than a missing package.
+The first command runs the whole test suite; the second validates every account configuration and its selected Strategy Spec. Without `uv`, run the same commands with any Python 3.12 interpreter from the repository root. A system Python older than 3.12 fails on import, which is a version problem rather than a missing package.
+
+## Run one cycle offline
+
+No model, no API key, no broker connection, no network. This replays a checked-in fixture through the real publisher, the real deterministic risk module, and the real shadow adapter:
+
+```bash
+uv run --no-cache python -m ripple.mvp run-shadow-cycle \
+  --config config/examples/demo_lane.json \
+  --fixture fixtures/mvp/demo_lane_cycle.json \
+  --output /tmp/ripple-demo/demo_lane
+```
+
+It writes a complete Decision Cycle — `decision_snapshot.json`, `order_plan.json`, `execution.json`, and a readable `report.md` — to `/tmp/ripple-demo/demo_lane/trading_days/2026-08-25/`. The report ends with `No broker write tool was called.` The demo lane lives outside the `config/*.json` glob, so it is invisible to the catalog and can never be selected by a scheduled run. See [`docs/RUNNING.md`](docs/RUNNING.md) to turn it into a lane of your own.
 
 ## Actual structure
 
@@ -80,93 +93,30 @@ Core limits are 20% per symbol, three new positions per day, 5% daily loss, 10%/
 
 The catalog permits at most one live configuration, but this is not a broker-side security boundary. Live v1 still lacks exactly-once execution and automatic ambiguous-outcome reconciliation. See [`docs/INVARIANTS.md`](docs/INVARIANTS.md) for the full contract.
 
-## Run Ripple with Codex prompts
+## Running Ripple
 
-Use a separate Codex task for Decision and Execution so the two phases remain isolated. Replace the bracketed values before sending a prompt.
+Ripple separates **what a run must do** from **who runs it**. The four prompts in
+[`routines/`](routines/) are the durable contract — one per cohort phase — and the Agent Runner
+that executes them is replaceable: Codex scheduled tasks drive the current deployment, but nothing
+in the Python privileges one product over another.
 
-### Normal run
-
-Send the Decision prompt during the normal Decision window:
-
-```text
-Run Ripple's normal [live|shadow] Decision now. Read AGENTS.md and routines/DECISION_[LIVE|SHADOW].md completely and follow them exactly. Use the current validated cohort and selected Strategy Spec. This is a normal scheduled-style run, not manual and not a backfill. Stop after publishing and verifying the Decision artifacts; do not perform Execution.
-```
-
-On the next weekday, send the matching Execution prompt:
-
-```text
-Run Ripple's normal [live|shadow] Execution now. Read AGENTS.md and routines/EXECUTION_[LIVE|SHADOW].md completely and follow them exactly. Execute only the matching published plans through deterministic risk. This is a normal scheduled-style run, not manual and not a backfill. Do not perform new Decision work.
-```
-
-### Manual run
-
-Manual mode is for an owner-authorized run outside the schedule window. It changes timing only; every other safety rule remains active. Send Decision and Execution as separate prompts:
-
-```text
-I am the designated owner and explicitly authorize a manual [live|shadow] Decision for account [account_id] now. Read AGENTS.md and routines/DECISION_[LIVE|SHADOW].md completely, gather all required current facts, and follow the routine using --manual-run. Preserve lane isolation and all stop conditions. Stop after publishing and verifying the Decision artifacts; do not perform Execution.
-```
-
-```text
-I am the designated owner and explicitly authorize manual [live|shadow] Execution for account [account_id] and trade date [YYYY-MM-DD] now. Read AGENTS.md and routines/EXECUTION_[LIVE|SHADOW].md completely and follow the routine using --manual-run. Use only that cycle's immutable plan, run deterministic risk, preserve all Live Gate/account/duplicate/ambiguity checks, and do not perform new Decision work.
-```
-
-### Historical backfill
-
-Backfill recreates a missed live or shadow cycle from point-in-time facts. First send the historical Decision prompt:
-
-```text
-I am the designated owner and explicitly authorize a historical [live|shadow] Decision backfill for account [account_id], with Decision date [YYYY-MM-DD] and intended trade date [YYYY-MM-DD]. Read AGENTS.md, routines/DECISION_[LIVE|SHADOW].md, and the account's selected Strategy Spec completely. Gather complete point-in-time facts for that historical Decision, use --historical-backfill, label the plan as backfill, and preserve all validation and immutability rules. Stop after publishing and verifying the Decision artifacts; do not perform Execution.
-```
-
-After reviewing that plan, start a separate Codex task with the Execution prompt:
-
-```text
-I am the designated owner and explicitly authorize [live|shadow] Execution of the backfill plan for account [account_id] and trade date [YYYY-MM-DD]. Read AGENTS.md and routines/EXECUTION_[LIVE|SHADOW].md completely. Gather the matching historical T+1 execution facts, use --manual-run, execute only the immutable backfill plan through the normal deterministic and mode-specific safeguards, and do not perform new Decision work. Keep backfill provenance explicit in every artifact and report.
-```
-
-Backfill is unavailable for `dry_run`, never overwrites an existing cycle, and is never started automatically by a scheduled task.
-
-## Create the scheduled Codex workflows
-
-OpenAI currently exposes Codex automations as **Scheduled tasks** in the ChatGPT desktop app. A scheduled task created from Codex can work in a local Git project, while a web-only task cannot directly access a folder on this computer. See the official [Scheduled tasks documentation](https://developers.openai.com/codex/app/automations).
-
-The files in [`routines/`](routines/) are the durable prompts that a scheduled task reads; they are not executable schedules and are not registered automatically. [`routines/SCHEDULE.md`](routines/SCHEDULE.md) is the operator-owned target schedule manifest. It documents the eventual four-task live/shadow topology; hosted shadow acceptance uses the two shadow tasks below, while live tasks remain disabled until the broker-write loop and Live Gate are complete.
-
-Before creating the tasks:
-
-- open this repository as a local project in the ChatGPT desktop app and select Codex;
-- use the intended private state branch, confirm the worktree is clean, and confirm unattended `git pull`/`git push` can use the repository remote;
-- keep the computer on, the desktop app running, and the repository available at each trigger time; and
-- grant only repository write and network access needed for Git and market facts. Shadow tasks need no Robinhood connection or broker-write permission.
-
-Create two **standalone** scheduled tasks. Choose this local project, not an isolated worktree, so Decision and Execution use the same checked-out branch and credential-free state history. Leave model and reasoning settings at their defaults unless an observed run requires a reviewed change.
-
-| Task name | Time zone and recurrence | Saved prompt |
-|---|---|---|
-| `Ripple Shadow Decision` | `America/New_York`; Sun–Thu at 9:00 PM. Advanced rule: `RRULE:FREQ=WEEKLY;BYDAY=SU,MO,TU,WE,TH;BYHOUR=21;BYMINUTE=0` | `Work in the selected Ripple repository. Read routines/DECISION_SHADOW.md completely and follow it exactly. This task owns only the Shadow Decision cohort. Do not perform Execution or live work. If a precondition fails, stop and report it without broadening authority.` |
-| `Ripple Shadow Execution` | `America/New_York`; Mon–Fri at 9:35 AM. Advanced rule: `RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=35` | `Work in the selected Ripple repository. Read routines/EXECUTION_SHADOW.md completely and follow it exactly. This task owns only the Shadow Execution cohort. Do not perform Decision or live work. If a precondition fails, stop and report it without broadening authority.` |
-
-The desktop workflow is:
-
-1. Open a Codex chat for this local repository and ask it to create the standalone scheduled task with the name, saved prompt, recurrence, and time zone above. You can also create and later manage it from **Scheduled** in the desktop sidebar.
-2. Before enabling recurrence, run each saved prompt once in a normal Codex chat. Record the validated catalog output and verify that every selected lane is authorized for the task's cohort.
-3. Enable Shadow Decision first. After its first successful scheduled run, inspect `state/accounts/<account_id>/trading_days/<trade-date>/order_plan.json` for each selected lane and its `Decision: shadow <date>` commit.
-4. Enable Shadow Execution. After the next-weekday run, inspect `execution.json` and `report.md` in that same trade-date directory, including the ending virtual account, and its `Execution: shadow <date>` commit. Confirm no broker call occurred.
-5. Review the first few runs in **Scheduled**. Pause a task after a failed precondition, Git conflict, unexpected artifact, credential finding, or timing error; scheduled tasks never automatically backfill a missed cycle. A designated-owner historical Decision and any following Execution are separate, explicitly labeled manual operations.
-
-Do not create or enable the two live tasks yet. They become eligible only after the live tasks in [`docs/TODO.md`](docs/TODO.md) are complete and the designated owner explicitly approves the mode change and allocation. Editing a routine changes what the next scheduled run reads; changing a trigger or enabling live remains an operator action in the Scheduled interface and must stay aligned with [`routines/SCHEDULE.md`](routines/SCHEDULE.md).
+[`docs/RUNNING.md`](docs/RUNNING.md) has the offline demo, the seven requirements any runner must
+satisfy, the prompt library for normal, manual, and historical-backfill runs, and setup for the
+runners known to satisfy the contract. [`routines/SCHEDULE.md`](routines/SCHEDULE.md) is the
+operator-owned schedule manifest, and [`docs/RUNBOOK.md`](docs/RUNBOOK.md) covers operations,
+incidents, and the kill switch.
 
 ## Repository map
 
 | Path | Purpose |
 |---|---|
-| [`config/`](config/) | One filename-identified configuration per Account Lane |
+| [`config/`](config/) | One filename-identified configuration per Account Lane; [`config/examples/`](config/examples/) holds unscheduled samples |
 | [`strategies/`](strategies/) | Version-named Strategy Specs selected by config |
 | [`ripple/`](ripple/) | Catalog, artifacts, CLI, deterministic risk, and shadow simulation |
 | [`routines/`](routines/) | Live/shadow Decision and Execution contracts plus schedules |
 | [`fixtures/`](fixtures/) | Credential-free dry and shadow evidence inputs |
 | [`tests/`](tests/) | Catalog, isolation, artifact, risk, timing, and fill coverage |
-| [`docs/`](docs/) | Architecture, decisions, invariants, operations, and unfinished work |
+| [`docs/`](docs/) | Architecture, decisions, invariants, operations, and unfinished work; [`RUNNING.md`](docs/RUNNING.md) covers runners |
 
 Canonical state uses lowercase config identifiers and groups each prior-evening Decision and next-weekday Execution under `state/accounts/<account_id>/trading_days/<trade-date>`.
 
