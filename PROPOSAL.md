@@ -1,6 +1,6 @@
 # Ripple Trading — Proposal
 
-**Current stage:** Ripple has a validated account catalog, one fixture-backed development lane, and one fixture-backed shadow lane. The scheduled live/shadow routine topology is specified; hosted acceptance and the reviewed Robinhood broker-write loop remain unfinished.
+**Current stage:** Ripple has a validated account catalog plus fixture-backed dry-run and shadow paths. The scheduled live/shadow routine topology is specified; hosted acceptance and the reviewed Robinhood broker-write loop remain unfinished.
 
 `docs/ARCHITECTURE.md` is the current technical design, `docs/DECISIONS.md` records durable choices, and `docs/TODO.md` tracks unfinished work.
 
@@ -38,14 +38,7 @@ validated Account Catalog
 
 Each account configuration contains a human-readable description, one Strategy Spec identifier, an execution mode, a symbol universe, and risk limits. Adding a Strategy Spec means adding a version-named Markdown file and selecting it from an account configuration; catalog validation fails when that file does not exist or more than one configuration is live.
 
-## Current concrete lanes
-
-| Account Lane | Mode | Strategy | Current role |
-|---|---|---|---|
-| `account_a` | `dry_run` | `growth_momentum_v3` | Manual fixture-backed development and future live candidate; never scheduled in this mode |
-| `account_b` | `shadow` | `earnings_drift_v1` | Scheduled-cohort candidate producing event-driven earnings evidence and assumed T+1 quote fills without Robinhood writes |
-
-The lanes select different reviewed Strategy Specs: Account A applies Growth Momentum v3 with deterministically compiled numeric facts, while Account B evaluates post-earnings drift with a $1000 initial virtual balance. Strategy attribution and lane isolation allow their evidence to remain distinct; no result automatically promotes a strategy or changes capital.
+Current lane membership and account-to-strategy bindings live exclusively in `config/*.json`. The validated catalog and `list-accounts` command expose those deployment facts without duplicating them here. Strategy attribution and lane isolation keep each lane's evidence distinct; no result automatically promotes a strategy or changes capital.
 
 Canonical lowercase identifiers own state under `state/accounts/<account_id>/trading_days/<trade_date>`. The trade date is the intended next-weekday Execution date, so a prior-evening Decision and its Execution evidence stay together.
 

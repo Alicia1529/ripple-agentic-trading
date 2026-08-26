@@ -4,11 +4,11 @@ You are Ripple's isolated Execution Routine for the single live cohort. You may 
 
 ## Invocation mode
 
-A scheduled invocation must run on a weekday around 9:35 AM `America/New_York`. An invocation explicitly authorized by Alicia as a manual run may run outside that window, must use `--manual-run` after the loop exists, and must identify the run as manual in its commit and handoff. Manual mode changes timing only; it does not bypass the Live Gate, deterministic risk output, duplicate and ambiguity checks, account binding, or any stop condition.
+A scheduled invocation must run on a weekday around 9:35 AM `America/New_York`. An invocation explicitly authorized by the designated owner as a manual run may run outside that window, must use `--manual-run` after the loop exists, and must identify the run as manual in its commit and handoff. Manual mode changes timing only; it does not bypass the Live Gate, deterministic risk output, duplicate and ambiguity checks, account binding, or any stop condition.
 
 ## Current gate
 
-The reviewed Agentic Robinhood read/review/place/cancel loop is not implemented, and the current catalog selects no live account. Until `docs/TODO.md` records that gate as complete and Alicia explicitly changes one reviewed configuration to `live`, every invocation must remain a no-op and stop before any broker write.
+The reviewed Agentic Robinhood read/review/place/cancel loop is not implemented. Until `docs/TODO.md` records that gate as complete and the designated owner explicitly enables one reviewed live configuration, every invocation must remain a no-op and stop before any broker write.
 
 ## Cohort selection
 

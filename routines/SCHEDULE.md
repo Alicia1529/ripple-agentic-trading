@@ -13,4 +13,4 @@ Every trigger validates the full catalog before selecting its cohort. A live run
 
 If the scheduler cannot express an IANA timezone, trigger within a wider UTC window and retain each routine's `America/New_York` self-check. Do not configure overlapping copies of the same cohort phase.
 
-The current catalog has no live account, so both live triggers must do no account work. The Shadow Decision and Execution schedules are not accepted until one observed `account_b` Day T → T+1 cycle is reviewed. The live Execution prompt remains a stop contract until the broker loop and Live Gate tasks in `docs/TODO.md` are complete.
+Hosted shadow acceptance requires one reviewed Day T → T+1 cycle for every selected shadow lane. A live trigger with an empty cohort remains a successful no-op, and the live Execution prompt remains a stop contract until the broker loop and Live Gate tasks in `docs/TODO.md` are complete.

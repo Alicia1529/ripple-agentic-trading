@@ -24,6 +24,6 @@ uv run --no-cache python -m ripple.mvp execute-shadow \
 
 Inspect `trading_days/<trade-date>/execution.json`. Risk-allowed marketable limits are assumed filled at the T+1 quote with zero fees and slippage; unmarketable limits say `not_filled`. `ending_account` becomes the continuity source for the next Decision Cycle after fresh mark-to-market. A Shadow Fill is never described as a broker fill.
 
-If a tier-two lock exists, new BUYs remain blocked until Alicia removes that exact lock after review. Routines never edit or delete it.
+If a tier-two lock exists, new BUYs remain blocked until the designated owner removes that exact lock after review. Routines never edit or delete it.
 
 After all lanes, run core tests, inspect cycle artifacts for credentials, commit only new state with an `Execution: shadow YYYY-MM-DD` subject, and push normally. Report every account, strategy, risk status, fill status, fill/rejection, ending cash/positions, tests, and commit.

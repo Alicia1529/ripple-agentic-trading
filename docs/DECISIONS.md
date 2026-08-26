@@ -5,8 +5,8 @@ Git history retains superseded reasoning. This file summarizes only decisions th
 ## Product and release
 
 - Ripple compares isolated, strategy-attributed Account Lanes while keeping deterministic risk authority and human-owned live activation.
-- `account_a` is currently `dry_run`; `account_b` is currently `shadow`. There is no live configuration while the broker-write loop and acceptance gates remain unfinished.
-- Initial live exposure remains $500–1000. Alicia alone enables live mode, binds or funds the broker account, restarts a tier-two lock, switches the live strategy, or approves more capital.
+- Current Account Lane identity, mode, strategy, universe, and risk bindings are defined only by `config/*.json`; stable documentation does not duplicate that mutable deployment inventory.
+- Initial live exposure remains $500–1000. The designated owner alone enables live mode, binds or funds the broker account, restarts a tier-two lock, switches the live strategy, or approves more capital.
 - Live and shadow evidence can support a human review. No metric or threshold automatically promotes a strategy or changes capital.
 
 ## Account Catalog and strategies
@@ -16,8 +16,8 @@ Git history retains superseded reasoning. This file summarizes only decisions th
 - The catalog validates every selected `strategies/<strategy_id>.md` file and fails if more than one configuration is live. It returns account-ID-sorted cohorts instead of maintaining an `accounts[]` registry.
 - Strategy Specs remain prompt-defined Markdown policies. Ripple does not add a Python plugin engine. New versioned specs are added as new files rather than changing historical attribution in place.
 - `strategy_id` is frozen into new OrderPlans and execution evidence so later review does not depend on the current config alone.
-- Account A selects `growth_momentum_v3`; its research evaluation, compiled fact provenance, and thesis records stay in immutable DecisionSnapshots while its orders use the shared schema. Account B is outside that switch.
-- Growth Momentum numeric facts are derived by one checked-in deterministic compiler from normalized source-attributed raw inputs. The compiler reads the selected account configuration and requires the input symbol set to match its universe exactly. It owns Decimal formulas, date/session alignment, interpolation rejection, source and freshness checks, and completeness checks; the LLM gathers and normalizes sources but does not recompute compiler output. This is a facts seam, not a Python strategy engine: filtering, ranking, prose research, and portfolio judgment remain in the versioned Strategy Spec.
+- Strategy research, compiled fact provenance, and thesis records stay in immutable DecisionSnapshots while orders use the shared schema.
+- A Strategy Spec may require a checked-in deterministic compiler for normalized source-attributed raw inputs. The compiler reads the selected account configuration and requires the input symbol set to match its universe exactly. It owns Decimal formulas, date/session alignment, interpolation rejection, source and freshness checks, and completeness checks; the LLM gathers and normalizes sources but does not recompute compiler output. This is a facts seam, not a Python strategy engine: filtering, ranking, prose research, and portfolio judgment remain in the versioned Strategy Spec.
 
 ## Modes and scheduling
 

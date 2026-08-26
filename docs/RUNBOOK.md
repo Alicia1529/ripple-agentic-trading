@@ -13,20 +13,20 @@ uv run --no-cache python -m ripple.mvp list-accounts --mode shadow
 uv run --no-cache python -m ripple.mvp list-accounts --mode dry_run
 ```
 
-The current expected output is zero live lanes, `account_b` shadow, and `account_a` dry-run. A missing strategy or second live configuration must fail validation.
+Treat the command output and reviewed `config/*.json` files as the current deployment inventory. A missing strategy or second live configuration must fail validation.
 
-Run both credential-free fixture paths:
+Choose account IDs from the catalog output and run each matching credential-free fixture path:
 
 ```bash
 uv run --no-cache python -m ripple.mvp run-dry-cycle \
-  --config config/account_a.json \
-  --fixture fixtures/mvp/dry_cycle.json \
-  --output /tmp/ripple-mvp/account_a
+  --config config/<dry_run_account_id>.json \
+  --fixture fixtures/mvp/<dry_run_fixture>.json \
+  --output /tmp/ripple-mvp/<dry_run_account_id>
 
 uv run --no-cache python -m ripple.mvp run-shadow-cycle \
-  --config config/account_b.json \
-  --fixture fixtures/mvp/dry_cycle_account_b.json \
-  --output /tmp/ripple-mvp/account_b
+  --config config/<shadow_account_id>.json \
+  --fixture fixtures/mvp/<shadow_fixture>.json \
+  --output /tmp/ripple-mvp/<shadow_account_id>
 ```
 
 The first command writes Decision artifacts under `trading_days/<trade-date>/`. The second adds `execution.json` and `report.md` to that same directory, including deterministic risk, Shadow Fill attempts, and `ending_account`. Neither command calls a broker. Re-running the same cycle fails instead of overwriting evidence.
@@ -54,14 +54,14 @@ Zero fees and zero slippage are explicit MVP assumptions. Do not describe shadow
 
 ## Live Gate and kill switch
 
-No configuration is live today. Before the first mode change:
+Before enabling any live lane:
 
 - implement and review the Agentic Robinhood loop;
 - prove the connection selects the intended broker account;
 - reconcile real cash and positions with the selected lane rather than carrying over virtual state;
 - complete the required scheduled no-write acceptance;
 - confirm there is exactly one live configuration; and
-- obtain Alicia's explicit mode and allocation approval.
+- obtain the designated owner's explicit mode and allocation approval.
 
 There is no instantaneous repository-side “flatten everything” switch. To stop live work:
 
@@ -100,7 +100,7 @@ For every hosted run, verify:
 
 ## Tier-two restart
 
-`<state-root>/active_risk_lock.json` blocks new BUYs until Alicia reviews and removes that exact lane's lock. Equity recovery cannot clear it. Inspect the relevant real or virtual account evidence, resolve discrepancies, and run a fresh reviewed cycle before restoring entries.
+`<state-root>/active_risk_lock.json` blocks new BUYs until the designated owner reviews and removes that exact lane's lock. Equity recovery cannot clear it. Inspect the relevant real or virtual account evidence, resolve discrepancies, and run a fresh reviewed cycle before restoring entries.
 
 ## Known limits
 

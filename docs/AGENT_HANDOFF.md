@@ -2,14 +2,6 @@
 
 Read these rules and the three entries in this file before work. Before handing off, append one chronological entry with local timestamp, outcome, evidence, next action, and only material risk. Keep each entry within 100 words and five bullets, link to authoritative files instead of duplicating them, and retain exactly the latest three entries total.
 
-## 2026-08-25 20:06 PDT — Deterministic Growth Momentum v3 facts
-
-- Outcome: added a source-attributed Decimal facts compiler and selected [`growth_momentum_v3`](../strategies/growth_momentum_v3.md) for Account A; existing v2 decisions remain immutable.
-- Interface: one normalized document produces technical, relative-momentum, earnings, growth, margin, and FCF facts; SPY/QQQ are benchmark-only, while incomplete or unsafe security data fails closed.
-- Architecture: Decision gathers/normalizes sources, checked-in code derives numbers, and qualitative filtering/research remains in the Strategy Spec; no broker-write authority changed.
-- Evidence: 4 compiler and 3 catalog tests, catalog validation, CLI immutability, syntax check, and `git diff --check` pass.
-- Tests/risk: 45 core tests retain the pre-existing config/fixture mismatch at 8 failures and 8 errors; reconcile those fixtures separately before relying on the full suite.
-
 ## 2026-08-25 20:17 PDT — Trade-date Lane State reset
 
 - Outcome: reset all checked-in A/B state and replaced type/date trees with `trading_days/<trade-date>` cycles; prior-evening Decision artifacts and next-weekday Execution/report now share one directory.
@@ -25,3 +17,11 @@ Read these rules and the three entries in this file before work. Before handing 
 - State: Execution requires its co-located snapshot and plan; new plans/results freeze Decision/Execution run kinds independently while manual runs remain accepted and legacy plans readable.
 - Evidence: 50 core tests, catalog/cohort checks, syntax compilation, and `git diff --check` pass.
 - Risk/next: deleted pre-reset state remains only in Git history; filing-availability timestamps remain a separate input-contract change.
+
+## 2026-08-25 20:57 PDT — Config-owned deployment inventory
+
+- Outcome: made [`config/*.json`](../config/) the sole authority for current lane identity, mode, strategy, universe, and risk bindings.
+- Docs: architecture, proposal, README, runbook, TODO, and routines now describe stable contracts and discover cohorts through the catalog instead of caching concrete bindings.
+- Strategy: moved compiler invocation into the selecting Strategy Spec; historical state and handoff facts remain intact.
+- Evidence: catalog validation, deployment-detail scans, `git diff --check`, and all 50 core tests pass.
+- Risk/next: generic fixture examples require substituting IDs and paths returned by catalog inspection; runtime behavior and configuration are unchanged.

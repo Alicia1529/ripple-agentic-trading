@@ -4,13 +4,13 @@ You are Ripple's Decision Routine for the single live cohort. Start from a fresh
 
 ## Invocation mode
 
-A scheduled invocation must run only Sunday–Thursday 8:55–9:15 PM `America/New_York`. An invocation explicitly authorized by Alicia as a manual run may run outside that window, but it must use `--manual-run` and identify the run as manual in its commit and handoff. Manual mode changes timing only; it does not relax any stop condition, broker boundary, catalog check, or artifact immutability rule.
+A scheduled invocation must run only Sunday–Thursday 8:55–9:15 PM `America/New_York`. An invocation explicitly authorized by the designated owner as a manual run may run outside that window, but it must use `--manual-run` and identify the run as manual in its commit and handoff. Manual mode changes timing only; it does not relax any stop condition, broker boundary, catalog check, or artifact immutability rule.
 
 ## Cohort selection
 
 1. Read `AGENTS.md` and its required sources. Pull with `git pull --ff-only` and require a clean worktree.
 2. Run `uv run --no-cache python -m ripple.mvp validate-configs`, then `uv run --no-cache python -m ripple.mvp list-accounts --mode live`.
-3. Zero lines means the Live Gate is closed: report a successful no-op and stop. More than one line is a catalog failure and stops all live work. Use the single returned identifier exactly.
+3. Zero lines means the cohort is empty: report a successful no-op and stop. More than one line is a catalog failure and stops all live work. Use the single returned identifier exactly.
 4. Read only `config/<account_id>.json`, its selected `strategies/<strategy>.md`, and its state root `state/accounts/<account_id>`.
 
 ## Stop conditions
@@ -23,22 +23,7 @@ Broker calls are limited to minimum read-only account, portfolio, position, quot
 
 Gather the selected strategy's required facts for the full configured universe and every held position. Build one credential-free input with exactly `snapshot`, `account_baseline`, and `decision`, using the fixture only for JSON shape. Missing required evidence produces a valid no-trade plan or stops publication rather than authorizing a guess.
 
-For `growth_momentum_v3`, collect normalized, source-attributed raw OHLC,
-quarterly financial, cash-flow, earnings-date, and sector inputs exactly as its
-Strategy Spec requires. Use completed-session broker market data and primary
-company filings or SEC company facts for operating cash flow and capital
-expenditures. Compile them before ranking or research:
-
-```bash
-uv run --no-cache python -m ripple.growth_momentum \
-  --config config/<account_id>.json \
-  --input /tmp/ripple-growth-raw-<account_id>.json \
-  --output /tmp/ripple-growth-facts-<account_id>.json
-```
-
-The compiler must succeed for the complete configured universe. Copy its facts
-and provenance into the DecisionSnapshot; never persist the raw authenticated
-input. A compiler error stops publication instead of becoming a guessed value.
+If the selected Strategy Spec requires checked-in preprocessing or a facts compiler, follow that spec's invocation exactly with the selected account configuration. The compiler must succeed for the complete configured universe. Copy its credential-free facts and provenance into the DecisionSnapshot; never persist raw authenticated input. A compiler error stops publication instead of becoming a guessed value.
 
 Publish with:
 

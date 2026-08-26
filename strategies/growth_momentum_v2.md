@@ -1,8 +1,8 @@
 # Growth Momentum v2
 
-This is the complete investment policy selected by Account A through
-`"strategy": "growth_momentum_v2"`. The Decision Routine applies it to that
-Account Lane only. Deterministic validation and risk remain separate and
+This is the complete investment policy identified by
+`"strategy": "growth_momentum_v2"`. The Decision Routine applies it to only
+the selecting Account Lane. Deterministic validation and risk remain separate and
 authoritative; this Strategy Spec does not create execution authority.
 
 ## Hard rules

@@ -1,6 +1,6 @@
 # Ripple agent entrypoint
 
-Ripple is an existing account-catalog MVP with one development lane and one shadow lane, moving toward hosted live acceptance. Preserve lane isolation, strategy attribution, deterministic safety rules, timing, and state semantics. Build the shortest safe slice that produces evidence for a current requirement.
+Ripple is an existing account-catalog MVP moving toward hosted live acceptance. Preserve lane isolation, strategy attribution, deterministic safety rules, timing, and state semantics. Build the shortest safe slice that produces evidence for a current requirement.
 
 ## Sources of truth
 
@@ -8,11 +8,14 @@ Read these before every task:
 
 | Document | Authority |
 |---|---|
+| `config/*.json` | Sole authority for current Account Lane identity, mode, strategy, universe, and risk configuration |
 | `PROPOSAL.md` | Why Ripple exists, the current release, and product scope |
 | `docs/ARCHITECTURE.md` | How the current system works and where its boundaries sit |
 | `docs/INVARIANTS.md` | Non-negotiable safety and correctness rules |
 | `docs/TODO.md` | Genuinely unfinished work and the next operational gates |
 | `docs/AGENT_HANDOFF.md` | Handoff protocol and the latest three entries only |
+
+Stable documentation describes interfaces, constraints, and release gates. Do not copy current account IDs, cohort membership, or account-to-strategy bindings out of `config/*.json`; inspect the catalog when current deployment facts matter. State artifacts and handoff entries may retain concrete historical facts.
 
 Use task-specific context only when its branch applies:
 

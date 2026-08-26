@@ -8,38 +8,21 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class AccountCatalogTests(unittest.TestCase):
-    def test_repository_catalog_uses_filename_identifiers_and_mode_cohorts(self):
+    def test_repository_catalog_loads_all_config_files(self):
         from ripple.account_config import load_account_catalog
 
         catalog = load_account_catalog(ROOT / "config", ROOT / "strategies")
+        config_paths = sorted((ROOT / "config").glob("*.json"))
 
-        self.assertEqual([config.account_id for config in catalog], [
-            "account_a", "account_b",
-        ])
         self.assertEqual(
-            [config.account_id for config in catalog.for_mode("live")],
-            [],
-        )
-        self.assertEqual(
-            [config.account_id for config in catalog.for_mode("shadow")],
-            ["account_b"],
-        )
-        self.assertEqual(
-            [config.account_id for config in catalog.for_mode("dry_run")],
-            ["account_a"],
-        )
-        self.assertEqual(
-            {config.account_id: config.strategy_id for config in catalog},
-            {
-                "account_a": "growth_momentum_v3",
-                "account_b": "earnings_drift_v1",
-            },
+            [config.account_id for config in catalog],
+            [path.stem for path in config_paths],
         )
         for config in catalog:
             self.assertTrue(config.description)
             self.assertTrue(config.strategy_path.is_file())
-        account_b = next(config for config in catalog if config.account_id == "account_b")
-        self.assertEqual(account_b.shadow_initial_cash, "1000")
+            self.assertIn(config.mode, {"live", "shadow", "dry_run"})
+            self.assertTrue(config.universe)
 
     def test_missing_strategy_and_second_live_config_fail_catalog_validation(self):
         from ripple.account_config import load_account_catalog

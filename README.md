@@ -2,7 +2,7 @@
 
 Ripple is a small, inspectable experiment in AI-native development and agentic trading. Multiple isolated Account Lanes can select different checked-in investment strategies while sharing deterministic validation and risk rules. The goal is to monitor live and shadow records, understand failures, and build evidence for later human review—not to promise returns.
 
-The repository now implements a validated account catalog, a manual dry-run lane, and a T+1 quote-based shadow execution path. Hosted schedules and the reviewed live Agentic Robinhood broker-write loop remain unfinished, so no configuration is live today.
+The repository now implements a validated account catalog, a manual dry-run path, and a T+1 quote-based shadow execution path. Hosted schedules and the reviewed live Agentic Robinhood broker-write loop remain unfinished.
 
 ## Actual structure
 
@@ -26,15 +26,6 @@ config/<account_id>.json
 ```
 
 Daily hosting uses four schedule triggers: one live Decision run, one all-shadow Decision run, one live Execution run, and one all-shadow Execution run. A live run may have no selected account; dry-run configurations are never scheduled.
-
-## Current lanes
-
-| Account | Mode | Strategy | Purpose |
-|---|---|---|---|
-| `account_a` | `dry_run` | `growth_momentum_v3` | Manual fixture-backed development and future live candidate |
-| `account_b` | `shadow` | `earnings_drift_v1` | Event-driven earnings evidence with virtual T+1 execution and no Robinhood writes |
-
-The lanes now select different versioned policies. Account A uses Growth Momentum v3 with deterministically compiled numeric facts. Account B uses Earnings Drift v1 with a `$1000` initial virtual balance; later cycles continue from its latest shadow ending state. This enables attributed comparison evidence but does not automatically rank, promote, or fund either strategy.
 
 Each account configuration contains:
 
@@ -75,18 +66,18 @@ uv run --no-cache python -m ripple.mvp list-accounts --mode shadow
 uv run --no-cache python -m ripple.mvp list-accounts --mode dry_run
 ```
 
-Run the dry and shadow fixture lanes:
+Choose account IDs from the catalog output and run the matching credential-free fixture. Substitute the selected identifier and fixture path below:
 
 ```bash
 uv run --no-cache python -m ripple.mvp run-dry-cycle \
-  --config config/account_a.json \
-  --fixture fixtures/mvp/dry_cycle.json \
-  --output /tmp/ripple-mvp/account_a
+  --config config/<dry_run_account_id>.json \
+  --fixture fixtures/mvp/<dry_run_fixture>.json \
+  --output /tmp/ripple-mvp/<dry_run_account_id>
 
 uv run --no-cache python -m ripple.mvp run-shadow-cycle \
-  --config config/account_b.json \
-  --fixture fixtures/mvp/dry_cycle_account_b.json \
-  --output /tmp/ripple-mvp/account_b
+  --config config/<shadow_account_id>.json \
+  --fixture fixtures/mvp/<shadow_fixture>.json \
+  --output /tmp/ripple-mvp/<shadow_account_id>
 ```
 
 Run the tests:
@@ -106,7 +97,7 @@ env PYTHONDONTWRITEBYTECODE=1 uv run --no-cache python -m unittest \
 
 OpenAI currently exposes Codex automations as **Scheduled tasks** in the ChatGPT desktop app. A scheduled task created from Codex can work in a local Git project, while a web-only task cannot directly access a folder on this computer. See the official [Scheduled tasks documentation](https://developers.openai.com/codex/app/automations).
 
-The files in [`routines/`](routines/) are the durable prompts that a scheduled task reads; they are not executable schedules and are not registered automatically. [`routines/SCHEDULE.md`](routines/SCHEDULE.md) is the operator-owned target schedule manifest. It documents the eventual four-task live/shadow topology, but the current rollout should activate only the two shadow tasks below because there is no live account or approved broker-write loop.
+The files in [`routines/`](routines/) are the durable prompts that a scheduled task reads; they are not executable schedules and are not registered automatically. [`routines/SCHEDULE.md`](routines/SCHEDULE.md) is the operator-owned target schedule manifest. It documents the eventual four-task live/shadow topology; hosted shadow acceptance uses the two shadow tasks below, while live tasks remain disabled until the broker-write loop and Live Gate are complete.
 
 Before creating the tasks:
 
@@ -125,12 +116,12 @@ Create two **standalone** scheduled tasks. Choose this local project, not an iso
 The desktop workflow is:
 
 1. Open a Codex chat for this local repository and ask it to create the standalone scheduled task with the name, saved prompt, recurrence, and time zone above. You can also create and later manage it from **Scheduled** in the desktop sidebar.
-2. Before enabling recurrence, run each saved prompt once in a normal Codex chat. Confirm catalog validation selects only `account_b` for shadow and no account for live.
-3. Enable Shadow Decision first. After its first successful scheduled run, inspect `state/accounts/account_b/trading_days/<trade-date>/order_plan.json` and its `Decision: shadow <date>` commit.
+2. Before enabling recurrence, run each saved prompt once in a normal Codex chat. Record the validated catalog output and verify that every selected lane is authorized for the task's cohort.
+3. Enable Shadow Decision first. After its first successful scheduled run, inspect `state/accounts/<account_id>/trading_days/<trade-date>/order_plan.json` for each selected lane and its `Decision: shadow <date>` commit.
 4. Enable Shadow Execution. After the next-weekday run, inspect `execution.json` and `report.md` in that same trade-date directory, including the ending virtual account, and its `Execution: shadow <date>` commit. Confirm no broker call occurred.
 5. Review the first few runs in **Scheduled**. Pause a task after a failed precondition, Git conflict, unexpected artifact, credential finding, or timing error; do not backfill a missed cycle.
 
-Do not create or enable the two live tasks yet. They become eligible only after the live tasks in [`docs/TODO.md`](docs/TODO.md) are complete and Alicia explicitly approves the mode change and allocation. Editing a routine changes what the next scheduled run reads; changing a trigger or enabling live remains an operator action in the Scheduled interface and must stay aligned with [`routines/SCHEDULE.md`](routines/SCHEDULE.md).
+Do not create or enable the two live tasks yet. They become eligible only after the live tasks in [`docs/TODO.md`](docs/TODO.md) are complete and the designated owner explicitly approves the mode change and allocation. Editing a routine changes what the next scheduled run reads; changing a trigger or enabling live remains an operator action in the Scheduled interface and must stay aligned with [`routines/SCHEDULE.md`](routines/SCHEDULE.md).
 
 ## Repository map
 

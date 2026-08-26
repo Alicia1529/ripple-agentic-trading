@@ -1,6 +1,6 @@
 # Growth Momentum v3
 
-This is the complete investment policy selected by Account A through
+This is the complete investment policy identified by
 `"strategy": "growth_momentum_v3"`. It preserves Growth Momentum v2's sell,
 filter, ranking, research, sizing, and thesis rules while replacing ad hoc
 numeric preparation with the checked-in deterministic facts compiler.
@@ -20,6 +20,15 @@ numeric preparation with the checked-in deterministic facts compiler.
 5. Never persist credentials, account numbers, raw authenticated responses, or
    full article bodies. Decimal values remain base-10 strings.
 6. `target_portfolio` weights must sum exactly to `"1"`.
+
+Invoke the compiler with the selected lane configuration before ranking or research:
+
+```bash
+uv run --no-cache python -m ripple.growth_momentum \
+  --config config/<account_id>.json \
+  --input /tmp/ripple-growth-raw-<account_id>.json \
+  --output /tmp/ripple-growth-facts-<account_id>.json
+```
 
 ## Deterministic facts input
 
