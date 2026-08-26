@@ -2,13 +2,6 @@
 
 Read these rules and the three entries in this file before work. Before handing off, append one chronological entry with local timestamp, outcome, evidence, next action, and only material risk. Keep each entry within 100 words and five bullets, link to authoritative files instead of duplicating them, and retain exactly the latest three entries total.
 
-## 2026-08-25 22:37 PDT — Growth Momentum v2 Lite added
-
-- Outcome: added [`growth_momentum_v2_lite.md`](../strategies/growth_momentum_v2_lite.md), a prompt-defined strategy without the v3 compiler or FCF inputs.
-- Safety: source-attributed inputs remain mandatory; uncertainty fails closed, while deterministic risk, timing, and Decision/Execution separation are unchanged.
-- Scope: the Strategy Spec is not selected by any Account Lane; configuration, state, broker access, and Execution remain untouched.
-- Evidence: catalog and diff/credential checks pass; 44/53 tests pass, with the known 7 failures/2 errors from legacy dry-run tests reading current live/shadow configs.
-
 ## 2026-08-25 22:58 PDT — Growth Momentum v2 Lite prompt tightened
 
 - Outcome: added an explicit Decision order, valid no-trade outcomes, centralized failure scope, and a checkable publication self-check to [`growth_momentum_v2_lite.md`](../strategies/growth_momentum_v2_lite.md).
@@ -22,3 +15,10 @@ Read these rules and the three entries in this file before work. Before handing 
 - Rationale: no configured-universe company reported earnings in the prior three completed sessions and no position required an exit; warnings remain separate evidence.
 - Evidence: the complete snapshot exactly matches commit `1b9d2de`; JSON/schema, provenance, credential, and diff checks pass.
 - Tests/risk: 44/53 tests pass; the known 7 failures/2 errors remain legacy dry-run/config mismatches. No Execution, fill, broker, or live work occurred.
+
+## 2026-08-25 23:12 PDT — Dry-run tests isolated from deployment mode
+
+- Outcome: legacy MVP dry-run tests now create a test-owned temporary `dry_run` configuration instead of reading the live mode from `config/account_a.json`.
+- Scope: changed only [`tests/test_mvp_cycle.py`](../tests/test_mvp_cycle.py); production configuration, Decision, Execution, risk, and state behavior are unchanged.
+- Evidence: all 19 MVP cycle tests and the complete 53-test suite pass; compileall and `git diff --check` pass.
+- Risk: one previously false-positive timing test now reaches the intended dry-run timing guard rather than passing on an unrelated live-mode error.
