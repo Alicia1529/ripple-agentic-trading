@@ -1,0 +1,21 @@
+{
+  "account_baseline": {
+    "cash": "1000",
+    "positions": {}
+  },
+  "account_id": "account_c",
+  "cycle_profile": "same_session_close",
+  "decision_rationale": "No trade: QQQ's latest completed-session close was below its SMA50 and its 60-to-10 momentum was non-positive, so the required positive SPY/QQQ entry regime failed; there were no holdings to exit.",
+  "decision_run_kind": "manual",
+  "decision_snapshot_id": "447e18be-c2c1-485a-8d1a-f6abb8f89db8",
+  "decision_time": "2026-08-27T15:44:28-04:00",
+  "market_snapshot_as_of": "2026-08-27T15:44:28-04:00",
+  "model_config_version": "closing_momentum_v1",
+  "order_plan_id": "a726736a-65eb-5dbd-adb7-cdbc164e1a4e",
+  "orders": [],
+  "strategy_id": "closing_momentum_v1",
+  "target_portfolio": {
+    "cash": "1"
+  },
+  "trade_date": "2026-08-27"
+}
