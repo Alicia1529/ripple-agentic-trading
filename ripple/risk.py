@@ -356,7 +356,11 @@ def evaluate_plan(
         ):
             actions.append(_rejected_action(order, "opening_gap"))
             continue
-        price_move = abs(current_price - reference_price) / reference_price
+        price_move = (
+            (current_price - reference_price) / reference_price
+            if order["side"] == "BUY"
+            else abs(current_price - reference_price) / reference_price
+        )
         if price_move > Decimal(order["price_tolerance_pct"]):
             actions.append(_rejected_action(order, "price_outside_tolerance"))
             continue

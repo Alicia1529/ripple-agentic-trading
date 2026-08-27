@@ -40,6 +40,7 @@ Git history retains superseded reasoning. This file summarizes only decisions th
 - A BUY may freeze an optional `gap_cancel_above` price. That order requires the actual regular-session open at Execution and is rejected only when the open is strictly above the threshold; a missing required open fails closed. Existing plans without the field remain valid.
 - New planned limits above $1 are quantized before OrderPlan publication to the broker's whole-cent increment. BUY limits round down and SELL limits round up so quantization never weakens the strategy's maximum purchase price or minimum sale price. Execution consumes the resulting immutable value verbatim; historical plans remain readable and are never repaired in place.
 - A designated-owner manual `next_session_open` Decision made before 9:30 AM New York may explicitly freeze that same regular Trading Day with `--trade-date`. The override is rejected for scheduled, backfill, same-session-profile, post-open, closed-day, mismatched-date, or malformed requests. Execution still requires the immutable frozen date, occurs after Decision, and applies every normal account, risk, duplicate, and broker safeguard.
+- BUY price tolerance is adverse-direction-only at Execution: a rise beyond the frozen percentage rejects the order, while a lower current price proceeds to the independent planned-limit, opening-gap, account, and risk checks. SELL tolerance remains symmetric. This prevents a favorable lower BUY price from being rejected without relaxing the maximum purchase price.
 
 ## Shadow execution
 

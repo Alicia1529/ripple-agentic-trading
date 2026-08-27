@@ -190,6 +190,16 @@ class RiskEvaluationTests(unittest.TestCase):
                 self.assertIsNone(result["actions"][0]["actual_sizing"])
                 self.assertIsNone(result["actions"][0]["broker_order"])
 
+    def test_buy_price_tolerance_only_blocks_adverse_upward_moves(self):
+        context = self.context()
+        context["quotes"]["AAPL"]["price"] = "98.00"
+
+        result = evaluate_plan(self.plan(), context, self.rules())
+
+        self.assertEqual(result["status"], "allowed")
+        self.assertTrue(result["actions"][0]["allowed"])
+        self.assertEqual(result["actions"][0]["broker_order"]["limit_price"], "101.00")
+
     def test_buy_above_opening_gap_threshold_is_rejected(self):
         plan = self.plan()
         plan["orders"][0]["gap_cancel_above"] = "103.00"
