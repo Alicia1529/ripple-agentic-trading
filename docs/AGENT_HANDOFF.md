@@ -2,13 +2,6 @@
 
 Read these rules and the three entries in this file before work. Before handing off, append one chronological entry with local timestamp, outcome, evidence, next action, and only material risk. Keep each entry within 100 words and five bullets, link to authoritative files instead of duplicating them, and retain exactly the latest three entries total.
 
-## 2026-08-26 21:45 PDT — Account A manual Live Decision
-
-- Outcome: manual [`2026-08-28` Decision](../state/accounts/account_a/trading_days/2026-08-28/order_plan.json) published plan `18c0433c-13fc-550c-8dec-fdbd5dc67d5c`, 100% cash and zero orders.
-- Rationale: Robinhood marked the expected 2026-08-26 bar interpolated for all 18 symbols; compact facts safely reported `missing_latest_completed_session`.
-- Evidence: complete-universe compiler succeeded; artifacts are credential-free and contain no raw bars; all 72 tests and catalog validation pass.
-- Next/risk: await a later Execution decision or next cycle. No Execution, shadow, order review, broker write, cancellation, or placement occurred.
-
 ## 2026-08-26 21:53 PDT — Shadow source freshness tightened
 
 - Outcome: [`DECISION_SHADOW.md`](../routines/DECISION_SHADOW.md) now resolves the expected completed session before sourcing and requires an explicit dated row for an accepted close.
@@ -22,3 +15,10 @@ Read these rules and the three entries in this file before work. Before handing 
 - Safety: date, source, volume, and OHLC conflicts fail closed; earlier interpolation remains unavailable. Old inputs produce byte-identical output.
 - Evidence: the real 18-symbol repro changed from 18 unavailable to 18 available facts; all 75 tests, catalog validation, compileall, and diff checks pass.
 - Next/risk: use the fallback in a future Decision. Pre-existing HEAD `2e4faff` removed the 2026-08-28 artifacts; this change did not recreate them or run Decision, Execution, shadow, or broker writes.
+
+## 2026-08-26 22:16 PDT — Account A manual Live Decision
+
+- Outcome: manual [`2026-08-28` Decision](../state/accounts/account_a/trading_days/2026-08-28/order_plan.json) published plan `18c0433c-13fc-550c-8dec-fdbd5dc67d5c` with one 0.279-share JPM limit BUY and 90% cash target.
+- Evidence: complete-universe compact compiler passed with 18 deterministic latest-session repairs; JPM ranked first and cleared all four primary-source research gates.
+- Verification: snapshot contains no raw bars or credentials; all 75 core tests and artifact checks pass.
+- Next/risk: any later Execution remains separately gated by account binding, baseline, opening-gap, quote, duplicate, and broker safeguards. No Execution, shadow, order review, cancellation, placement, or broker write occurred.
