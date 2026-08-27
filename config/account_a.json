@@ -1,6 +1,6 @@
 {
-  "description": "Live lane for the small Account A validation portfolio. It uses Growth Momentum v2 Lite Compact with deterministically compiled, compact facts over a fixed liquid large-cap and index universe, with deterministic position, loss, drawdown, quote-freshness, wash-sale, stop-loss, take-profit, price-tolerance, and opening-gap constraints. Designated-owner manual Decision runs may bypass only the schedule window; broker writes remain subject to the Live Gate.",
-  "strategy": "growth_momentum_v2_lite_compact",
+  "description": "Live lane for the small Account A validation portfolio. It uses Growth Momentum v2 Lite Compact v2 with deterministically compiled compact facts and a fail-closed latest-session fallback over a fixed liquid large-cap and index universe, with deterministic position, loss, drawdown, quote-freshness, wash-sale, stop-loss, take-profit, price-tolerance, and opening-gap constraints. Designated-owner manual Decision runs may bypass only the schedule window; broker writes remain subject to the Live Gate.",
+  "strategy": "growth_momentum_v2_lite_compact_v2",
   "execution": {
     "mode": "live"
   },
