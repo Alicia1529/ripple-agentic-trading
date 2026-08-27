@@ -1,6 +1,6 @@
 # Ripple Trading — Proposal
 
-**Current stage:** Ripple has a validated account catalog, dry-run and shadow paths, hosted schedules that have produced reviewable prior-evening Decision and next-weekday Shadow Execution cycles, and a reviewed Robinhood broker-write loop. `docs/TODO.md` records hosted shadow acceptance and live acceptance as complete; the remaining work is accumulating comparable cycles, defining a review window and after-cost metrics, and the reliability review that precedes a second live lane or more capital.
+**Current stage:** Ripple has a validated account catalog, dry-run and shadow paths, hosted `next_session_open` acceptance, a reviewed Robinhood broker-write loop, and a configured `same_session_close` shadow cohort awaiting its first hosted cycle. The remaining work includes close-profile hosted acceptance, comparable cycles, after-cost metrics, and reliability review before a second live lane or more capital.
 
 `docs/ARCHITECTURE.md` is the current technical design, `docs/DECISIONS.md` records durable choices, and `docs/TODO.md` tracks unfinished work.
 
@@ -28,7 +28,7 @@ flowchart TD
 
     LIVE --> RUNS
     SHDW --> RUNS
-    RUNS["Decision: one live run + one shadow run<br/>Execution: one live run + one shadow run"]
+    RUNS["Profile-isolated Decision and Execution runs"]
 
     RUNS --> RISK["deterministic risk authority"]
     RISK --> L["Robinhood live<br/>after the Live Gate"]
@@ -61,14 +61,14 @@ Changing a shadow lane to live is not an automatic promotion. The owner must rec
 | Stage | Evidence required | What it permits |
 |---|---|---|
 | Repository acceptance | Catalog validation, isolated dry/shadow fixture cycles, and all core tests pass | Configure hosted cohorts |
-| Shadow hosted acceptance | One scheduled prior-evening Decision and next-trading-day Shadow Execution is reviewable | Begin accumulating comparison evidence |
+| Shadow hosted acceptance | One scheduled, profile-attributed Decision and Execution cycle is reviewable | Begin accumulating comparison evidence for that profile |
 | Live hosted acceptance | Intended live lane completes the required scheduled no-write acceptance and account binding proof | Review the lane for Live Gate approval |
 | Small live canary | Reviewed broker-write loop plus explicit owner approval | Begin with the approved $500–1000 allocation |
 | Strategy or capital change | Reviewed live/shadow evidence and a new human decision | Consider a specific switch or increase; never automatic |
 
 ## Boundaries
 
-The current release is long-only and supports `next_session_open` plus an unbound, fixture-accepted `same_session_close` shadow seam. It does not include a hosted same-session lane, same-day entry and exit, a dashboard, automated strategy ranking or promotion, multiple simultaneous live accounts, transactional submission state, exactly-once broker execution, automatic reconciliation, sophisticated slippage/fee models, a Python strategy plugin engine, or historical backtesting.
+The current release is long-only and supports `next_session_open` plus a configured `same_session_close` shadow cohort awaiting hosted acceptance. It does not include a live same-session lane, same-day entry and exit, a dashboard, automated strategy ranking or promotion, multiple simultaneous live accounts, transactional submission state, exactly-once broker execution, automatic reconciliation, sophisticated slippage/fee models, a Python strategy plugin engine, or historical backtesting.
 
 Shadow lanes are the simulation path instead of a backtester. A shadow lane runs forward on the same schedule, the same Strategy Spec, and the same deterministic risk authority as a live lane, and differs only in the documented Shadow Fill assumption. Backtesting is a current non-goal because a Decision is a single non-replayable model call and no historical bar source exists; comparable evidence accumulates cycle by cycle instead.
 

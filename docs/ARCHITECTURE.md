@@ -108,22 +108,24 @@ Changing an execution mode is a reviewed human operation. A shadow-to-live chang
 
 ## Current scheduled runs
 
-Ripple currently uses four non-overlapping `next_session_open` triggers. The catalog can additionally select a cohort by both mode and Cycle Profile, but Task 1 adds no same-session Account Lane or hosted trigger.
+Ripple uses six non-overlapping triggers. The four existing live/shadow triggers select `next_session_open`; two close-shadow triggers select only `same_session_close`.
 
 | Run | Selection | Intended time |
 |---|---|---|
 | Live Decision | 0..1 live lane | Sunday–Thursday around 9:00 PM `America/New_York` |
-| Shadow Decision | all shadow lanes | Sunday–Thursday around 9:00 PM `America/New_York` |
+| Shadow Decision | `next_session_open` shadow lanes | Sunday–Thursday around 9:00 PM `America/New_York` |
 | Live Execution | 0..1 live lane | next trading day around 9:35 AM `America/New_York` |
-| Shadow Execution | all shadow lanes | next trading day around 9:35 AM `America/New_York` |
+| Shadow Execution | `next_session_open` shadow lanes | next trading day around 9:35 AM `America/New_York` |
+| Close Shadow Decision | `same_session_close` shadow lanes | Trading Day around 2:30 PM `America/New_York` |
+| Close Shadow Execution | `same_session_close` shadow lanes | same Trading Day around 3:20 PM `America/New_York` |
 
 A scheduled trigger outside its profile's valid session or window is a successful no-op and writes no artifact. This includes weekends and full closures for both profiles and every early-close session for `same_session_close`. There may be zero live lane; the live runs then finish without account work. Dry-run lanes are never selected. Schedules never automatically backfill missed cycles. A designated-owner historical backfill remains available only to `next_session_open` live/shadow cycles with complete point-in-time inputs and the normal safeguards.
 
-The shadow runs are one scheduled cohort but each lane remains an independent Decision Cycle. One lane's malformed input or failure is reported for that lane and does not authorize, mutate, or suppress another lane's work.
+Each shadow trigger owns one mode-and-profile cohort, but every lane remains an independent Decision Cycle. One lane's malformed input or failure is reported for that lane and does not authorize, mutate, or suppress another lane's work.
 
 ## One Decision Cycle
 
-### Prior-evening Decision
+### Decision
 
 The Decision Routine:
 
@@ -137,11 +139,11 @@ Decision never reviews, places, cancels, or changes a broker order. Missing fact
 
 For a shadow lane, the Decision baseline comes from its latest prior `ending_account`; the first cycle starts from the reviewed `shadow.initial_cash`. Before the next cycle, current quotes mark equity and daily P&L, high-water mark moves only upward, and the prior trading day's new-position count resets. A live lane reads its real account through the platform-managed connection. These sources never merge.
 
-### Overnight boundary
+### Plan boundary
 
-The published plan remains unchanged. Git carries credential-free artifacts into the next fresh routine. Execution receives no new investment thesis and does not rewrite Decision content.
+The published plan remains unchanged. Git carries credential-free artifacts into the next fresh routine, whether the boundary is overnight or within the same session. Execution receives no new investment thesis and does not rewrite Decision content.
 
-### Next-trading-day Execution
+### Execution
 
 Execution loads the plan from the current trade-date directory, current account state, loss-sale history, and fresh quotes. Before risk evaluation, it requires that directory's immutable `decision_snapshot.json` and `order_plan.json` to exist and match the execution input. This binding applies equally to scheduled and explicitly authorized manual runs. It then runs the shared deterministic risk module.
 

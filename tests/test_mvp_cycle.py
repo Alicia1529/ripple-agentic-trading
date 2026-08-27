@@ -45,11 +45,16 @@ class MvpDryCycleTests(unittest.TestCase):
                 result["shadow_fills"][0]["reason_code"],
                 "assumed_same_session_quote_fill",
             )
-            configured_strategies = {
-                json.loads(path.read_text())["strategy"]
+            bindings = [
+                (path.stem, json.loads(path.read_text()))
                 for path in (ROOT / "config").glob("*.json")
-            }
-            self.assertNotIn("closing_momentum_v1", configured_strategies)
+                if json.loads(path.read_text())["strategy"] == "closing_momentum_v1"
+            ]
+            self.assertEqual(len(bindings), 1)
+            self.assertEqual(bindings[0][0], "account_c")
+            self.assertEqual(bindings[0][1]["execution"], {
+                "mode": "shadow", "cycle_profile": "same_session_close",
+            })
 
     def test_same_session_shadow_cycle_uses_one_trade_date_and_execution_quote(self):
         fixture_path = ROOT / "fixtures" / "mvp" / "same_session_close_cycle.json"

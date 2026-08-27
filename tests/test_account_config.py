@@ -56,6 +56,30 @@ class AccountCatalogTests(unittest.TestCase):
             self.assertIn(config.mode, {"live", "shadow", "dry_run"})
             self.assertTrue(config.universe)
 
+    def test_repository_scheduled_cohorts_are_profile_isolated(self):
+        from ripple.account_config import load_account_catalog
+
+        catalog = load_account_catalog(ROOT / "config", ROOT / "strategies")
+
+        self.assertEqual(
+            [config.account_id for config in catalog.for_schedule(
+                "shadow", "next_session_open",
+            )],
+            ["account_b"],
+        )
+        self.assertEqual(
+            [config.account_id for config in catalog.for_schedule(
+                "shadow", "same_session_close",
+            )],
+            ["account_c"],
+        )
+        account_b = next(config for config in catalog if config.account_id == "account_b")
+        account_c = next(config for config in catalog if config.account_id == "account_c")
+        self.assertEqual(account_c.strategy_id, "closing_momentum_v1")
+        self.assertEqual(account_c.shadow_initial_cash, account_b.shadow_initial_cash)
+        self.assertEqual(account_c.universe, account_b.universe)
+        self.assertEqual(account_c.risk, account_b.risk)
+
     def test_missing_strategy_and_second_live_config_fail_catalog_validation(self):
         from ripple.account_config import load_account_catalog
 

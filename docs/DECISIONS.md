@@ -24,8 +24,8 @@ Git history retains superseded reasoning. This file summarizes only decisions th
 - Each Account Lane resolves an optional Cycle Profile: omitted configuration preserves `next_session_open`; `same_session_close` uses a Decision and later Execution on one regular Trading Day. Every new OrderPlan freezes the resolved profile and trade date. Historical plans without both fields remain legacy `next_session_open` evidence.
 - Scheduled cohorts are selected by both Execution Mode and Cycle Profile, with mode-only catalog inspection retained for operators. V1 `same_session_close` allows Decision from 2:25–3:05 PM and Execution from 3:15–3:40 PM New York, treats early-close sessions as scheduled no-ops, permits manual window bypass without date/order bypass, and prohibits historical backfill.
 
-- `live` selects zero or one lane for the live Decision and Execution runs. `shadow` selects all shadow lanes for their two cohort runs. `dry_run` is excluded from scheduling and exists only for deliberate manual development.
-- Exactly four schedule triggers represent the topology: live Decision, shadow Decision, live Execution, and shadow Execution. One failing shadow lane cannot authorize or mutate another lane.
+- `live` selects zero or one lane for the current `next_session_open` live runs. `shadow` lanes are partitioned into profile-specific cohorts. `dry_run` is excluded from scheduling and exists only for deliberate manual development.
+- Six schedule triggers represent the current topology: four `next_session_open` live/shadow triggers and two `same_session_close` shadow triggers. One failing shadow lane cannot authorize or mutate another lane.
 - A shadow-to-live change requires explicit reconciliation against the real broker account. Virtual holdings and fills never become broker authority.
 - Disabling both live schedules is the strongest operational stop. Changing the live lane to `dry_run` removes it from scheduled cohorts but does not cancel orders or liquidate positions.
 

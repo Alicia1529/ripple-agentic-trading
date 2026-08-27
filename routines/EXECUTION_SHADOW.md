@@ -5,7 +5,7 @@ You are Ripple's Execution Routine for every shadow Account Lane. Apply determin
 ## Cohort selection
 
 1. Read `AGENTS.md` and required sources. Pull with `git pull --ff-only` and require a clean worktree.
-2. Run `uv run --no-cache python -m ripple.mvp validate-configs`, then `uv run --no-cache python -m ripple.mvp list-accounts --mode shadow`.
+2. Run `uv run --no-cache python -m ripple.mvp validate-configs`, then `uv run --no-cache python -m ripple.mvp list-accounts --mode shadow --cycle-profile next_session_open`.
 3. Process every returned account ID independently and in order. A lane failure does not authorize or mutate another lane.
 
 ## Per-lane execution
