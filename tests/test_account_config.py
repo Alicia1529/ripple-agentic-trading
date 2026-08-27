@@ -8,6 +8,38 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class AccountCatalogTests(unittest.TestCase):
+    def test_cycle_profile_defaults_validates_and_selects_deterministically(self):
+        from ripple.account_config import load_account_catalog
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            config_dir = root / "config"
+            strategy_dir = root / "strategies"
+            config_dir.mkdir()
+            strategy_dir.mkdir()
+            (strategy_dir / "exists.md").write_text("# Existing strategy\n")
+            base = json.loads((ROOT / "config" / "account_b.json").read_text())
+            base["strategy"] = "exists"
+            base["universe"] = ["AAPL"]
+            (config_dir / "z_lane.json").write_text(json.dumps(base))
+            same_close = json.loads(json.dumps(base))
+            same_close["execution"]["cycle_profile"] = "same_session_close"
+            (config_dir / "a_lane.json").write_text(json.dumps(same_close))
+
+            catalog = load_account_catalog(config_dir, strategy_dir)
+            self.assertEqual(catalog.for_mode("shadow")[1].cycle_profile, "next_session_open")
+            self.assertEqual(
+                [config.account_id for config in catalog.for_schedule(
+                    "shadow", "same_session_close",
+                )],
+                ["a_lane"],
+            )
+
+            same_close["execution"]["cycle_profile"] = "closing_bell"
+            (config_dir / "a_lane.json").write_text(json.dumps(same_close))
+            with self.assertRaisesRegex(ValueError, "cycle_profile"):
+                load_account_catalog(config_dir, strategy_dir)
+
     def test_repository_catalog_loads_all_config_files(self):
         from ripple.account_config import load_account_catalog
 

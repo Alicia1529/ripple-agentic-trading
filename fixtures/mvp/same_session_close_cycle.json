@@ -1,0 +1,32 @@
+{
+  "snapshot": {
+    "snapshot_id": "10de633f-be1f-4548-944a-76b94296ed5b",
+    "as_of": "2026-08-26T14:54:00-04:00",
+    "universe": ["AAPL"],
+    "inputs": {"market": {"AAPL": {"price": "100.00"}}}
+  },
+  "account_baseline": {"cash": "720", "positions": {}},
+  "decision": {
+    "decision_time": "2026-08-26T14:55:00-04:00",
+    "decision_rationale": "Fixture selects AAPL for a same-session quote-fill acceptance check.",
+    "model_config_version": "same_session_close_fixture_v1",
+    "target_portfolio": {"AAPL": "0.10", "cash": "0.90"},
+    "orders": [{
+      "symbol": "AAPL", "side": "BUY", "quantity": "0.5",
+      "order_type": "LIMIT", "limit_price": "101.00",
+      "price_tolerance_pct": "0.01", "reference_price_at_decision": "100.00",
+      "market_hours": "regular_hours", "time_in_force": "gfd",
+      "buy_reason": "Credential-free same-session fixture order."
+    }]
+  },
+  "execution_context": {
+    "account_id": "same_session_close_account",
+    "as_of": "2026-08-26T15:25:00-04:00",
+    "account": {
+      "equity": "800", "cash": "720", "daily_pnl": "0",
+      "high_water_mark": "800", "new_positions_today": 0,
+      "positions": {}, "loss_sales": []
+    },
+    "quotes": {"AAPL": {"price": "100.50", "as_of": "2026-08-26T15:24:00-04:00"}}
+  }
+}

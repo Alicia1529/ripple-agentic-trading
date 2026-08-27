@@ -24,6 +24,127 @@ def _write_dry_run_config(root: Path) -> Path:
 
 
 class MvpDryCycleTests(unittest.TestCase):
+    def test_same_session_shadow_cycle_uses_one_trade_date_and_execution_quote(self):
+        fixture_path = ROOT / "fixtures" / "mvp" / "same_session_close_cycle.json"
+        config_path = ROOT / "fixtures" / "mvp" / "same_session_close_account.json"
+        fixture = json.loads(fixture_path.read_text())
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            output = Path(temporary_directory) / "same_session_close_account"
+            from ripple.mvp import run_shadow_cycle
+
+            result = run_shadow_cycle(config_path, fixture_path, output)
+            cycle = output / "trading_days" / "2026-08-26"
+            plan = json.loads((cycle / "order_plan.json").read_text())
+            execution = json.loads((cycle / "execution.json").read_text())
+            self.assertEqual(plan["cycle_profile"], "same_session_close")
+            self.assertEqual(plan["trade_date"], "2026-08-26")
+            self.assertEqual(execution["cycle_profile"], "same_session_close")
+            self.assertEqual(execution["trade_date"], "2026-08-26")
+            self.assertEqual(plan["strategy_id"], execution["strategy_id"])
+            self.assertEqual(result["shadow_fills"][0]["price"], "100.50")
+            self.assertEqual(
+                result["shadow_fills"][0]["reason_code"],
+                "assumed_same_session_quote_fill",
+            )
+            self.assertLess(fixture["snapshot"]["as_of"], plan["decision_time"])
+            self.assertLess(plan["decision_time"], fixture["execution_context"]["as_of"])
+
+    def test_same_session_timing_profile_mismatch_and_backfill_fail_closed(self):
+        fixture = json.loads(
+            (ROOT / "fixtures" / "mvp" / "same_session_close_cycle.json").read_text()
+        )
+        config_path = ROOT / "fixtures" / "mvp" / "same_session_close_account.json"
+        from ripple.mvp import _validate_execution_timing, publish_decision
+
+        for execution_time in (
+            "2026-08-26T14:50:00-04:00",
+            "2026-08-27T15:25:00-04:00",
+            "2026-08-26T15:41:00-04:00",
+        ):
+            with self.subTest(execution_time=execution_time), self.assertRaises(ValueError):
+                _validate_execution_timing(
+                    fixture["decision"]["decision_time"], execution_time,
+                    "same_session_close",
+                )
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            decision_path = root / "decision.json"
+            decision_path.write_text(json.dumps({
+                key: fixture[key] for key in ("snapshot", "account_baseline", "decision")
+            }))
+            with self.assertRaisesRegex(ValueError, "backfill"):
+                publish_decision(
+                    config_path, decision_path, root / "same_session_close_account",
+                    historical_backfill=True,
+                )
+
+    def test_same_session_scheduled_closed_and_early_close_days_are_no_ops(self):
+        fixture = json.loads(
+            (ROOT / "fixtures" / "mvp" / "same_session_close_cycle.json").read_text()
+        )
+        config_path = ROOT / "fixtures" / "mvp" / "same_session_close_account.json"
+        from ripple.calendar import NoTradingSession
+        from ripple.mvp import publish_decision
+
+        for day in ("2026-08-29", "2026-09-07", "2026-11-27"):
+            with self.subTest(day=day), tempfile.TemporaryDirectory() as temporary_directory:
+                root = Path(temporary_directory)
+                decision_input = json.loads(json.dumps({
+                    key: fixture[key] for key in ("snapshot", "account_baseline", "decision")
+                }))
+                decision_input["snapshot"]["as_of"] = f"{day}T14:54:00-04:00"
+                decision_input["decision"]["decision_time"] = f"{day}T14:55:00-04:00"
+                input_path = root / "decision.json"
+                input_path.write_text(json.dumps(decision_input))
+                with self.assertRaises(NoTradingSession):
+                    publish_decision(
+                        config_path, input_path, root / "same_session_close_account",
+                        now=datetime.fromisoformat(f"{day}T14:55:00-04:00"),
+                    )
+                self.assertFalse((root / "same_session_close_account").exists())
+
+    def test_same_session_manual_bypasses_window_but_not_trade_date_or_profile(self):
+        fixture = json.loads(
+            (ROOT / "fixtures" / "mvp" / "same_session_close_cycle.json").read_text()
+        )
+        fixture["snapshot"]["as_of"] = "2026-08-26T12:59:00-04:00"
+        fixture["decision"]["decision_time"] = "2026-08-26T13:00:00-04:00"
+        fixture["execution_context"]["as_of"] = "2026-08-26T13:05:00-04:00"
+        fixture["execution_context"]["quotes"]["AAPL"]["as_of"] = "2026-08-26T13:04:00-04:00"
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            decision_path = root / "decision.json"
+            context_path = root / "context.json"
+            decision_path.write_text(json.dumps({
+                key: fixture[key] for key in ("snapshot", "account_baseline", "decision")
+            }))
+            context_path.write_text(json.dumps(fixture["execution_context"]))
+            output = root / "same_session_close_account"
+            from ripple.mvp import execute_shadow, publish_decision
+
+            plan = publish_decision(
+                ROOT / "fixtures" / "mvp" / "same_session_close_account.json",
+                decision_path, output, manual=True,
+            )
+            plan_path = output / "trading_days" / "2026-08-26" / "order_plan.json"
+            result = execute_shadow(
+                ROOT / "fixtures" / "mvp" / "same_session_close_account.json",
+                plan_path, context_path, output, manual=True,
+            )
+            self.assertEqual(result["trade_date"], "2026-08-26")
+            self.assertEqual(plan.cycle_profile, "same_session_close")
+
+            legacy_config = json.loads(
+                (ROOT / "fixtures" / "mvp" / "same_session_close_account.json").read_text()
+            )
+            legacy_config["execution"].pop("cycle_profile")
+            mismatch_path = root / "mismatch" / "same_session_close_account.json"
+            mismatch_path.parent.mkdir()
+            mismatch_path.write_text(json.dumps(legacy_config))
+            with self.assertRaisesRegex(ValueError, "cycle_profile"):
+                execute_shadow(mismatch_path, plan_path, context_path, root / "other" / "same_session_close_account", manual=True)
+
     def test_cycle_artifacts_share_the_target_trade_date_directory(self):
         fixture_path = ROOT / "fixtures" / "mvp" / "dry_cycle.json"
         fixture = json.loads(fixture_path.read_text())

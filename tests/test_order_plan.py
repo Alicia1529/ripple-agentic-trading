@@ -4,6 +4,30 @@ from ripple.order_plan import OrderPlan
 
 
 class OrderPlanTests(unittest.TestCase):
+    def test_cycle_profile_and_trade_date_are_paired_with_legacy_round_trip(self):
+        legacy_document = self.valid_document()
+        legacy = OrderPlan.from_dict(legacy_document)
+        self.assertIsNone(legacy.cycle_profile)
+        self.assertEqual(legacy.to_dict(), legacy_document)
+
+        attributed = self.valid_document()
+        attributed.update({
+            "cycle_profile": "same_session_close",
+            "trade_date": "2026-08-22",
+        })
+        self.assertEqual(OrderPlan.from_dict(attributed).to_dict(), attributed)
+
+        for mutation in (
+            {"cycle_profile": "same_session_close"},
+            {"trade_date": "2026-08-22"},
+            {"cycle_profile": "later", "trade_date": "2026-08-22"},
+            {"cycle_profile": "same_session_close", "trade_date": "08/22/2026"},
+        ):
+            document = self.valid_document()
+            document.update(mutation)
+            with self.subTest(mutation=mutation), self.assertRaises(ValueError):
+                OrderPlan.from_dict(document)
+
     def valid_document(self):
         return {
             "order_plan_id": "d44c4279-6d02-4773-a888-f906fb738aae",

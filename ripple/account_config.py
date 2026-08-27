@@ -25,6 +25,7 @@ _RISK_FIELDS = {
 }
 _IDENTIFIER = re.compile(r"[a-z][a-z0-9_]*")
 _MODES = {"dry_run", "live", "shadow"}
+_CYCLE_PROFILES = {"next_session_open", "same_session_close"}
 
 
 @dataclass(frozen=True)
@@ -34,6 +35,7 @@ class AccountConfig:
     strategy_id: str
     strategy_path: Path
     mode: str
+    cycle_profile: str
     universe: tuple[str, ...]
     risk: Mapping[str, Any]
     shadow_initial_cash: str | None = None
@@ -58,6 +60,18 @@ class AccountCatalog:
         if mode not in _MODES:
             raise ValueError("execution.mode is not supported")
         return tuple(config for config in self.accounts if config.mode == mode)
+
+    def for_schedule(
+        self, mode: str, cycle_profile: str,
+    ) -> tuple[AccountConfig, ...]:
+        if mode not in _MODES:
+            raise ValueError("execution.mode is not supported")
+        if cycle_profile not in _CYCLE_PROFILES:
+            raise ValueError("execution.cycle_profile is not supported")
+        return tuple(
+            config for config in self.accounts
+            if config.mode == mode and config.cycle_profile == cycle_profile
+        )
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -101,8 +115,15 @@ def load_account_config(
     expected_fields = _CONFIG_FIELDS | ({"shadow"} if mode == "shadow" else set())
     if set(document) != expected_fields:
         raise ValueError("account configuration fields do not match the schema")
-    if not isinstance(execution, Mapping) or set(execution) != {"mode"} or mode not in _MODES:
+    if (
+        not isinstance(execution, Mapping)
+        or not {"mode"} <= set(execution) <= {"mode", "cycle_profile"}
+        or mode not in _MODES
+    ):
         raise ValueError("execution.mode is not supported")
+    cycle_profile = execution.get("cycle_profile", "next_session_open")
+    if not isinstance(cycle_profile, str) or cycle_profile not in _CYCLE_PROFILES:
+        raise ValueError("execution.cycle_profile is not supported")
 
     description = require_nonempty_string(document["description"], "description")
     strategy_id = require_nonempty_string(document["strategy"], "strategy")
@@ -139,6 +160,7 @@ def load_account_config(
         strategy_id=strategy_id,
         strategy_path=strategy_path,
         mode=mode,
+        cycle_profile=cycle_profile,
         universe=tuple(universe),
         risk=_validate_risk(document["risk"]),
         shadow_initial_cash=shadow_initial_cash,

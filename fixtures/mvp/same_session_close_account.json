@@ -1,0 +1,21 @@
+{
+  "description": "Unbound same-session close shadow fixture lane.",
+  "strategy": "earnings_drift_v1",
+  "execution": {
+    "mode": "shadow",
+    "cycle_profile": "same_session_close"
+  },
+  "shadow": {"initial_cash": "1000"},
+  "universe": ["AAPL"],
+  "risk": {
+    "max_position_pct": "0.20",
+    "max_new_positions_per_day": 3,
+    "daily_loss_pct": "0.05",
+    "drawdown_tier1_pct": "0.10",
+    "drawdown_tier2_pct": "0.15",
+    "max_quote_age_minutes": 15,
+    "wash_sale_lookback_days": 30,
+    "stop_loss_pct": "0.08",
+    "take_profit_pct": "0.20"
+  }
+}

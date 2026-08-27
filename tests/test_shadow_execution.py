@@ -9,6 +9,37 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class ShadowExecutionTests(unittest.TestCase):
+    def test_same_session_fill_has_profile_specific_reason_code(self):
+        from ripple.shadow import simulate_shadow_fills
+
+        risk_result = {
+            "actions": [{
+                "order_id": "04bbf1c7-416b-4ca2-b5a6-0e27be980965",
+                "symbol": "AAPL", "side": "BUY", "allowed": True,
+                "actual_sizing": {"field": "quantity", "value": "0.5"},
+                "broker_order": {
+                    "side": "buy", "symbol": "AAPL", "type": "limit",
+                    "quantity": "0.5", "limit_price": "101",
+                },
+            }],
+        }
+        context = {
+            "as_of": "2026-08-26T15:25:00-04:00",
+            "account": {
+                "equity": "800", "cash": "720", "daily_pnl": "0",
+                "high_water_mark": "800", "new_positions_today": 0,
+                "positions": {}, "loss_sales": [],
+            },
+            "quotes": {"AAPL": {"price": "100.50", "as_of": "2026-08-26T15:24:00-04:00"}},
+        }
+
+        result = simulate_shadow_fills(risk_result, context, "same_session_close")
+        self.assertEqual(
+            result["shadow_fills"][0]["reason_code"],
+            "assumed_same_session_quote_fill",
+        )
+        self.assertEqual(result["ending_account"]["cash"], "669.75")
+
     def test_shadow_sell_updates_cash_position_and_loss_sale_state(self):
         from ripple.shadow import simulate_shadow_fills
 

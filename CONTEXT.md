@@ -20,12 +20,16 @@ _Avoid_: Weekday, business day, market day
 The human-owned classification of an Account Lane as `live`, `shadow`, or `dry_run`.
 _Avoid_: Environment, automatic promotion state
 
+**Cycle Profile**:
+The configured timing topology of a Decision Cycle: `next_session_open` or `same_session_close`.
+_Avoid_: Strategy cadence, execution mode
+
 **Scheduled Cohort**:
-The Account Lanes selected for one scheduled run by Execution Mode. The live cohort contains at most one lane; the shadow cohort contains every shadow lane; dry-run lanes belong to neither.
+The Account Lanes selected for one scheduled run by Execution Mode and Cycle Profile. A live cohort contains at most one lane; a shadow cohort contains every matching shadow lane; dry-run lanes belong to neither.
 _Avoid_: Shared account pool, batch account
 
 **Decision Cycle**:
-One prior-evening decision and its corresponding next-trading-day execution attempt for a single Account Lane. The decision evening is the calendar evening immediately before its Trading Day.
+One profile-attributed Decision and its corresponding Execution attempt for a single Account Lane. Its Trading Day is the frozen Execution-session date; `next_session_open` decides on the prior evening, while `same_session_close` decides earlier on that same regular session.
 _Avoid_: Trading session, daily batch
 
 **Decision Routine**:
@@ -49,7 +53,7 @@ The isolated role that applies deterministic risk output to a published OrderPla
 _Avoid_: Portfolio manager, independent trading agent
 
 **Shadow Fill**:
-A credential-free assumption that a deterministic-risk-allowed order filled at its documented next-trading-day quote when its limit was marketable. It is evidence, never a broker fill.
+A credential-free, profile-attributed assumption that a deterministic-risk-allowed order filled at its actual Execution quote when its limit was marketable. It is evidence, never a broker fill.
 _Avoid_: Paper broker confirmation, backdated fill
 
 **Risk Exit**:

@@ -1,6 +1,6 @@
 # Current unfinished work
 
-Repository implementation now validates account/strategy configuration, enforces scheduled cohorts, preserves strategy attribution, and produces isolated dry-run and T+1 quote-based shadow evidence.
+Repository implementation now validates account/strategy configuration, enforces mode-and-profile scheduled cohorts, preserves strategy attribution, and produces isolated dry-run plus profile-attributed shadow evidence. The `same_session_close` seam is fixture-accepted but has no scheduled Account Lane, Strategy Spec, or hosted trigger.
 
 ## Hosted shadow acceptance
 
@@ -24,7 +24,7 @@ Repository implementation now validates account/strategy configuration, enforces
 - [x] Add reviewed, version-named Strategy Specs and the deterministic facts-compiler seam.
 - [ ] Observe enough comparable cycles across enabled strategy-attributed lanes before making any claim about relative strategy behavior.
 - [ ] Accumulate enough live/shadow records to define a review window, after-cost metrics, and acceptable incident criteria.
-- [ ] Add replay/reporting only from recorded strategy IDs, plans, T+1 fill assumptions, and ending virtual states; do not retrofit Day T fills.
+- [ ] Add replay/reporting only from recorded strategy IDs, profile-attributed plans and fill assumptions, and ending virtual states; do not retrofit fills from Decision reference prices or future closes.
 - [ ] Treat any strategy switch or capital increase as a new human decision, never an automatic promotion.
 
 ## Reliability review before expansion

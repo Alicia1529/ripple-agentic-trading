@@ -1,4 +1,4 @@
-"""Deterministic T+1 quote-fill simulation for one shadow account lane."""
+"""Deterministic profile-attributed quote fills for one shadow account lane."""
 
 from decimal import Decimal
 from typing import Any, Mapping
@@ -19,8 +19,11 @@ def _is_marketable(order: Mapping[str, Any], quote_price: Decimal) -> bool:
 def simulate_shadow_fills(
     risk_result: Mapping[str, Any],
     execution_context: Mapping[str, Any],
+    cycle_profile: str = "next_session_open",
 ) -> dict[str, Any]:
     """Return fill attempts and post-fill account state without broker I/O."""
+    if cycle_profile not in {"next_session_open", "same_session_close"}:
+        raise ValueError("cycle_profile is not supported")
     account = execution_context["account"]
     cash = Decimal(account["cash"])
     positions = {
@@ -87,6 +90,11 @@ def simulate_shadow_fills(
                     "quantity": remaining,
                     "average_cost": previous["average_cost"],
                 }
+        reason_code = (
+            "assumed_same_session_quote_fill"
+            if cycle_profile == "same_session_close"
+            else "assumed_t_plus_one_quote_fill"
+        )
         fill_attempts.append({
             "order_id": action["order_id"],
             "symbol": symbol,
@@ -95,7 +103,7 @@ def simulate_shadow_fills(
             "price": quote_text,
             "filled_at": execution_context["as_of"],
             "status": "filled",
-            "reason_code": "assumed_t_plus_one_quote_fill",
+            "reason_code": reason_code,
         })
 
     filled_count = sum(fill["status"] == "filled" for fill in fill_attempts)

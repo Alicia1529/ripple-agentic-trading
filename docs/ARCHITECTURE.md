@@ -39,7 +39,7 @@ flowchart TD
     end
 
     RISK --> LADP["Live adapter — Agentic Robinhood<br/>same risk verdict, real broker write<br/>owner-enabled small-canary authority"]
-    RISK --> SADP["Shadow adapter — no Robinhood call, same risk verdict<br/>re-checks the real T+1 9:35 quote against the planned limit<br/>marketable: assumed fill at that quote and as_of<br/>otherwise not_filled, reason_code limit_not_marketable<br/>zero fees and slippage; carries cash, quantity, average cost forward"]
+    RISK --> SADP["Shadow adapter — no Robinhood call, same risk verdict<br/>re-checks the profile's real Execution quote against the planned limit<br/>marketable: assumed fill at that quote and as_of<br/>otherwise not_filled, reason_code limit_not_marketable<br/>zero fees and slippage; carries cash, quantity, average cost forward"]
 
     LADP -->|"writes evidence back"| ST
     SADP -->|"writes evidence back"| ST
@@ -60,14 +60,17 @@ Every file matching `config/*.json` is one Account Lane. The filename stem is it
 {
   "description": "Human-readable purpose, strategy, universe, and risk summary.",
   "strategy": "<strategy_id>",
-  "execution": {"mode": "<live|shadow|dry_run>"},
+  "execution": {
+    "mode": "<live|shadow|dry_run>",
+    "cycle_profile": "<next_session_open|same_session_close>"
+  },
   "shadow": {"initial_cash": "<decimal_string>"},
   "universe": ["<SYMBOL>"],
   "risk": {}
 }
 ```
 
-`shadow.initial_cash` is required only for a shadow lane. Financial values remain base-10 decimal strings.
+`execution.cycle_profile` is optional and defaults to legacy `next_session_open`; `shadow.initial_cash` is required only for a shadow lane. Financial values remain base-10 decimal strings.
 
 The catalog validates, as one operation:
 
@@ -76,6 +79,7 @@ The catalog validates, as one operation:
 - a real `strategies/<strategy_id>.md` file for every selected strategy;
 - unique universe symbols;
 - `execution.mode` in `live`, `shadow`, or `dry_run`; and
+- `execution.cycle_profile` in `next_session_open` or `same_session_close` when present; and
 - no more than one live configuration.
 
 The catalog returns deterministic, account-ID-sorted cohorts. A missing strategy or second live configuration invalidates the catalog instead of silently skipping a lane.
@@ -90,19 +94,21 @@ A Strategy Spec may require checked-in deterministic preprocessing before rankin
 
 Every new `OrderPlan`, Decision record, deterministic result, execution record, and report carries `strategy_id`. New OrderPlans also carry a concise `decision_rationale` explaining the final target portfolio and orders, and freeze whether Decision was `fixture`, `manual`, `scheduled`, or `backfill`; execution evidence independently freezes its own run kind. Historical plans without rationale or Decision run provenance remain readable as legacy evidence. A versioned Strategy Spec should not be edited in place after it has produced decisions; create a new identifier so historical attribution stays meaningful. Git history retains its exact checked-in content.
 
-## Execution modes and scheduled cohorts
+## Execution modes, cycle profiles, and scheduled cohorts
+
+A Cycle Profile freezes the timing topology and Execution-session `trade_date` of each new OrderPlan. `next_session_open` preserves the prior-evening Decision and next-Trading-Day morning Execution. `same_session_close` uses a 2:25–3:05 PM Decision and later 3:15–3:40 PM Execution on one regular New York Trading Day. V1 excludes early-close sessions and historical backfill for the same-session profile; a manual run bypasses only the clock window, not the frozen date, calendar, ordering, risk, or mode checks.
 
 | Mode | Scheduled selection | Execution behavior | Authority |
 |---|---|---|---|
 | `live` | The live cohort contains zero or one lane | Deterministic risk output may be sent to the reviewed Agentic Robinhood adapter after the Live Gate | Human-owned activation; real broker consequence |
-| `shadow` | Every shadow lane is selected in account-ID order | Deterministic risk runs; marketable allowed orders receive assumed T+1 quote fills and virtual ending state | No broker connection or write |
+| `shadow` | Every matching shadow lane is selected in account-ID order | Deterministic risk runs; marketable allowed orders receive profile-attributed Execution-quote fills and virtual ending state | No broker connection or write |
 | `dry_run` | Excluded from all scheduled cohorts | Manual fixture/development evaluation only; proposed broker arguments but no fill | Developer evidence only |
 
 Changing an execution mode is a reviewed human operation. A shadow-to-live change also requires broker binding and real cash/position baseline reconciliation; virtual holdings never authorize a real trade.
 
-## Four scheduled runs
+## Current scheduled runs
 
-Ripple uses four non-overlapping schedule triggers:
+Ripple currently uses four non-overlapping `next_session_open` triggers. The catalog can additionally select a cohort by both mode and Cycle Profile, but Task 1 adds no same-session Account Lane or hosted trigger.
 
 | Run | Selection | Intended time |
 |---|---|---|
@@ -111,7 +117,7 @@ Ripple uses four non-overlapping schedule triggers:
 | Live Execution | 0..1 live lane | next trading day around 9:35 AM `America/New_York` |
 | Shadow Execution | all shadow lanes | next trading day around 9:35 AM `America/New_York` |
 
-A scheduled trigger that lands outside a trading session is a successful no-op: a Decision evening that does not precede a trading day, or an Execution morning on a market holiday, publishes and executes nothing and reports why. There may be zero live lane; the live runs then finish without account work. Dry-run lanes are never selected. Schedules never automatically backfill missed cycles. A designated-owner historical backfill is a separate live/shadow operation: it requires complete point-in-time Decision inputs, preserves the normal Decision timestamp window, and records `decision_run_kind=backfill`. Its immutable plan may proceed through explicitly authorized manual Execution with the usual deterministic and mode-specific safeguards.
+A scheduled trigger outside its profile's valid session or window is a successful no-op and writes no artifact. This includes weekends and full closures for both profiles and every early-close session for `same_session_close`. There may be zero live lane; the live runs then finish without account work. Dry-run lanes are never selected. Schedules never automatically backfill missed cycles. A designated-owner historical backfill remains available only to `next_session_open` live/shadow cycles with complete point-in-time inputs and the normal safeguards.
 
 The shadow runs are one scheduled cohort but each lane remains an independent Decision Cycle. One lane's malformed input or failure is reported for that lane and does not authorize, mutate, or suppress another lane's work.
 
@@ -149,20 +155,20 @@ Shadow execution uses the same risk output but never calls Robinhood. For each a
 - an unmarketable limit is recorded as `not_filled`; and
 - cash, quantity, average cost, new-position count, and visible loss-sale state are carried into an immutable per-cycle `ending_account`.
 
-The plan's signal time remains Day T and every fill attempt remains Day T+1. Shadow never backdates a fill to the decision close.
+The plan freezes its Cycle Profile and Trading Day. Every fill attempt occurs after Decision at the actual profile-specific Execution quote; Shadow never backdates a fill to the Decision reference price or uses a future official close.
 
 ## Modules and responsibilities
 
 | Module | Interface responsibility | What stays behind it |
 |---|---|---|
-| Account catalog | Load all lane configs and select one mode cohort | Filename identity, strict schema, strategy existence, live-count validation, deterministic ordering |
+| Account catalog | Load all lane configs and select a mode or mode-plus-profile cohort | Filename identity, strict schema, strategy existence, live-count validation, deterministic ordering |
 | Trading calendar | Answer whether a New York regular session exists and which session follows a date | Checked-in NYSE closures, coverage bounds, and a fail-closed refusal to extrapolate |
 | Strategy facts compiler | Compile one normalized source-attributed document when required by a Strategy Spec | Decimal formulas, session alignment, provenance, interpolation rejection, and fail-closed validation |
 | Decision publisher | Publish one validated Decision Cycle | Timing, universe, target weights, stable IDs, strategy attribution, immutable writes |
 | `DecisionSnapshot` | Represent allowed decision inputs | Strict JSON and immutable nested values |
 | `OrderPlan` | Represent strategy-attributed decision intent | Decision rationale, strict order shape, account baseline, portfolio weights, immutable nested values |
 | Risk module | Return allowed, clipped, rejected, or aborted actions | Account binding, freshness, sizing, cash reservation, loss/drawdown/wash-sale/exit rules |
-| Shadow adapter | Return fill attempts and ending virtual state | T+1 marketability, quote-price fills, position/cash state transition, no broker I/O |
+| Shadow adapter | Return fill attempts and ending virtual state | Profile-attributed marketability, Execution-quote fills, position/cash state transition, no broker I/O |
 | Live adapter | Use deterministic output with Robinhood | Account binding, duplicate/history checks, review/place fidelity, ambiguity stop, credential-free evidence |
 | Lane State | Carry credential-free evidence across fresh sessions | Per-lane trade-date cycles and an optional active risk lock |
 
@@ -195,6 +201,6 @@ Credentials, tokens, cookies, account numbers, and raw authenticated responses n
 
 ## Current non-goals
 
-The implemented architecture does not include automatic strategy scoring/promotion, a dashboard, multiple simultaneous live lanes, a Python strategy engine, transactional persistence, exactly-once broker execution, automatic reconciliation, intraday trading, additional brokers, tax-lot optimization, a calibrated slippage/fee model, or historical backtesting and the market-data replay layer it would require. Forward shadow lanes are the simulation path; see `docs/DECISIONS.md`.
+The implemented architecture does not include automatic strategy scoring/promotion, a dashboard, multiple simultaneous live lanes, a Python strategy engine, transactional persistence, exactly-once broker execution, automatic reconciliation, same-day entry and exit, additional brokers, tax-lot optimization, a calibrated slippage/fee model, or historical backtesting and the market-data replay layer it would require. Forward shadow lanes are the simulation path; see `docs/DECISIONS.md`.
 
 Operational procedures belong in `docs/RUNBOOK.md`. Remaining hosted and live work belongs in `docs/TODO.md`.

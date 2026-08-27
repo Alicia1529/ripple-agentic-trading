@@ -21,6 +21,9 @@ Git history retains superseded reasoning. This file summarizes only decisions th
 
 ## Modes and scheduling
 
+- Each Account Lane resolves an optional Cycle Profile: omitted configuration preserves `next_session_open`; `same_session_close` uses a Decision and later Execution on one regular Trading Day. Every new OrderPlan freezes the resolved profile and trade date. Historical plans without both fields remain legacy `next_session_open` evidence.
+- Scheduled cohorts are selected by both Execution Mode and Cycle Profile, with mode-only catalog inspection retained for operators. V1 `same_session_close` allows Decision from 2:25–3:05 PM and Execution from 3:15–3:40 PM New York, treats early-close sessions as scheduled no-ops, permits manual window bypass without date/order bypass, and prohibits historical backfill.
+
 - `live` selects zero or one lane for the live Decision and Execution runs. `shadow` selects all shadow lanes for their two cohort runs. `dry_run` is excluded from scheduling and exists only for deliberate manual development.
 - Exactly four schedule triggers represent the topology: live Decision, shadow Decision, live Execution, and shadow Execution. One failing shadow lane cannot authorize or mutate another lane.
 - A shadow-to-live change requires explicit reconciliation against the real broker account. Virtual holdings and fills never become broker authority.
@@ -39,14 +42,15 @@ Git history retains superseded reasoning. This file summarizes only decisions th
 ## Shadow execution
 
 - Shadow uses the same deterministic risk result as live/dry evaluation and never calls a broker.
-- An allowed BUY limit fills only when the T+1 execution quote is at or below its limit; an allowed SELL limit fills only when the quote is at or above its limit. Market Risk Exits fill at the quote.
-- A Shadow Fill is recorded at the T+1 quote and execution timestamp with zero fees and zero slippage. Unmarketable limits are recorded as `not_filled`.
+- An allowed BUY limit fills only when the profile's Execution quote is at or below its limit; an allowed SELL limit fills only when that quote is at or above its limit. Market Risk Exits fill at the quote.
+- A Shadow Fill is recorded at the profile's Execution quote and timestamp with zero fees and zero slippage. Unmarketable limits are recorded as `not_filled`.
+- For `same_session_close`, the equivalent marketable fill is recorded at the later same-session Execution quote and timestamp with reason `assumed_same_session_quote_fill`; it never uses the Decision reference price or a future official close. Existing `next_session_open` evidence retains `assumed_t_plus_one_quote_fill`.
 - Each result freezes fill attempts and the ending virtual cash, positions, average costs, new-position count, and loss-sale state for the next cycle. It is comparison evidence, not a claim about real broker fills.
 
 ## State and isolation
 
 - Every lane owns its configuration, state root, plan, virtual or real account facts, risk state, execution evidence, and restart lock. Taxpayer-wide loss-sale history remains the only documented cross-lane input.
-- Each lowercase lane stores one complete cycle under `state/accounts/<account_id>/trading_days/<trade_date>`. The trade date is the intended next-trading-day Execution date, not the prior-evening Decision date, and is always a real session.
+- Each lowercase lane stores one complete cycle under `state/accounts/<account_id>/trading_days/<trade_date>`. The trade date is the frozen Execution-session date and is always a real session; it is the day after a `next_session_open` Decision and the same New York date as a `same_session_close` Decision.
 - A cycle publishes `decision_snapshot.json` and `order_plan.json` before Execution; `execution.json` and `report.md` are added to that same directory afterward. Execution requires the co-located snapshot and plan to exist and match its input. Repeated publication or execution fails instead of overwriting evidence.
 - JSONL indexes are not stored; the trade-date directories are the sole cycle index. A lane-wide tier-two block is the optional account-root `active_risk_lock.json` because it persists across trade dates.
 - The state layout reset removed prior checked-in state artifacts before hosted acceptance. Private Git stores only new credential-free cycles and locks. Platform-managed Robinhood authorization remains outside the repository.
@@ -61,4 +65,4 @@ Git history retains superseded reasoning. This file summarizes only decisions th
 - Risk remains per lane: 20% maximum position, three new positions per day, 5% daily loss, 10%/15% drawdown tiers, 15-minute quote age, 30-day taxpayer-wide wash-sale lookback, 8% stop loss, and 20% take profit. Planned limits must remain inside a positive per-order price tolerance capped at 10%; Growth Momentum v3 retains v2's removal of v1's fixed 1% policy but does not remove this deterministic cap.
 - Missing or stale facts, baseline mismatch, cross-account mismatch, malformed inputs, or unsafe sizing fail closed. Tier two requires human restart.
 - Historical backtesting is a current non-goal. Each Decision is a single non-replayable model call over point-in-time facts, and there is no MarketData port or historical bar source; a multi-year replay would require both. Forward shadow lanes are Ripple's simulation of live trading: same schedule, same Strategy Spec, and same deterministic risk authority as live, differing only in the documented Shadow Fill assumption. Evidence about a strategy therefore comes from accumulated forward cycles rather than reconstructed history. Revisiting this needs a new decision, not a local exception.
-- Current non-goals include a dashboard, automatic strategy ranking/promotion, multiple simultaneous live lanes, additional brokers, intraday trading, a Python strategy engine, transactional persistence, exactly-once submission, automatic reconciliation, calibrated fee/slippage simulation, and historical backtesting or a market-data replay layer.
+- Current non-goals include a dashboard, automatic strategy ranking/promotion, multiple simultaneous live lanes, additional brokers, same-day entry and exit, a Python strategy engine, transactional persistence, exactly-once submission, automatic reconciliation, calibrated fee/slippage simulation, and historical backtesting or a market-data replay layer.

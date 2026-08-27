@@ -1,7 +1,7 @@
 """Immutable decision-stage order plans."""
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 import re
 from typing import Any, Mapping
@@ -27,8 +27,11 @@ _REQUIRED_FIELDS = {
     "target_portfolio",
     "orders",
 }
-_OPTIONAL_FIELDS = {"decision_rationale", "decision_run_kind"}
+_OPTIONAL_FIELDS = {
+    "cycle_profile", "decision_rationale", "decision_run_kind", "trade_date",
+}
 _RUN_KINDS = {"backfill", "fixture", "manual", "scheduled"}
+_CYCLE_PROFILES = {"next_session_open", "same_session_close"}
 
 _REQUIRED_ORDER_FIELDS = {
     "order_id",
@@ -127,6 +130,8 @@ class OrderPlan:
     orders: tuple[Mapping[str, Any], ...]
     decision_rationale: str | None
     decision_run_kind: str | None
+    cycle_profile: str | None
+    trade_date: str | None
 
     @classmethod
     def from_dict(cls, document: Mapping[str, Any]) -> "OrderPlan":
@@ -169,6 +174,25 @@ class OrderPlan:
             decision_rationale = require_nonempty_string(
                 document["decision_rationale"], "decision_rationale",
             )
+        has_cycle_profile = "cycle_profile" in document
+        has_trade_date = "trade_date" in document
+        if has_cycle_profile != has_trade_date:
+            raise ValueError("cycle_profile and trade_date must appear together")
+        cycle_profile = None
+        trade_date = None
+        if has_cycle_profile:
+            cycle_profile = require_nonempty_string(
+                document["cycle_profile"], "cycle_profile",
+            )
+            if cycle_profile not in _CYCLE_PROFILES:
+                raise ValueError("cycle_profile is not supported")
+            trade_date = require_nonempty_string(document["trade_date"], "trade_date")
+            try:
+                parsed_trade_date = date.fromisoformat(trade_date)
+            except ValueError as error:
+                raise ValueError("trade_date must be an ISO date") from error
+            if parsed_trade_date.isoformat() != trade_date:
+                raise ValueError("trade_date must be an ISO date")
         account_baseline = _validate_account_baseline(document["account_baseline"])
         target_portfolio = document["target_portfolio"]
         orders = document["orders"]
@@ -209,6 +233,8 @@ class OrderPlan:
         object.__setattr__(plan, "orders", freeze_json(orders))
         object.__setattr__(plan, "decision_rationale", decision_rationale)
         object.__setattr__(plan, "decision_run_kind", decision_run_kind)
+        object.__setattr__(plan, "cycle_profile", cycle_profile)
+        object.__setattr__(plan, "trade_date", trade_date)
         return plan
 
     def to_dict(self) -> dict[str, Any]:
@@ -228,4 +254,7 @@ class OrderPlan:
             document["decision_run_kind"] = self.decision_run_kind
         if self.decision_rationale is not None:
             document["decision_rationale"] = self.decision_rationale
+        if self.cycle_profile is not None:
+            document["cycle_profile"] = self.cycle_profile
+            document["trade_date"] = self.trade_date
         return document

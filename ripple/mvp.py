@@ -11,7 +11,7 @@ from uuid import NAMESPACE_URL, uuid5
 from zoneinfo import ZoneInfo
 
 from .account_config import AccountConfig, load_account_catalog, load_account_config
-from .calendar import NoTradingSession, is_trading_day, next_trading_day
+from .calendar import EARLY_CLOSE_DAYS, NoTradingSession, is_trading_day, next_trading_day
 from .decision_snapshot import DecisionSnapshot
 from .order_plan import OrderPlan
 from .risk import evaluate_plan
@@ -56,12 +56,25 @@ def _new_york_time(value: str) -> datetime:
     return parsed.astimezone(_NEW_YORK)
 
 
-def _trade_date(decision_time: str) -> str:
-    return next_trading_day(_new_york_time(decision_time).date()).isoformat()
+def _trade_date(
+    decision_time: str, cycle_profile: str = "next_session_open",
+) -> str:
+    decision_date = _new_york_time(decision_time).date()
+    if cycle_profile == "same_session_close":
+        return decision_date.isoformat()
+    return next_trading_day(decision_date).isoformat()
+
+
+def _plan_cycle_profile(plan: OrderPlan) -> str:
+    return plan.cycle_profile or "next_session_open"
+
+
+def _plan_trade_date(plan: OrderPlan) -> str:
+    return plan.trade_date or _trade_date(plan.decision_time)
 
 
 def _published_cycle_root(output: Path, plan: OrderPlan) -> Path:
-    cycle_root = output / "trading_days" / _trade_date(plan.decision_time)
+    cycle_root = output / "trading_days" / _plan_trade_date(plan)
     snapshot_path = cycle_root / "decision_snapshot.json"
     plan_path = cycle_root / "order_plan.json"
     if not snapshot_path.is_file() or not plan_path.is_file():
@@ -82,27 +95,52 @@ def _validate_state_root(output: Path, config: AccountConfig) -> None:
 def _validate_decision_timing(
     decision_time: str,
     snapshot_time: str,
+    cycle_profile: str = "next_session_open",
     *,
     enforce_schedule: bool = True,
 ) -> None:
     decision_at = _new_york_time(decision_time)
     snapshot_at = _new_york_time(snapshot_time)
-    if enforce_schedule and not is_trading_day(decision_at.date() + _ONE_DAY):
-        raise ValueError("decision time does not precede a New York trading day")
-    if enforce_schedule and not time(20, 55) <= decision_at.time() <= time(21, 15):
-        raise ValueError("decision time is outside the allowed America/New_York window")
-    if enforce_schedule and snapshot_at.date() != decision_at.date():
+    if cycle_profile == "same_session_close":
+        if not is_trading_day(decision_at.date()):
+            raise ValueError("same-session decision date must be a New York trading day")
+        if decision_at.date() in EARLY_CLOSE_DAYS:
+            raise ValueError("same-session decisions do not support early-close sessions")
+        if enforce_schedule and not time(14, 25) <= decision_at.time() <= time(15, 5):
+            raise ValueError("decision time is outside the allowed America/New_York window")
+    else:
+        if enforce_schedule and not is_trading_day(decision_at.date() + _ONE_DAY):
+            raise ValueError("decision time does not precede a New York trading day")
+        if enforce_schedule and not time(20, 55) <= decision_at.time() <= time(21, 15):
+            raise ValueError("decision time is outside the allowed America/New_York window")
+    if (
+        (enforce_schedule or cycle_profile == "same_session_close")
+        and snapshot_at.date() != decision_at.date()
+    ):
         raise ValueError("snapshot and decision must use the same New York date")
 
 
 def _validate_execution_timing(
     decision_time: str,
     execution_time: str,
+    cycle_profile: str = "next_session_open",
     *,
     enforce_schedule: bool = True,
 ) -> None:
     decision_at = _new_york_time(decision_time)
     execution_at = _new_york_time(execution_time)
+    if cycle_profile == "same_session_close":
+        if execution_at.date() != decision_at.date():
+            raise ValueError("same-session execution must use the decision trade date")
+        if not is_trading_day(execution_at.date()):
+            raise ValueError("same-session execution date must be a New York trading day")
+        if execution_at.date() in EARLY_CLOSE_DAYS:
+            raise ValueError("same-session execution does not support early-close sessions")
+        if execution_at <= decision_at:
+            raise ValueError("same-session execution must occur after the decision")
+        if enforce_schedule and not time(15, 15) <= execution_at.time() <= time(15, 40):
+            raise ValueError("execution time is outside the allowed America/New_York window")
+        return
     if not enforce_schedule:
         if execution_at <= decision_at:
             raise ValueError("manual execution must occur after the decision")
@@ -113,18 +151,32 @@ def _validate_execution_timing(
         raise ValueError("execution time is outside the allowed America/New_York window")
 
 
-def _validate_runtime_clock(now: datetime, expected_time: str, phase: str) -> None:
+def _validate_runtime_clock(
+    now: datetime, expected_time: str, phase: str,
+    cycle_profile: str = "next_session_open",
+) -> None:
     if now.utcoffset() is None:
         raise ValueError("runtime clock must include a timezone offset")
     actual = now.astimezone(_NEW_YORK)
     expected = _new_york_time(expected_time)
-    window = (time(20, 55), time(21, 15)) if phase == "decision" else (
-        time(9, 30), time(9, 50)
-    )
-    session = actual.date() + _ONE_DAY if phase == "decision" else actual.date()
+    if cycle_profile == "same_session_close":
+        window = (
+            (time(14, 25), time(15, 5))
+            if phase == "decision" else (time(15, 15), time(15, 40))
+        )
+        session = actual.date()
+    else:
+        window = (time(20, 55), time(21, 15)) if phase == "decision" else (
+            time(9, 30), time(9, 50)
+        )
+        session = actual.date() + _ONE_DAY if phase == "decision" else actual.date()
     if not is_trading_day(session):
         raise NoTradingSession(
             f"{phase} runtime has no New York trading session on {session.isoformat()}"
+        )
+    if cycle_profile == "same_session_close" and session in EARLY_CLOSE_DAYS:
+        raise NoTradingSession(
+            f"{phase} runtime does not support early-close session {session.isoformat()}"
         )
     if actual.date() != expected.date():
         raise ValueError(f"{phase} runtime date does not match America/New_York now")
@@ -167,8 +219,10 @@ def _build_plan(
 
     decision_time = decision["decision_time"]
     _validate_decision_timing(
-        decision_time, snapshot.as_of, enforce_schedule=enforce_schedule,
+        decision_time, snapshot.as_of, config.cycle_profile,
+        enforce_schedule=enforce_schedule,
     )
+    trade_date = _trade_date(decision_time, config.cycle_profile)
     plan_id = str(uuid5(NAMESPACE_URL, f"ripple:{config.account_id}:{_date(decision_time)}"))
     orders = []
     for index, proposed_order in enumerate(decision["orders"]):
@@ -190,6 +244,8 @@ def _build_plan(
         "market_snapshot_as_of": snapshot.as_of,
         "decision_rationale": decision["decision_rationale"],
         "decision_run_kind": decision_run_kind,
+        "cycle_profile": config.cycle_profile,
+        "trade_date": trade_date,
         "account_baseline": account_baseline,
         "target_portfolio": decision["target_portfolio"],
         "orders": orders,
@@ -210,7 +266,7 @@ def _publish_decision(
         enforce_schedule=run_kind != "manual",
         decision_run_kind=run_kind,
     )
-    trade_date = _trade_date(plan.decision_time)
+    trade_date = _plan_trade_date(plan)
     cycle_root = output / "trading_days" / trade_date
     _write_new_json(
         cycle_root / "decision_snapshot.json",
@@ -266,6 +322,8 @@ def _write_report(
             f"- Strategy: `{plan.strategy_id}`\n"
             f"- Order plan: `{plan.order_plan_id}`\n"
             f"- Decision: `{plan.decision_time}`\n"
+            f"- Cycle profile: `{_plan_cycle_profile(plan)}`\n"
+            f"- Trade date: `{_plan_trade_date(plan)}`\n"
             f"- Decision run: `{plan.decision_run_kind or 'legacy'}`\n"
             f"- Execution run: `{result['execution_run_kind']}`\n"
             f"- Execution check: `{execution_context['as_of']}`\n"
@@ -294,10 +352,13 @@ def _execute_dry_run(
     _validate_execution_timing(
         plan.decision_time,
         execution_context["as_of"],
+        _plan_cycle_profile(plan),
         enforce_schedule=run_kind != "manual",
     )
     if plan.account_id != config.account_id:
         raise ValueError("plan account_id does not match configured account_id")
+    if _plan_cycle_profile(plan) != config.cycle_profile:
+        raise ValueError("plan cycle_profile does not match configured cycle_profile")
     cycle_root = _published_cycle_root(output, plan)
     execution_path = cycle_root / "execution.json"
     if execution_path.exists():
@@ -309,6 +370,8 @@ def _execute_dry_run(
             new_entries_locked=latch_path.is_file(),
         ),
         "execution_run_kind": run_kind,
+        "cycle_profile": _plan_cycle_profile(plan),
+        "trade_date": _plan_trade_date(plan),
     }
     if result["manual_restart_required"] and not latch_path.exists():
         _write_new_json(latch_path, {
@@ -341,10 +404,13 @@ def _execute_shadow(
     _validate_execution_timing(
         plan.decision_time,
         execution_context["as_of"],
+        _plan_cycle_profile(plan),
         enforce_schedule=run_kind != "manual",
     )
     if plan.account_id != config.account_id:
         raise ValueError("plan account_id does not match configured account_id")
+    if _plan_cycle_profile(plan) != config.cycle_profile:
+        raise ValueError("plan cycle_profile does not match configured cycle_profile")
     cycle_root = _published_cycle_root(output, plan)
     execution_path = cycle_root / "execution.json"
     if execution_path.exists():
@@ -356,8 +422,12 @@ def _execute_shadow(
     )
     result = {
         **risk_result,
-        **simulate_shadow_fills(risk_result, execution_context),
+        **simulate_shadow_fills(
+            risk_result, execution_context, _plan_cycle_profile(plan),
+        ),
         "execution_run_kind": run_kind,
+        "cycle_profile": _plan_cycle_profile(plan),
+        "trade_date": _plan_trade_date(plan),
     }
     if result["manual_restart_required"] and not latch_path.exists():
         _write_new_json(latch_path, {
@@ -394,6 +464,8 @@ def publish_decision(
         raise ValueError("manual and historical backfill modes are mutually exclusive")
     if historical_backfill and config.mode not in {"live", "shadow"}:
         raise ValueError("historical Decision backfill requires live or shadow mode")
+    if historical_backfill and config.cycle_profile == "same_session_close":
+        raise ValueError("same_session_close historical backfill is not supported")
     if not manual and not historical_backfill and config.mode == "dry_run":
         raise ValueError("dry_run accounts are excluded from scheduled Decision runs")
     runtime_now = now or datetime.now(timezone.utc)
@@ -404,7 +476,7 @@ def publish_decision(
             raise ValueError("historical Decision backfill must use a past decision_time")
     elif not manual:
         _validate_runtime_clock(
-            runtime_now, decision["decision_time"], "decision",
+            runtime_now, decision["decision_time"], "decision", config.cycle_profile,
         )
     return _publish_decision(
         config, decision_input, output,
@@ -431,6 +503,7 @@ def execute_dry_run(
     if not manual:
         _validate_runtime_clock(
             now or datetime.now(timezone.utc), execution_time, "execution",
+            config.cycle_profile,
         )
     return _execute_dry_run(
         config,
@@ -458,6 +531,7 @@ def execute_shadow(
     if not manual:
         _validate_runtime_clock(
             now or datetime.now(timezone.utc), execution_time, "execution",
+            config.cycle_profile,
         )
     return _execute_shadow(
         config,
@@ -536,6 +610,9 @@ def _parser() -> argparse.ArgumentParser:
     listing.add_argument("--config-dir", type=Path, default=Path("config"))
     listing.add_argument("--strategies-dir", type=Path, default=Path("strategies"))
     listing.add_argument("--mode", choices=("live", "shadow", "dry_run"), required=True)
+    listing.add_argument(
+        "--cycle-profile", choices=("next_session_open", "same_session_close"),
+    )
     return parser
 
 
@@ -547,7 +624,11 @@ def main(argv: list[str] | None = None) -> int:
             if args.command == "validate-configs":
                 print(f"account catalog valid: {len(catalog.accounts)} account(s)")
             else:
-                for config in catalog.for_mode(args.mode):
+                configs = (
+                    catalog.for_schedule(args.mode, args.cycle_profile)
+                    if args.cycle_profile else catalog.for_mode(args.mode)
+                )
+                for config in configs:
                     print(config.account_id)
             return 0
         if args.command == "publish-decision":

@@ -32,7 +32,7 @@ flowchart TD
 
     RUNS --> RISK["deterministic risk authority"]
     RISK --> L["Robinhood live<br/>after the Live Gate"]
-    RISK --> S["Shadow Fill — no broker call<br/>the real T+1 quote must still be marketable<br/>against the planned limit, or it is not_filled"]
+    RISK --> S["Shadow Fill — no broker call<br/>the profile's real Execution quote must be marketable<br/>against the planned limit, or it is not_filled"]
 
     L --> ST
     S --> ST
@@ -46,12 +46,12 @@ Each account configuration contains a human-readable description, one Strategy S
 
 Current lane membership and account-to-strategy bindings live exclusively in `config/*.json`. The validated catalog and `list-accounts` command expose those deployment facts without duplicating them here. Strategy attribution and lane isolation keep each lane's evidence distinct; no result automatically promotes a strategy or changes capital.
 
-Canonical lowercase identifiers own state under `state/accounts/<account_id>/trading_days/<trade_date>`. The trade date is the intended next-trading-day Execution date, so a prior-evening Decision and its Execution evidence stay together.
+Canonical lowercase identifiers own state under `state/accounts/<account_id>/trading_days/<trade_date>`. The trade date is the frozen Execution-session date, so a profile-attributed Decision and its Execution evidence stay together.
 
 ## Mode contract
 
 - `live`: selected by the live Decision and Execution schedules; at most one configuration may use it. Real orders remain blocked until the reviewed Agentic Robinhood loop, broker binding proof, hosted acceptance, and explicit owner approval are complete.
-- `shadow`: selected with every other shadow lane in the shadow schedules. Deterministic checks run normally. A marketable allowed order is assumed filled at the documented next-trading-day quote with zero fees and zero slippage, then written as credential-free evidence and ending virtual account state.
+- `shadow`: selected with every other shadow lane in its mode-and-profile scheduled cohort. Deterministic checks run normally. A marketable allowed order is assumed filled at the documented Execution quote with zero fees and zero slippage, then written as credential-free evidence and ending virtual account state.
 - `dry_run`: excluded from all schedules. It exists for deliberate manual fixture and strategy development and never calls the broker or writes shadow-fill evidence.
 
 Changing a shadow lane to live is not an automatic promotion. The owner must reconcile the real broker account, positions, cash baseline, connection, and Live Gate. The system never opens or funds an account, enables live mode, increases capital, or clears a tier-two lock.
@@ -68,7 +68,7 @@ Changing a shadow lane to live is not an automatic promotion. The owner must rec
 
 ## Boundaries
 
-The current release is long-only, prior-evening Decision and next-trading-day Execution. It does not include a dashboard, automated strategy ranking or promotion, intraday trading, multiple simultaneous live accounts, transactional submission state, exactly-once broker execution, automatic reconciliation, sophisticated slippage/fee models, a Python strategy plugin engine, or historical backtesting.
+The current release is long-only and supports `next_session_open` plus an unbound, fixture-accepted `same_session_close` shadow seam. It does not include a hosted same-session lane, same-day entry and exit, a dashboard, automated strategy ranking or promotion, multiple simultaneous live accounts, transactional submission state, exactly-once broker execution, automatic reconciliation, sophisticated slippage/fee models, a Python strategy plugin engine, or historical backtesting.
 
 Shadow lanes are the simulation path instead of a backtester. A shadow lane runs forward on the same schedule, the same Strategy Spec, and the same deterministic risk authority as a live lane, and differs only in the documented Shadow Fill assumption. Backtesting is a current non-goal because a Decision is a single non-replayable model call and no historical bar source exists; comparable evidence accumulates cycle by cycle instead.
 
