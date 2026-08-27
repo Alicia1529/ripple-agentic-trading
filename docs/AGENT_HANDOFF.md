@@ -2,13 +2,6 @@
 
 Read these rules and the three entries in this file before work. Before handing off, append one chronological entry with local timestamp, outcome, evidence, next action, and only material risk. Keep each entry within 100 words and five bullets, link to authoritative files instead of duplicating them, and retain exactly the latest three entries total.
 
-## 2026-08-26 21:53 PDT — Shadow source freshness tightened
-
-- Outcome: [`DECISION_SHADOW.md`](../routines/DECISION_SHADOW.md) now resolves the expected completed session before sourcing and requires an explicit dated row for an accepted close.
-- Sources: issuer IR/SEC evidence is preferred for company events; lagging price pages require an independent date-indexed fallback, and unresolved conflicts fail closed.
-- Semantics: regular close, extended-hours prices, and completed post-event reactions remain distinct; historical backfills cannot use later-known data.
-- Evidence/risk: Markdown and diff checks plus all core tests pass. Next Shadow Decision uses this protocol; extra source checks may take longer.
-
 ## 2026-08-26 21:59 PDT — Deterministic latest-session fallback
 
 - Outcome: [`growth_momentum_v2_lite_compact_v2.md`](../strategies/growth_momentum_v2_lite_compact_v2.md) repairs only a latest interpolated bar from same-date fundamentals and a non-interpolated SIP close; `account_a` selects it.
@@ -22,3 +15,10 @@ Read these rules and the three entries in this file before work. Before handing 
 - Evidence: complete-universe compact compiler passed with 18 deterministic latest-session repairs; JPM ranked first and cleared all four primary-source research gates.
 - Verification: snapshot contains no raw bars or credentials; all 75 core tests and artifact checks pass.
 - Next/risk: any later Execution remains separately gated by account binding, baseline, opening-gap, quote, duplicate, and broker safeguards. No Execution, shadow, order review, cancellation, placement, or broker write occurred.
+
+## 2026-08-26 22:35 PDT — Session-close sourcing rule hardened
+
+- Outcome: [`DECISION_SHADOW.md`](../routines/DECISION_SHADOW.md) now defines the accepted value as the dated session's official consolidated (market-center) close, not the 4:00 PM auction print, with an ordered official-close → SIP → fail-closed resolution and no averaging between sources; [`DECISIONS.md`](DECISIONS.md) records the durable form.
+- Trigger: `account_b` 2026-08-27 backfill hit a SPY 8/26 conflict (766.08 vs 765.94); the SIP list-exchange close 766.08 wins under the new ladder.
+- Evidence: 75 tests, catalog validation, compileall, and diff review pass; docs-only change, no code touched.
+- Next/risk: 2026-08-27 `account_b` still resolves to a no-trade plan — NVDA reported after the 8/26 close (`sessions_since_report=0`, no completed-session `reaction_pct`). No Decision, Execution, shadow, or broker work ran.
