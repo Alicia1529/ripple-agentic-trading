@@ -1,8 +1,8 @@
 # Same-session close shadow slice — execution plan
 
-**Status:** Task 1 implemented and fixture-accepted on 2026-08-27 after designated-owner scope
-approval. Task 2 and Task 3 have not started. This plan does not authorize a live lane, hosted
-schedule mutation, strategy switch, or capital change.
+**Status:** Tasks 1 and 2 implemented and fixture-accepted on 2026-08-27 after designated-owner
+scope approval. Task 3 has not started. This plan does not authorize a live lane, hosted schedule
+mutation, strategy switch, or capital change.
 
 Use this plan when implementing the first `same_session_close` shadow capability. Read
 `AGENTS.md` and its current sources of truth before acting; current repository state overrides

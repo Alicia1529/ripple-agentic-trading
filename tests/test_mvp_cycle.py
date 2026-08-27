@@ -24,6 +24,33 @@ def _write_dry_run_config(root: Path) -> Path:
 
 
 class MvpDryCycleTests(unittest.TestCase):
+    def test_closing_momentum_v1_fixture_uses_shared_unbound_shadow_path(self):
+        fixture_path = ROOT / "fixtures" / "mvp" / "closing_momentum_v1_cycle.json"
+        config_path = ROOT / "fixtures" / "mvp" / "closing_momentum_v1_account.json"
+        fixture = json.loads(fixture_path.read_text())
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            output = Path(temporary_directory) / "closing_momentum_v1_account"
+            from ripple.mvp import run_shadow_cycle
+
+            result = run_shadow_cycle(config_path, fixture_path, output)
+            cycle = output / "trading_days" / "2026-08-26"
+            plan = json.loads((cycle / "order_plan.json").read_text())
+            self.assertEqual(plan["strategy_id"], "closing_momentum_v1")
+            self.assertEqual(plan["cycle_profile"], "same_session_close")
+            self.assertEqual(plan["target_portfolio"]["AAPL"], "0.08")
+            self.assertEqual(plan["orders"][0]["reference_price_at_decision"], "100")
+            self.assertEqual(result["strategy_id"], "closing_momentum_v1")
+            self.assertEqual(result["shadow_fills"][0]["price"], "100.40")
+            self.assertEqual(
+                result["shadow_fills"][0]["reason_code"],
+                "assumed_same_session_quote_fill",
+            )
+            configured_strategies = {
+                json.loads(path.read_text())["strategy"]
+                for path in (ROOT / "config").glob("*.json")
+            }
+            self.assertNotIn("closing_momentum_v1", configured_strategies)
+
     def test_same_session_shadow_cycle_uses_one_trade_date_and_execution_quote(self):
         fixture_path = ROOT / "fixtures" / "mvp" / "same_session_close_cycle.json"
         config_path = ROOT / "fixtures" / "mvp" / "same_session_close_account.json"

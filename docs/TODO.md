@@ -1,6 +1,6 @@
 # Current unfinished work
 
-Repository implementation now validates account/strategy configuration, enforces mode-and-profile scheduled cohorts, preserves strategy attribution, and produces isolated dry-run plus profile-attributed shadow evidence. The `same_session_close` seam is fixture-accepted but has no scheduled Account Lane, Strategy Spec, or hosted trigger.
+Repository implementation now validates account/strategy configuration, enforces mode-and-profile scheduled cohorts, preserves strategy attribution, and produces isolated dry-run plus profile-attributed shadow evidence. The `same_session_close` seam and unbound `closing_momentum_v1` Strategy Spec are fixture-accepted but have no scheduled Account Lane or hosted trigger.
 
 ## Hosted shadow acceptance
 

@@ -1,0 +1,50 @@
+{
+  "snapshot": {
+    "snapshot_id": "83ec22bb-764d-46d2-bfe4-a8a133652a02",
+    "as_of": "2026-08-26T14:54:00-04:00",
+    "universe": ["AAPL", "QQQ", "SPY"],
+    "inputs": {
+      "compiled_facts": {
+        "as_of": "2026-08-26",
+        "expected_latest_session": "2026-08-25",
+        "retrieved_at": "2026-08-26T14:50:00-04:00",
+        "facts": {
+          "AAPL": {"asset_role": "security", "atr20_pct": "0.02", "close": "99", "days_to_earnings": 20, "mom_60_10": "0.12", "rel_mom_qqq": "0.04", "rel_mom_streak": 0, "sector": "Technology", "sma50": "95", "status": "available"},
+          "QQQ": {"asset_role": "benchmark", "atr20_pct": "0.015", "close": "600", "days_to_earnings": null, "mom_60_10": "0.08", "rel_mom_qqq": "0", "rel_mom_streak": 1, "sector": null, "sma50": "580", "status": "available"},
+          "SPY": {"asset_role": "benchmark", "atr20_pct": "0.012", "close": "650", "days_to_earnings": null, "mom_60_10": "0.06", "rel_mom_qqq": "-0.02", "rel_mom_streak": 1, "sector": null, "sma50": "630", "status": "available"}
+        },
+        "provenance": {
+          "AAPL": {"accepted_bar_count": 70, "earnings": "https://example.com/AAPL/earnings", "expected_latest_session": "2026-08-25", "interpolated_bar_count": 0, "next_earnings_date": "2026-09-15", "prices": "https://example.com/AAPL/prices", "prices_as_of": "2026-08-25", "requested_bar_count": 70, "sector": "https://example.com/AAPL/sector"},
+          "QQQ": {"accepted_bar_count": 70, "earnings": "https://example.com/QQQ/earnings", "expected_latest_session": "2026-08-25", "interpolated_bar_count": 0, "next_earnings_date": null, "prices": "https://example.com/QQQ/prices", "prices_as_of": "2026-08-25", "requested_bar_count": 70, "sector": "https://example.com/QQQ/sector"},
+          "SPY": {"accepted_bar_count": 70, "earnings": "https://example.com/SPY/earnings", "expected_latest_session": "2026-08-25", "interpolated_bar_count": 0, "next_earnings_date": null, "prices": "https://example.com/SPY/prices", "prices_as_of": "2026-08-25", "requested_bar_count": 70, "sector": "https://example.com/SPY/sector"}
+        }
+      },
+      "current_session": {
+        "trade_date": "2026-08-26",
+        "retrieved_at": "2026-08-26T14:54:00-04:00",
+        "AAPL": {"current_price": "100", "session_open": "99.50", "price_source_url": "https://example.com/AAPL/price", "open_source_url": "https://example.com/AAPL/open", "price_as_of": "2026-08-26T14:54:00-04:00", "open_as_of": "2026-08-26T09:30:00-04:00"},
+        "QQQ": {"current_price": "603", "session_open": "601", "price_source_url": "https://example.com/QQQ/price", "open_source_url": "https://example.com/QQQ/open", "price_as_of": "2026-08-26T14:54:00-04:00", "open_as_of": "2026-08-26T09:30:00-04:00"},
+        "SPY": {"current_price": "653", "session_open": "651", "price_source_url": "https://example.com/SPY/price", "open_source_url": "https://example.com/SPY/open", "price_as_of": "2026-08-26T14:54:00-04:00", "open_as_of": "2026-08-26T09:30:00-04:00"}
+      },
+      "account": {"equity": "1000", "available_virtual_cash": "1000", "positions": {}},
+      "holding_evaluations": {},
+      "ranking": [{"rank": 1, "symbol": "AAPL", "rel_mom_qqq": "0.04", "mom_60_10": "0.12"}],
+      "rejected_candidates": [],
+      "warnings": []
+    }
+  },
+  "account_baseline": {"cash": "1000", "positions": {}},
+  "decision": {
+    "decision_time": "2026-08-26T14:55:00-04:00",
+    "decision_rationale": "Positive SPY/QQQ regime and AAPL's first-ranked completed-session momentum plus strength above SMA50, prior close, and session open support an 8% target.",
+    "model_config_version": "closing_momentum_v1",
+    "target_portfolio": {"AAPL": "0.08", "cash": "0.92"},
+    "orders": [{"symbol": "AAPL", "side": "BUY", "quantity": "0.79", "order_type": "LIMIT", "limit_price": "100.50", "price_tolerance_pct": "0.005", "reference_price_at_decision": "100", "market_hours": "regular_hours", "time_in_force": "gfd", "buy_reason": "AAPL ranks first by compiled relative and absolute momentum and trades above SMA50, prior close, and session open."}]
+  },
+  "execution_context": {
+    "account_id": "closing_momentum_v1_account",
+    "as_of": "2026-08-26T15:25:00-04:00",
+    "account": {"equity": "1000", "cash": "1000", "daily_pnl": "0", "high_water_mark": "1000", "new_positions_today": 0, "positions": {}, "loss_sales": []},
+    "quotes": {"AAPL": {"price": "100.40", "as_of": "2026-08-26T15:24:00-04:00"}}
+  }
+}
