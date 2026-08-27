@@ -1,0 +1,64 @@
+{
+  "account_id": "account_a",
+  "broker_binding": {
+    "accessible_account_count": 1,
+    "account_state": "active",
+    "account_type": "limited_margin"
+  },
+  "broker_outcomes": [
+    {
+      "order_id": "86c42d82-7be6-5a50-aa72-7d2e53b89c14",
+      "outcome": "safely_skipped",
+      "placement_attempted": false,
+      "review": {
+        "alert_code": "EQUITY_VALIDATION_ERROR",
+        "detail": "Prices above $1.00 can't have subpenny increments.",
+        "market_data_disclosure": "Bid $356.46 × 40 Q · Ask $356.62 × 80 Q · Last $356.50 × 40 D. Updated 9:41 AM ET.",
+        "matched_deterministic_order": true
+      },
+      "stage": "broker_review"
+    }
+  ],
+  "cash_basis": {
+    "as_of": "2026-08-27T13:40:27Z",
+    "name": "broker_unleveraged_buying_power",
+    "pending_deposits": "1000",
+    "value": "1000.0000"
+  },
+  "execution_run_kind": "scheduled",
+  "mode": "live",
+  "order_plan_id": "18c0433c-13fc-550c-8dec-fdbd5dc67d5c",
+  "risk_result": {
+    "abort_reason": null,
+    "actions": [
+      {
+        "abort_reason": null,
+        "actual_sizing": {"field": "quantity", "value": "0.279"},
+        "allowed": true,
+        "broker_order": {
+          "limit_price": "358.2825",
+          "market_hours": "regular_hours",
+          "quantity": "0.279",
+          "ref_id": "86c42d82-7be6-5a50-aa72-7d2e53b89c14",
+          "side": "buy",
+          "symbol": "JPM",
+          "time_in_force": "gfd",
+          "type": "limit"
+        },
+        "buy_reason": "JPM's broad recurring growth in loans, deposits, payments, fees, and managed assets, together with raised net-interest-income guidance, should support appreciation.",
+        "desired_buy_price": "358.2825",
+        "order_id": "86c42d82-7be6-5a50-aa72-7d2e53b89c14",
+        "original_sizing": {"field": "quantity", "value": "0.279"},
+        "reason_code": "allowed",
+        "side": "BUY",
+        "symbol": "JPM"
+      }
+    ],
+    "manual_restart_required": false,
+    "position_alerts": [],
+    "status": "allowed"
+  },
+  "status": "safely_skipped",
+  "strategy_id": "growth_momentum_v2_lite_compact_v2",
+  "trade_date": "2026-08-27"
+}
