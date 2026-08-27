@@ -1,6 +1,6 @@
 # Current unfinished work
 
-Repository implementation now validates account/strategy configuration, enforces mode-and-profile scheduled cohorts, preserves strategy attribution, and produces isolated dry-run plus profile-attributed shadow evidence. The `same_session_close` shadow lane and repository routines are configured; hosted triggers and the first reviewable scheduled cycle remain acceptance gates.
+Repository implementation now validates account/strategy configuration, enforces mode-and-profile scheduled cohorts, preserves strategy attribution, and produces isolated dry-run plus profile-attributed shadow evidence. The `same_session_close` shadow lane, repository routines, and hosted triggers are configured; the first reviewable scheduled cycle remains its acceptance gate.
 
 ## Hosted shadow acceptance
 
@@ -8,7 +8,7 @@ Repository implementation now validates account/strategy configuration, enforces
 - [x] Observe one complete scheduled Decision → next-weekday Shadow Execution cycle for every selected shadow lane.
 - [x] Review the strategy-attributed plan, deterministic risk result, Shadow Fill assumptions, ending account, and report in one trade-date directory.
 - [x] Confirm a failed shadow lane does not corrupt or authorize another lane when a second shadow configuration is eventually added.
-- [ ] Configure the two `same_session_close` hosted shadow triggers from `routines/SCHEDULE.md`.
+- [x] Configure the two `same_session_close` hosted shadow triggers from `routines/SCHEDULE.md`.
 - [ ] Observe and review one complete scheduled same-date Decision → Shadow Execution cycle for the selected close-profile lane.
 
 ## Live acceptance and loop

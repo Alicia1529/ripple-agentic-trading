@@ -21,4 +21,4 @@ Read these rules and the three entries in this file before work. Before handing 
 - Outcome: owner-approved `account_c` binds `closing_momentum_v1` to `same_session_close` with Account B's $1000, universe, and risk; overnight and close routines now select disjoint profile cohorts.
 - Evidence: [`SCHEDULE.md`](../routines/SCHEDULE.md) defines 2:30 PM Decision and 3:20 PM Execution triggers; stable architecture records the six-trigger topology.
 - Verification: 84/84 tests, three-account catalog, exact `account_b`/`account_c` parameter parity, profile listings, compileall, diff check, and credential scan pass.
-- Next/risk: configure the two hosted triggers, then observe one scheduled same-date cycle. No live config, broker behavior, or existing lane binding changed.
+- Next/risk: both hosted close-shadow triggers are active; observe one scheduled same-date cycle before acceptance. No live config, broker behavior, or existing lane binding changed.

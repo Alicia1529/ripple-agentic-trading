@@ -1,8 +1,8 @@
 # Same-session close shadow slice — execution plan
 
-**Status:** Tasks 1 and 2 are fixture-accepted. Task 3 repository rollout was owner-approved on
-2026-08-27; hosted triggers and the first scheduled acceptance cycle remain pending. This plan
-does not authorize a live lane, strategy switch, or capital change.
+**Status:** Tasks 1 and 2 are fixture-accepted. Task 3 repository rollout and hosted triggers were
+configured after owner approval on 2026-08-27; the first scheduled acceptance cycle remains
+pending. This plan does not authorize a live lane, strategy switch, or capital change.
 
 Use this plan when implementing the first `same_session_close` shadow capability. Read
 `AGENTS.md` and its current sources of truth before acting; current repository state overrides
