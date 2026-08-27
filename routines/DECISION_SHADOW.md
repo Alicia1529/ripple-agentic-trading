@@ -18,6 +18,16 @@ Use `ending_account` from the latest prior `trading_days/*/execution.json` as th
 
 Gather the selected strategy's required facts for the complete configured universe and current virtual positions. Where two lanes require the same market facts, use the same completed-session `as_of` for fair comparison, while producing independent decisions.
 
+## Market-data freshness
+
+Before gathering prices, resolve `expected_latest_session` from the checked-in New York trading calendar and the Decision's point-in-time cutoff. For a historical backfill, derive it from the historical `decision_time`, never from the current date or later-known data.
+
+- For issuer events, filings, reported results, and guidance, prefer the issuer's investor-relations site or SEC filing. For prices and indicators, use a date-indexed historical market-data source that exposes the exact session represented by each value.
+- Accept a completed-session close only when the source explicitly contains a row for `expected_latest_session`, with the market timezone and value identifiable. A search-result snippet, page crawl date, undated current quote, or “previous close” label is not proof of that session.
+- If the first price source lags `expected_latest_session`, query at least one independent date-indexed source before declaring the value unavailable. Do not silently reuse the prior session. If sources disagree and the discrepancy cannot be resolved from a more authoritative record, record the conflict and fail closed under the selected Strategy Spec.
+- Keep regular-session close, extended-hours price, and post-event reaction distinct. Never use an after-hours move as a completed-session close or as a completed post-event session reaction.
+- Record each accepted source URL, its exact market-data `as_of`, and the retrieval time in the credential-free snapshot. A current retrieval time does not make an older market observation current.
+
 Build one credential-free temporary input per lane with exactly `snapshot`, `account_baseline`, and `decision`, then publish:
 
 ```bash

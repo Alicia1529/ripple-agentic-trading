@@ -2,24 +2,23 @@
 
 Read these rules and the three entries in this file before work. Before handing off, append one chronological entry with local timestamp, outcome, evidence, next action, and only material risk. Keep each entry within 100 words and five bullets, link to authoritative files instead of duplicating them, and retain exactly the latest three entries total.
 
-## 2026-08-26 01:22 PDT — README introduces the documentation set
+## 2026-08-26 21:53 PDT — Shadow source freshness tightened
 
-- Outcome: [`README.md`](../README.md) now groups every document by the question it answers — understand it, run it, change it — so the three new pages and the existing set are reachable from the front page.
-- Correction: the stale "Current gates" paragraph, which still required a live loop the intro already described as in place, is replaced by what actually gates expansion.
-- Deferred: `EXECUTION_LIVE.md` and [`ARCHITECTURE.md`](ARCHITECTURE.md) still say the live broker-write loop is unimplemented while TODO, README, and `config/account_a.json` say otherwise; README now points at both authorities instead of taking a side. Owner decision required.
-- Evidence: 72 tests pass, no broken links, every `docs/*.md` reachable from README or the map.
+- Outcome: [`DECISION_SHADOW.md`](../routines/DECISION_SHADOW.md) now resolves the expected completed session before sourcing and requires an explicit dated row for an accepted close.
+- Sources: issuer IR/SEC evidence is preferred for company events; lagging price pages require an independent date-indexed fallback, and unresolved conflicts fail closed.
+- Semantics: regular close, extended-hours prices, and completed post-event reactions remain distinct; historical backfills cannot use later-known data.
+- Evidence/risk: Markdown and diff checks plus all core tests pass. Next Shadow Decision uses this protocol; extra source checks may take longer.
 
-## 2026-08-26 01:33 PDT — Live Execution stop contract removed
+## 2026-08-26 21:59 PDT — Deterministic latest-session fallback
 
-- Outcome: [`EXECUTION_LIVE.md`](../routines/EXECUTION_LIVE.md) now operates the reviewed live loop for a catalog-selected lane and requires deterministic output fidelity, account binding, duplicate/history checks, ambiguity stops, and credential-free evidence.
-- Alignment: [`ARCHITECTURE.md`](ARCHITECTURE.md), [`RUNNING.md`](RUNNING.md), and [`SCHEDULE.md`](../routines/SCHEDULE.md) no longer describe the completed loop or live tasks as unfinished.
-- Scope: prompt and documentation only; no code, strategy, configuration, state, schedule trigger, broker connection, or allocation changed.
-- Evidence: full tests pass; stale stop-contract search and `git diff --check` are clean.
-- Risk: live v1 retains the reliability limits documented in [`RUNBOOK.md`](RUNBOOK.md); ambiguous outcomes still require human inspection and never authorize retry.
+- Outcome: [`growth_momentum_v2_lite_compact_v2.md`](../strategies/growth_momentum_v2_lite_compact_v2.md) repairs only a latest interpolated bar from same-date fundamentals and a non-interpolated SIP close; `account_a` selects it.
+- Safety: date, source, volume, and OHLC conflicts fail closed; earlier interpolation remains unavailable. Old inputs produce byte-identical output.
+- Evidence: the real 18-symbol repro changed from 18 unavailable to 18 available facts; all 75 tests, catalog validation, compileall, and diff checks pass.
+- Next/risk: use the fallback in a future Decision. Pre-existing HEAD `2e4faff` removed the 2026-08-28 artifacts; this change did not recreate them or run Decision, Execution, shadow, or broker writes.
 
-## 2026-08-26 06:40 PDT — Shadow execution preserved cash
+## 2026-08-26 22:16 PDT — Account A manual Live Decision
 
-- Outcome: the selected shadow lane executed its [`2026-08-26` cycle](../state/accounts/account_b/trading_days/2026-08-26/execution.json) with deterministic status `allowed`, no actions, and no Shadow Fills.
-- Evidence: ending state is $1000 cash with no positions; the credential scan, JSON validation, and all 72 core tests passed.
-- Provenance: the immutable Decision is `backfill`; Execution is `scheduled` at 09:37 EDT. No quotes were required because the lane held and planned no symbols.
-- Next: use this ending account as the next Decision continuity source. Material risk remains the documented zero-cost Shadow Fill model.
+- Outcome: manual [`2026-08-28` Decision](../state/accounts/account_a/trading_days/2026-08-28/order_plan.json) published plan `18c0433c-13fc-550c-8dec-fdbd5dc67d5c` with one 0.279-share JPM limit BUY and 90% cash target.
+- Evidence: complete-universe compact compiler passed with 18 deterministic latest-session repairs; JPM ranked first and cleared all four primary-source research gates.
+- Verification: snapshot contains no raw bars or credentials; all 75 core tests and artifact checks pass.
+- Next/risk: any later Execution remains separately gated by account binding, baseline, opening-gap, quote, duplicate, and broker safeguards. No Execution, shadow, order review, cancellation, placement, or broker write occurred.

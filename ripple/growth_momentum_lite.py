@@ -23,6 +23,19 @@ _SYMBOL_FIELDS = {
     "earnings_source_url",
 }
 _BAR_FIELDS = {"date", "open", "high", "low", "close", "interpolated"}
+_FALLBACK_FIELDS = {
+    "market_date",
+    "open",
+    "high",
+    "low",
+    "volume",
+    "fundamentals_source_url",
+    "official_close",
+}
+_OFFICIAL_CLOSE_FIELDS = {
+    "date", "price", "interpolated", "source", "source_url",
+}
+_OFFICIAL_CLOSE_SOURCES = {"sip-close", "sip-list-exchange-close"}
 
 
 def _decimal(value: Any, field: str) -> Decimal:
@@ -71,6 +84,15 @@ def _aware_timestamp(value: Any, field: str) -> str:
     return value
 
 
+def _validate_ohlc(prices: Mapping[str, Decimal], field: str) -> None:
+    if min(prices.values()) <= 0 or prices["high"] < max(
+        prices["open"], prices["low"], prices["close"]
+    ) or prices["low"] > min(
+        prices["open"], prices["high"], prices["close"]
+    ):
+        raise ValueError(f"{field} has invalid OHLC values")
+
+
 def _bars(
     raw: Any, symbol: str, as_of: date,
 ) -> tuple[list[dict[str, Any]], int, int, bool]:
@@ -93,12 +115,7 @@ def _bars(
             field: _decimal(item[field], f"{symbol}.bars[{index}].{field}")
             for field in ("open", "high", "low", "close")
         }
-        if min(prices.values()) <= 0 or prices["high"] < max(
-            prices["open"], prices["low"], prices["close"]
-        ) or prices["low"] > min(
-            prices["open"], prices["high"], prices["close"]
-        ):
-            raise ValueError(f"{symbol}.bars[{index}] has invalid OHLC values")
+        _validate_ohlc(prices, f"{symbol}.bars[{index}]")
         if item["interpolated"]:
             interpolated_count += 1
         else:
@@ -108,6 +125,70 @@ def _bars(
         item["interpolated"] for item in raw[-66:]
     )
     return accepted, len(raw), interpolated_count, required_window_interpolated
+
+
+def _latest_session_fallback(
+    raw_bars: Any,
+    raw_fallback: Any,
+    symbol: str,
+    expected_session: date,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    field = f"{symbol}.latest_session_fallback"
+    if not isinstance(raw_fallback, Mapping) or set(raw_fallback) != _FALLBACK_FIELDS:
+        raise ValueError(f"{field} fields do not match the schema")
+    if not isinstance(raw_bars, list) or not raw_bars:
+        raise ValueError(f"{field} requires an interpolated latest bar")
+    latest = raw_bars[-1]
+    if (
+        not isinstance(latest, Mapping)
+        or latest.get("interpolated") is not True
+    ):
+        raise ValueError(f"{field} requires an interpolated latest bar")
+
+    market_date = _date(raw_fallback["market_date"], f"{field}.market_date")
+    latest_date = _date(latest.get("date"), f"{symbol}.bars[-1].date")
+    raw_close = raw_fallback["official_close"]
+    if not isinstance(raw_close, Mapping) or set(raw_close) != _OFFICIAL_CLOSE_FIELDS:
+        raise ValueError(f"{field}.official_close fields do not match the schema")
+    close_date = _date(raw_close["date"], f"{field}.official_close.date")
+    if {market_date, latest_date, close_date} != {expected_session}:
+        raise ValueError(f"{field} dates must match expected_latest_session")
+    if raw_close["interpolated"] is not False:
+        raise ValueError(f"{field} official close must not be interpolated")
+    close_source = raw_close["source"]
+    if (
+        not isinstance(close_source, str)
+        or close_source not in _OFFICIAL_CLOSE_SOURCES
+    ):
+        raise ValueError(f"{field} official close source must be SIP close")
+    volume = _decimal(raw_fallback["volume"], f"{field}.volume")
+    if volume <= 0:
+        raise ValueError(f"{field} volume must be positive")
+
+    prices = {
+        "open": _decimal(raw_fallback["open"], f"{field}.open"),
+        "high": _decimal(raw_fallback["high"], f"{field}.high"),
+        "low": _decimal(raw_fallback["low"], f"{field}.low"),
+        "close": _decimal(raw_close["price"], f"{field}.official_close.price"),
+    }
+    _validate_ohlc(prices, field)
+    fundamentals_source = _source(
+        raw_fallback["fundamentals_source_url"],
+        f"{field}.fundamentals_source_url",
+    )
+    official_close_source = _source(
+        raw_close["source_url"], f"{field}.official_close.source_url",
+    )
+    return (
+        {"date": expected_session, **prices},
+        {
+            "fundamentals": fundamentals_source,
+            "market_date": expected_session.isoformat(),
+            "official_close": official_close_source,
+            "official_close_source": close_source,
+            "volume": _format(volume),
+        },
+    )
 
 
 def _mom_60_10(bars: Sequence[Mapping[str, Any]], end: int) -> Decimal:
@@ -193,11 +274,24 @@ def compile_growth_momentum_lite_facts(
     normalized = {}
     provenance = {}
     for symbol, raw in symbols.items():
-        if not isinstance(raw, Mapping) or set(raw) != _SYMBOL_FIELDS:
+        raw_fields = set(raw) if isinstance(raw, Mapping) else set()
+        if raw_fields not in (
+            _SYMBOL_FIELDS,
+            _SYMBOL_FIELDS | {"latest_session_fallback"},
+        ):
             raise ValueError(f"{symbol} fields do not match the schema")
         bars, requested_count, interpolated_count, required_window_interpolated = _bars(
             raw["bars"], symbol, as_of,
         )
+        fallback_provenance = None
+        if "latest_session_fallback" in raw:
+            repaired_bar, fallback_provenance = _latest_session_fallback(
+                raw["bars"], raw["latest_session_fallback"], symbol, latest_session,
+            )
+            bars.append(repaired_bar)
+            required_window_interpolated = any(
+                item["interpolated"] for item in raw["bars"][-66:-1]
+            )
         is_benchmark = symbol in _BENCHMARKS
         earnings_date = (
             None if raw["next_earnings_date"] is None
@@ -229,6 +323,9 @@ def compile_growth_momentum_lite_facts(
             "requested_bar_count": requested_count,
             "sector": _source(raw["sector_source_url"], f"{symbol}.sector_source_url"),
         }
+        if fallback_provenance is not None:
+            provenance[symbol]["latest_session_fallback"] = fallback_provenance
+            provenance[symbol]["repaired_interpolated_bar_count"] = 1
 
     preliminary = {}
     for symbol, values in normalized.items():
