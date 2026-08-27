@@ -75,6 +75,8 @@ Before enabling any live lane:
 - confirm there is exactly one live configuration; and
 - obtain the designated owner's explicit mode and allocation approval.
 
+For a planned Live action, inspect the deterministic `broker_order` rather than reconstructing it from the OrderPlan. A fractional final quantity is emitted as a regular-hours market order only after its current quote satisfies the immutable planned limit; it intentionally has no `limit_price`. An integer quantity remains a limit order. Treat any other fractional order shape, an unexpected market order, or a broker review mismatch as a stop condition. A market fill may slip beyond the planned limit, so reconcile the actual fill price and notional against the small-canary allocation after placement.
+
 There is no instantaneous repository-side “flatten everything” switch. To stop live work:
 
 1. Disable both live schedules on the hosting platform.

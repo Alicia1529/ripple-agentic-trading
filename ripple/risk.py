@@ -51,6 +51,7 @@ _ABORT_MESSAGES = {
     "stale_quote": "A required current quote is stale.",
     "account_state_mismatch": "Current cash or positions do not match the decision baseline.",
     "price_outside_tolerance": "The current price moved beyond the plan's allowed tolerance.",
+    "limit_not_marketable": "The current quote does not satisfy the planned limit.",
     "missing_session_open": "A required session opening price is missing.",
     "opening_gap": "The session opened above the plan's buy cancellation price.",
     "daily_loss": "The daily loss circuit breaker blocks new purchases.",
@@ -434,14 +435,24 @@ def evaluate_plan(
             if requested_quantity > position_quantity:
                 reason_code = "position_quantity"
                 actual_value = _format_decimal(position_quantity)
+        fractional_live_order = (
+            rules["execution"]["mode"] == "live"
+            and Decimal(actual_value) != Decimal(actual_value).to_integral_value()
+        )
+        if fractional_live_order and (
+            (order["side"] == "BUY" and current_price > Decimal(order["limit_price"]))
+            or (order["side"] == "SELL" and current_price < Decimal(order["limit_price"]))
+        ):
+            actions.append(_rejected_action(order, "limit_not_marketable"))
+            continue
         broker_order = {
             "side": order["side"].lower(),
             "symbol": symbol,
-            "type": order["order_type"].lower(),
+            "type": "market" if fractional_live_order else order["order_type"].lower(),
             sizing_field: actual_value,
         }
         for field in ("limit_price", "stop_price", "market_hours", "time_in_force"):
-            if field in order:
+            if field in order and not (fractional_live_order and field == "limit_price"):
                 broker_order[field] = order[field]
         broker_order["ref_id"] = order["order_id"]
         actions.append({

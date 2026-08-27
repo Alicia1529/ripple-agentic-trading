@@ -2,13 +2,6 @@
 
 Read these rules and the three entries in this file before work. Before handing off, append one chronological entry with local timestamp, outcome, evidence, next action, and only material risk. Keep each entry within 100 words and five bullets, link to authoritative files instead of duplicating them, and retain exactly the latest three entries total.
 
-## 2026-08-27 06:38 PDT — Account B shadow execution complete
-
-- Outcome: scheduled `next_session_open` Shadow Execution processed only `account_b`; deterministic risk returned `allowed` with `no_actions` for `earnings_drift_v1`.
-- Evidence: [`execution.json`](../state/accounts/account_b/trading_days/2026-08-27/execution.json) and [`report.md`](../state/accounts/account_b/trading_days/2026-08-27/report.md) preserve the immutable plan binding and explicit no-broker result.
-- Verification: catalog/profile selection, artifact inspection, JSON validation, credential scan, diff check, and all 84 core tests passed.
-- Next/risk: ending state remains $1000 cash and no positions; no fills, rejections, active lock, broker call, Decision, live, or close-profile work occurred.
-
 ## 2026-08-27 06:43 PDT — Account A broker review safely skipped
 
 - Outcome: scheduled live Execution risk allowed the planned `0.279` JPM BUY, but Robinhood review rejected its exact `358.2825` limit for subpenny increments; placement stopped with no broker write.
@@ -22,3 +15,11 @@ Read these rules and the three entries in this file before work. Before handing 
 - Evidence: [`execution.json`](../state/accounts/account_a/trading_days/2026-08-27/execution.json) records the exact allowed action, review, placement error, and zero-order/zero-position verification; [`report.md`](../state/accounts/account_a/trading_days/2026-08-27/report.md) summarizes no fill.
 - Verification: 87/87 tests passed before placement; post-error order history and positions were empty.
 - Next/risk: diagnose broker support for fractional LIMIT orders separately. Do not retry or silently convert the immutable limit order to market.
+
+## 2026-08-27 12:14 PDT — Live fractional broker compatibility fixed
+
+- Outcome: owner selected Live-only fractional `MARKET + regular_hours`; integer quantities remain LIMIT and no broker call occurred.
+- Safety: conversion requires the current quote to satisfy the immutable planned limit; BUY sizing still reserves cash at that limit.
+- Evidence: [`README.md`](../README.md), [`risk.py`](../ripple/risk.py), architecture, decision, and runbook document the no-hard-cap slippage risk.
+- Verification: targeted red/green coverage, 90/90 tests, catalog validation, and live cohort selection passed.
+- Next/risk: apply only on a future authorized cycle; reconcile any market fill because it can slip beyond the planned limit.

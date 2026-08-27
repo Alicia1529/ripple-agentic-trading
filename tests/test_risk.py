@@ -200,6 +200,48 @@ class RiskEvaluationTests(unittest.TestCase):
         self.assertTrue(result["actions"][0]["allowed"])
         self.assertEqual(result["actions"][0]["broker_order"]["limit_price"], "101.00")
 
+    def test_live_fractional_quantity_uses_marketable_regular_hours_order(self):
+        rules = self.rules()
+        rules["execution"]["mode"] = "live"
+
+        result = evaluate_plan(self.plan(), self.context(), rules)
+
+        self.assertEqual(result["status"], "allowed")
+        self.assertEqual(result["actions"][0]["broker_order"], {
+            "side": "buy",
+            "symbol": "AAPL",
+            "type": "market",
+            "quantity": "1.5",
+            "market_hours": "regular_hours",
+            "time_in_force": "gfd",
+            "ref_id": "04bbf1c7-416b-4ca2-b5a6-0e27be980965",
+        })
+
+    def test_live_fractional_quantity_requires_quote_to_satisfy_planned_limit(self):
+        plan = self.plan()
+        plan["orders"][0]["price_tolerance_pct"] = "0.02"
+        context = self.context()
+        context["quotes"]["AAPL"]["price"] = "101.50"
+        rules = self.rules()
+        rules["execution"]["mode"] = "live"
+
+        result = evaluate_plan(plan, context, rules)
+
+        self.assertEqual(result["status"], "rejected")
+        self.assertEqual(result["actions"][0]["reason_code"], "limit_not_marketable")
+        self.assertIsNone(result["actions"][0]["broker_order"])
+
+    def test_live_whole_share_quantity_keeps_limit_order(self):
+        plan = self.plan()
+        plan["orders"][0]["quantity"] = "1"
+        rules = self.rules()
+        rules["execution"]["mode"] = "live"
+
+        result = evaluate_plan(plan, self.context(), rules)
+
+        self.assertEqual(result["actions"][0]["broker_order"]["type"], "limit")
+        self.assertEqual(result["actions"][0]["broker_order"]["limit_price"], "101.00")
+
     def test_buy_above_opening_gap_threshold_is_rejected(self):
         plan = self.plan()
         plan["orders"][0]["gap_cancel_above"] = "103.00"
