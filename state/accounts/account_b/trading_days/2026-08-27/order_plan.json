@@ -1,0 +1,19 @@
+{
+  "account_baseline": {
+    "cash": "1000",
+    "positions": {}
+  },
+  "account_id": "account_b",
+  "decision_rationale": "First cycle for this lane, so no holding exists and no exit applies. The only configured-universe earnings event within the last three completed sessions is NVDA, which reported after the 2026-08-26 regular close: sessions_since_report=0 fails the strategy's 1-through-3 window and no completed post-report session exists yet to establish reaction_pct, so NVDA is disqualified before ranking. No other candidate qualifies. Retain 100% cash.",
+  "decision_run_kind": "backfill",
+  "decision_snapshot_id": "6cc6907d-fe6b-456b-9982-0c9c1aa1a9d8",
+  "decision_time": "2026-08-26T21:02:00-04:00",
+  "market_snapshot_as_of": "2026-08-26T21:01:30-04:00",
+  "model_config_version": "earnings_drift_v1_backfill_2026_08_27",
+  "order_plan_id": "aa3216bc-58a3-59c3-8b0e-c505eb076ab4",
+  "orders": [],
+  "strategy_id": "earnings_drift_v1",
+  "target_portfolio": {
+    "cash": "1"
+  }
+}

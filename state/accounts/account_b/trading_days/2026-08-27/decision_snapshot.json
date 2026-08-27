@@ -1,0 +1,103 @@
+{
+  "as_of": "2026-08-26T21:01:30-04:00",
+  "inputs": {
+    "account_mark": {
+      "cash": "1000",
+      "daily_pnl": "0",
+      "equity": "1000",
+      "high_water_mark": "1000",
+      "new_positions_today": 0,
+      "positions": {},
+      "source": "first shadow cycle; configured shadow.initial_cash baseline, empty positions, matching equity/high-water"
+    },
+    "event_queue": [
+      "NVDA"
+    ],
+    "facts": {
+      "NVDA": {
+        "atr20_pct": "0.030",
+        "atr20_pct_as_of": "2026-08-26T16:00:00-04:00",
+        "atr20_pct_source": "platform technical indicator ATR period=20 interval=day adjustment=all, value 6.3307 / close 209.66; through 2026-08-25 ATR20=6.6639 (0.0318) \u2014 the 2026-08-26 gap-fill bar deflates it slightly",
+        "close": "209.66",
+        "close_as_of": "2026-08-26T16:00:00-04:00",
+        "close_source": "platform market-data official close (source sip-list-exchange-close, interpolated=false) for session 2026-08-26",
+        "eps_actual": "2.22",
+        "eps_consensus": "2.09",
+        "eps_source": "platform earnings dataset, NVDA FY2027 Q2, verified=true",
+        "eps_surprise_pct": "0.062",
+        "median_dollar_vol_20": "24776000000",
+        "median_dollar_vol_20_as_of": "2026-08-26",
+        "median_dollar_vol_20_source": "proxy: platform equity fundamentals average_volume_30_days 118176099 x close 209.66; clears the 5,000,000 floor by ~3 orders of magnitude",
+        "mktcap": "5164413085000",
+        "mktcap_as_of": "2026-08-26",
+        "mktcap_source": "platform equity fundamentals market_cap",
+        "next_report_date_est": "2026-11-18",
+        "next_report_date_est_source": "platform earnings dataset, NVDA FY2027 Q3, verified=false (tentative)",
+        "reaction_pct": null,
+        "reaction_pct_note": "no completed post-report regular session exists as of the 2026-08-26 21:02 ET decision cutoff; the after-hours move is not a completed-session reaction and is not used",
+        "report_date": "2026-08-26",
+        "report_source": "platform earnings dataset (verified=true); NVIDIA Q2 FY27 results released after the 2026-08-26 U.S. close",
+        "report_timing": "pm (after the regular-session close)",
+        "rev_actual": "96221000000",
+        "rev_actual_source": "platform financials, NVDA FY2027 Q2, period_end 2026-07-26",
+        "rev_consensus": null,
+        "rev_surprise_pct": null,
+        "sector": "Electronic Technology",
+        "sector_source": "platform equity fundamentals (industry: Semiconductors)",
+        "sessions_since_report": 0,
+        "sue": null
+      }
+    },
+    "market": {
+      "SPY": {
+        "close": "766.08",
+        "close_as_of": "2026-08-26T16:00:00-04:00",
+        "close_source": "platform market-data official close for session 2026-08-26 (source sip-list-exchange-close, interpolated=false)",
+        "regime": "close 766.08 > sma200 706.36 -> base target weight 0.08 (not exercised; no eligible entry this cycle)",
+        "sma200": "706.36",
+        "sma200_as_of": "2026-08-26T16:00:00-04:00",
+        "sma200_source": "platform technical indicator SMA period=200 interval=day adjustment=all, session 2026-08-26 value 706.3608"
+      }
+    },
+    "positions": {},
+    "rejected_candidates": [],
+    "research": {},
+    "universe_screen": {
+      "as_of": "2026-08-26T21:01:30-04:00",
+      "completed_sessions": [
+        "2026-08-24",
+        "2026-08-25",
+        "2026-08-26"
+      ],
+      "source": "platform market-wide earnings calendar for 2026-08-24..2026-08-26; only NVDA (2026-08-26, pm) intersects the configured universe. HD reported 2026-08-18, outside the three-session window."
+    },
+    "warnings": [
+      "Decisive: NVDA is the only configured-universe symbol that reported earnings within the last three completed sessions (2026-08-24, 2026-08-25, 2026-08-26). It reported after the 2026-08-26 regular close, so sessions_since_report=0, which fails the strategy hard filter requiring 1 through 3 inclusive. No completed post-report regular session exists yet, so reaction_pct cannot be established. NVDA is disqualified before ranking and research.",
+      "NVDA rev_consensus, rev_surprise_pct, and sue were not sourced: the symbol is disqualified by the sessions_since_report window before those facts gate anything, and no point-in-time consensus source was consulted.",
+      "SPY 2026-08-26 close: date-indexed sources disagreed (766.08 at StockAnalysis/Tiingo vs 765.94 at ChartExchange, a 3:59:59 pre-auction last trade). Resolved per DECISION_SHADOW.md step 2 to the platform SIP list-exchange official close 766.08 for the dated session. No value was averaged or synthesized.",
+      "Point-in-time discipline: expected_latest_session resolved to 2026-08-26 from the historical decision_time; no later-known data (including the 2026-08-27 session or NVDA post-earnings prints) was used.",
+      "No prompt-injection or instruction-like content was encountered while gathering facts."
+    ]
+  },
+  "snapshot_id": "6cc6907d-fe6b-456b-9982-0c9c1aa1a9d8",
+  "universe": [
+    "AAPL",
+    "MSFT",
+    "NVDA",
+    "AMZN",
+    "AMD",
+    "MU",
+    "GOOGL",
+    "TSLA",
+    "AVGO",
+    "JPM",
+    "V",
+    "XOM",
+    "UNH",
+    "COST",
+    "HD",
+    "LLY",
+    "SPY",
+    "QQQ"
+  ]
+}
