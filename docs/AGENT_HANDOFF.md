@@ -16,6 +16,13 @@ Read these rules and the three entries in this file before work. Before handing 
 - Verification: snapshot contains no raw bars or credentials; all 75 core tests and artifact checks pass.
 - Next/risk: any later Execution remains separately gated by account binding, baseline, opening-gap, quote, duplicate, and broker safeguards. No Execution, shadow, order review, cancellation, placement, or broker write occurred.
 
+## 2026-08-26 22:45 PDT — Account B shadow Decision backfill 2026-08-27
+
+- Outcome: [`2026-08-27` Decision](../state/accounts/account_b/trading_days/2026-08-27/order_plan.json) published plan `aa3216bc-58a3-59c3-8b0e-c505eb076ab4`, `decision_run_kind=backfill`, 0 orders, 100% cash; commit `43aa33e`, pushed.
+- Reason: first cycle (no holdings/exits); NVDA — sole universe earnings event in the last three sessions — reported after the 2026-08-26 close, so `sessions_since_report=0` and no completed-session `reaction_pct`; disqualified pre-ranking.
+- Data: SPY 8/26 close conflict resolved to SIP list-exchange official `766.08` per [`DECISION_SHADOW.md`](../routines/DECISION_SHADOW.md) step 2; sma200 `706.36`.
+- Verification: 75/75 tests, catalog valid, no secrets in artifacts. No Execution or broker work; `account_a` untouched.
+
 ## 2026-08-26 22:35 PDT — Session-close sourcing rule hardened
 
 - Outcome: [`DECISION_SHADOW.md`](../routines/DECISION_SHADOW.md) now defines the accepted value as the dated session's official consolidated (market-center) close, not the 4:00 PM auction print, with an ordered official-close → SIP → fail-closed resolution and no averaging between sources; [`DECISIONS.md`](DECISIONS.md) records the durable form.
