@@ -38,6 +38,7 @@ Git history retains superseded reasoning. This file summarizes only decisions th
 - The Execution Routine performs no new investment reasoning. It may execute, scale down, reject, or abort after deterministic revalidation. Script-emitted full-position stop-loss/take-profit Risk Exits are the sole unplanned-order exception.
 - Stable IDs and first-success ownership reduce duplicates. Each new OrderPlan freezes its Decision run kind (`scheduled`, `manual`, or `backfill`), each execution result independently freezes its Execution run kind, and explicitly authorized manual runs remain accepted without relaxing safety checks. Historical plans without this field remain readable. Ambiguous live broker outcomes stop without blind retry.
 - A BUY may freeze an optional `gap_cancel_above` price. That order requires the actual regular-session open at Execution and is rejected only when the open is strictly above the threshold; a missing required open fails closed. Existing plans without the field remain valid.
+- New planned limits above $1 are quantized before OrderPlan publication to the broker's whole-cent increment. BUY limits round down and SELL limits round up so quantization never weakens the strategy's maximum purchase price or minimum sale price. Execution consumes the resulting immutable value verbatim; historical plans remain readable and are never repaired in place.
 
 ## Shadow execution
 

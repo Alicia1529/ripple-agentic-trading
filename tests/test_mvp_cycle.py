@@ -24,6 +24,36 @@ def _write_dry_run_config(root: Path) -> Path:
 
 
 class MvpDryCycleTests(unittest.TestCase):
+    def test_published_limits_use_broker_valid_directional_cent_prices(self):
+        fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
+        config = load_account_config(ROOT / "config" / "account_a.json")
+        from ripple.mvp import _build_plan
+
+        buy_input = {
+            "snapshot": fixture["snapshot"],
+            "account_baseline": fixture["account_baseline"],
+            "decision": json.loads(json.dumps(fixture["decision"])),
+        }
+        buy_input["decision"]["orders"][0].update({
+            "reference_price_at_decision": "356.5",
+            "limit_price": "358.2825",
+            "price_tolerance_pct": "0.005",
+        })
+        self.assertEqual(
+            _build_plan(buy_input, config).orders[0]["limit_price"],
+            "358.28",
+        )
+
+        sell_input = json.loads(json.dumps(buy_input))
+        sell_order = sell_input["decision"]["orders"][0]
+        sell_order["side"] = "SELL"
+        sell_order["limit_price"] = "354.7175"
+        sell_order.pop("buy_reason")
+        self.assertEqual(
+            _build_plan(sell_input, config).orders[0]["limit_price"],
+            "354.72",
+        )
+
     def test_closing_momentum_v1_fixture_uses_shared_unbound_shadow_path(self):
         fixture_path = ROOT / "fixtures" / "mvp" / "closing_momentum_v1_cycle.json"
         config_path = ROOT / "fixtures" / "mvp" / "closing_momentum_v1_account.json"

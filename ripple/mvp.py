@@ -2,7 +2,7 @@
 
 import argparse
 from datetime import datetime, time, timedelta, timezone
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation, ROUND_CEILING, ROUND_FLOOR
 import json
 from pathlib import Path
 import sys
@@ -26,6 +26,20 @@ _DECISION_FIELDS = {
 }
 _NEW_YORK = ZoneInfo("America/New_York")
 _ONE_DAY = timedelta(days=1)
+_BROKER_CENT = Decimal("0.01")
+
+
+def _broker_limit_price(value: Any, side: Any) -> Any:
+    if not isinstance(value, str) or side not in {"BUY", "SELL"}:
+        return value
+    try:
+        price = Decimal(value)
+    except InvalidOperation:
+        return value
+    if price <= Decimal("1"):
+        return value
+    rounding = ROUND_FLOOR if side == "BUY" else ROUND_CEILING
+    return format(price.quantize(_BROKER_CENT, rounding=rounding), "f")
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -229,6 +243,9 @@ def _build_plan(
         if not isinstance(proposed_order, Mapping) or "order_id" in proposed_order:
             raise ValueError("decision orders must be objects without order_id")
         order = dict(proposed_order)
+        order["limit_price"] = _broker_limit_price(
+            order.get("limit_price"), order.get("side"),
+        )
         order["order_id"] = str(uuid5(
             NAMESPACE_URL,
             f"{plan_id}:{index}:{order.get('symbol')}:{order.get('side')}",

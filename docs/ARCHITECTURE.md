@@ -50,7 +50,7 @@ flowchart TD
     class LADP,DRY gated;
 ```
 
-The LLM supplies bounded fact gathering and investment judgment. Python validates configurations and artifacts, compiles any strategy-required deterministic facts, assigns stable IDs, performs deterministic risk calculations, and simulates Shadow Fills. The owner supplies broker binding, funding, live activation, restart, and strategy-switch decisions.
+The LLM supplies bounded fact gathering and investment judgment. Python validates configurations and artifacts, compiles any strategy-required deterministic facts, assigns stable IDs, quantizes new planned limits to broker-valid price increments, performs deterministic risk calculations, and simulates Shadow Fills. The owner supplies broker binding, funding, live activation, restart, and strategy-switch decisions.
 
 ## Account Catalog interface
 
@@ -192,6 +192,8 @@ Canonical state roots are `state/accounts/<account_id>`. Each cycle lives at `tr
 All modes use the same rules: 20% maximum symbol position, three new positions per day, 5% daily-loss breaker, 10% tier-one drawdown, 15% tier-two drawdown and owner restart, 15-minute quote freshness, 30-day taxpayer-wide wash-sale lookback, 8% stop loss, and 20% take profit.
 
 Execution also checks the decision baseline, universe, price tolerance, cumulative BUY cash, and SELL holdings. Every planned limit must remain within its positive per-order tolerance, which may not exceed 10%. A BUY may additionally freeze `gap_cancel_above`; such an order requires the actual regular-session open and is rejected when that open is strictly above the frozen threshold. A missing required session open aborts the plan. Missing or stale facts, malformed input, cross-account mismatch, or unsafe sizing fails closed. A deterministic full-position Risk Exit is the only action allowed without a matching planned order.
+
+Before publishing a new OrderPlan, the Decision publisher converts limits above $1 to broker-valid whole-cent prices without weakening their protective direction: BUY limits round down and SELL limits round up. This happens before immutable publication and deterministic risk evaluation. Execution never rounds, repairs, or otherwise changes a published limit, and historical plans retain their recorded values.
 
 ## Authority and reliability
 
