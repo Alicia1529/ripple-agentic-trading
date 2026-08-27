@@ -2,13 +2,6 @@
 
 Read these rules and the three entries in this file before work. Before handing off, append one chronological entry with local timestamp, outcome, evidence, next action, and only material risk. Keep each entry within 100 words and five bullets, link to authoritative files instead of duplicating them, and retain exactly the latest three entries total.
 
-## 2026-08-27 00:06 PDT — Cycle-profile seam fixture-accepted
-
-- Outcome: Task 1 adds legacy-default `next_session_open` and unbound `same_session_close` catalog, plan, timing, and Shadow Fill attribution; durable terms and invariants are generalized.
-- Evidence: [`same_session_close_cycle.json`](../fixtures/mvp/same_session_close_cycle.json) produces one 2026-08-26 cycle using the 15:25 quote and `assumed_same_session_quote_fill` without broker I/O.
-- Verification: 82/82 tests, catalog validation, both mode listings, profile filtering, compileall, diff check, artifact review, and credential scan pass.
-- Next/risk: stop after Task 1. No existing config, live lane, hosted routine, strategy binding, capital, or broker behavior changed; Task 2/3 require separate work and approval.
-
 ## 2026-08-27 00:14 PDT — Closing Momentum v1 fixture-accepted
 
 - Outcome: [`closing_momentum_v1.md`](../strategies/closing_momentum_v1.md) defines an unbound quantitative same-session policy using compiled completed-session facts plus fresh price/open evidence, holding-first exits, one 8% BUY, and eight-position capacity.
@@ -22,3 +15,10 @@ Read these rules and the three entries in this file before work. Before handing 
 - Evidence: [`SCHEDULE.md`](../routines/SCHEDULE.md) defines 2:30 PM Decision and 3:20 PM Execution triggers; stable architecture records the six-trigger topology.
 - Verification: 84/84 tests, three-account catalog, exact `account_b`/`account_c` parameter parity, profile listings, compileall, diff check, and credential scan pass.
 - Next/risk: both hosted close-shadow triggers are active; observe one scheduled same-date cycle before acceptance. No live config, broker behavior, or existing lane binding changed.
+
+## 2026-08-27 06:38 PDT — Account B shadow execution complete
+
+- Outcome: scheduled `next_session_open` Shadow Execution processed only `account_b`; deterministic risk returned `allowed` with `no_actions` for `earnings_drift_v1`.
+- Evidence: [`execution.json`](../state/accounts/account_b/trading_days/2026-08-27/execution.json) and [`report.md`](../state/accounts/account_b/trading_days/2026-08-27/report.md) preserve the immutable plan binding and explicit no-broker result.
+- Verification: catalog/profile selection, artifact inspection, JSON validation, credential scan, diff check, and all 84 core tests passed.
+- Next/risk: ending state remains $1000 cash and no positions; no fills, rejections, active lock, broker call, Decision, live, or close-profile work occurred.
