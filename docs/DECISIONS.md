@@ -51,6 +51,10 @@ Git history retains superseded reasoning. This file summarizes only decisions th
 - The state layout reset removed prior checked-in state artifacts before hosted acceptance. Private Git stores only new credential-free cycles and locks. Platform-managed Robinhood authorization remains outside the repository.
 - Git is not a transactional submission journal or cross-runner lease. The live canary still accepts crash-before-log, duplicate-call, ambiguous-timeout, prompt/tool-use, configuration, and model-drift risks.
 
+## Published evidence
+
+- Ripple does not claim published Decision or Execution evidence is permanently immutable at the Git-history level. The code still refuses to overwrite an existing `decision_snapshot.json`/`order_plan.json` in the same trade-date directory (publish-once-per-cycle), but the designated owner may remove a mistaken or superseded artifact from the repository as a manual override. This reflects actual practice rather than authorizing routine cleanup: a manual override is a human, out-of-band correction, never something a Decision or Execution Routine does to its own or another cycle's output.
+
 ## Deterministic safety and non-goals
 
 - Risk remains per lane: 20% maximum position, three new positions per day, 5% daily loss, 10%/15% drawdown tiers, 15-minute quote age, 30-day taxpayer-wide wash-sale lookback, 8% stop loss, and 20% take profit. Planned limits must remain inside a positive per-order price tolerance capped at 10%; Growth Momentum v3 retains v2's removal of v1's fixed 1% policy but does not remove this deterministic cap.

@@ -114,7 +114,7 @@ Each document owns one kind of truth, because what the system *is*, what it must
 |---|---|
 | [`docs/ANATOMY_OF_A_CYCLE.md`](docs/ANATOMY_OF_A_CYCLE.md) | What one cycle actually produces, field by field, from a demo you can rerun. The fastest way in |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | How the system works today, and where its boundaries sit |
-| [`docs/INVARIANTS.md`](docs/INVARIANTS.md) | The 14 rules that may never be broken — the checklist every review runs against |
+| [`docs/INVARIANTS.md`](docs/INVARIANTS.md) | The 13 rules that may never be broken — the checklist every review runs against |
 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | Which durable choices govern this release, and why they were made that way |
 | [`CONTEXT.md`](CONTEXT.md) | What each domain term means, and which tempting synonyms to avoid |
 | [`PROPOSAL.md`](PROPOSAL.md) | Why Ripple exists, what it deliberately is not, and the gates between releases |
