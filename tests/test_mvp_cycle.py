@@ -54,6 +54,31 @@ class MvpDryCycleTests(unittest.TestCase):
             "354.72",
         )
 
+    def test_manual_decision_can_freeze_an_explicit_same_day_trade_date(self):
+        fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
+        fixture["snapshot"]["as_of"] = "2026-08-27T01:15:00-04:00"
+        fixture["decision"]["decision_time"] = "2026-08-27T01:16:00-04:00"
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            input_path = root / "decision.json"
+            input_path.write_text(json.dumps({
+                key: fixture[key] for key in ("snapshot", "account_baseline", "decision")
+            }))
+            from ripple.mvp import publish_decision
+
+            plan = publish_decision(
+                ROOT / "config" / "account_a.json",
+                input_path,
+                root / "account_a",
+                manual=True,
+                trade_date="2026-08-27",
+            )
+
+            self.assertEqual(plan.trade_date, "2026-08-27")
+            self.assertTrue((
+                root / "account_a" / "trading_days" / "2026-08-27" / "order_plan.json"
+            ).is_file())
+
     def test_closing_momentum_v1_fixture_uses_shared_unbound_shadow_path(self):
         fixture_path = ROOT / "fixtures" / "mvp" / "closing_momentum_v1_cycle.json"
         config_path = ROOT / "fixtures" / "mvp" / "closing_momentum_v1_account.json"

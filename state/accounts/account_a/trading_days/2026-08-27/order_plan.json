@@ -4,6 +4,7 @@
     "positions": {}
   },
   "account_id": "account_a",
+  "cycle_profile": "next_session_open",
   "decision_rationale": "SPY is above its 50-session average; JPM is the highest-ranked quantitatively eligible candidate and cleared all four primary-source research gates, so target a 10% JPM position and retain 90% cash.",
   "decision_run_kind": "manual",
   "decision_snapshot_id": "7b215897-46b3-4bcf-8bfb-7c0ba6eef492",
@@ -15,7 +16,7 @@
     {
       "buy_reason": "JPM's broad recurring growth in loans, deposits, payments, fees, and managed assets, together with raised net-interest-income guidance, should support appreciation.",
       "gap_cancel_above": "367.195",
-      "limit_price": "358.2825",
+      "limit_price": "358.28",
       "market_hours": "regular_hours",
       "order_id": "86c42d82-7be6-5a50-aa72-7d2e53b89c14",
       "order_type": "LIMIT",
@@ -31,5 +32,6 @@
   "target_portfolio": {
     "JPM": "0.10",
     "cash": "0.90"
-  }
+  },
+  "trade_date": "2026-08-27"
 }

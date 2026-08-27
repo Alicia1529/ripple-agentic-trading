@@ -1,7 +1,7 @@
 """Commands for the fixture-backed Decision and Execution Routines."""
 
 import argparse
-from datetime import datetime, time, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal, InvalidOperation, ROUND_CEILING, ROUND_FLOOR
 import json
 from pathlib import Path
@@ -204,6 +204,7 @@ def _build_plan(
     *,
     enforce_schedule: bool = True,
     decision_run_kind: str = "fixture",
+    trade_date_override: str | None = None,
 ) -> OrderPlan:
     if set(decision_input) != _DECISION_INPUT_FIELDS:
         raise ValueError("decision input fields do not match the schema")
@@ -236,7 +237,23 @@ def _build_plan(
         decision_time, snapshot.as_of, config.cycle_profile,
         enforce_schedule=enforce_schedule,
     )
-    trade_date = _trade_date(decision_time, config.cycle_profile)
+    if trade_date_override is None:
+        trade_date = _trade_date(decision_time, config.cycle_profile)
+    else:
+        if enforce_schedule or config.cycle_profile != "next_session_open":
+            raise ValueError("trade_date override requires a manual next_session_open Decision")
+        try:
+            override_date = date.fromisoformat(trade_date_override)
+        except ValueError as error:
+            raise ValueError("trade_date override must be an ISO date") from error
+        decision_at = _new_york_time(decision_time)
+        if override_date.isoformat() != trade_date_override:
+            raise ValueError("trade_date override must be an ISO date")
+        if override_date != decision_at.date() or not is_trading_day(override_date):
+            raise ValueError("manual trade_date override must be the Decision's trading day")
+        if decision_at.time() >= time(9, 30):
+            raise ValueError("same-day manual Decision must occur before the market opens")
+        trade_date = trade_date_override
     plan_id = str(uuid5(NAMESPACE_URL, f"ripple:{config.account_id}:{_date(decision_time)}"))
     orders = []
     for index, proposed_order in enumerate(decision["orders"]):
@@ -275,6 +292,7 @@ def _publish_decision(
     output: Path,
     *,
     run_kind: str = "fixture",
+    trade_date_override: str | None = None,
 ) -> OrderPlan:
     _validate_state_root(output, config)
     plan = _build_plan(
@@ -282,6 +300,7 @@ def _publish_decision(
         config,
         enforce_schedule=run_kind != "manual",
         decision_run_kind=run_kind,
+        trade_date_override=trade_date_override,
     )
     trade_date = _plan_trade_date(plan)
     cycle_root = output / "trading_days" / trade_date
@@ -471,6 +490,7 @@ def publish_decision(
     now: datetime | None = None,
     manual: bool = False,
     historical_backfill: bool = False,
+    trade_date: str | None = None,
 ) -> OrderPlan:
     config = load_account_config(config_path)
     decision_input = _read_json(input_path)
@@ -479,6 +499,8 @@ def publish_decision(
         raise ValueError("decision input is missing decision_time")
     if manual and historical_backfill:
         raise ValueError("manual and historical backfill modes are mutually exclusive")
+    if trade_date is not None and not manual:
+        raise ValueError("trade_date override requires --manual-run")
     if historical_backfill and config.mode not in {"live", "shadow"}:
         raise ValueError("historical Decision backfill requires live or shadow mode")
     if historical_backfill and config.cycle_profile == "same_session_close":
@@ -500,6 +522,7 @@ def publish_decision(
         run_kind=(
             "manual" if manual else "backfill" if historical_backfill else "scheduled"
         ),
+        trade_date_override=trade_date,
     )
 
 
@@ -594,6 +617,7 @@ def _parser() -> argparse.ArgumentParser:
     publish_mode = publish.add_mutually_exclusive_group()
     publish_mode.add_argument("--manual-run", action="store_true")
     publish_mode.add_argument("--historical-backfill", action="store_true")
+    publish.add_argument("--trade-date")
 
     execute = subparsers.add_parser("execute-dry-run")
     execute.add_argument("--config", type=Path, required=True)
@@ -653,6 +677,7 @@ def main(argv: list[str] | None = None) -> int:
                 args.config, args.input, args.output,
                 manual=args.manual_run,
                 historical_backfill=args.historical_backfill,
+                trade_date=args.trade_date,
             )
             print(f"decision published: {plan.order_plan_id}")
             print(f"decision rationale: {plan.decision_rationale}")

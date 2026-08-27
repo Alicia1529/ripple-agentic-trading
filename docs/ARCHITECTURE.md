@@ -96,7 +96,7 @@ Every new `OrderPlan`, Decision record, deterministic result, execution record, 
 
 ## Execution modes, cycle profiles, and scheduled cohorts
 
-A Cycle Profile freezes the timing topology and Execution-session `trade_date` of each new OrderPlan. `next_session_open` preserves the prior-evening Decision and next-Trading-Day morning Execution. `same_session_close` uses a 2:25–3:05 PM Decision and later 3:15–3:40 PM Execution on one regular New York Trading Day. V1 excludes early-close sessions and historical backfill for the same-session profile; a manual run bypasses only the clock window, not the frozen date, calendar, ordering, risk, or mode checks.
+A Cycle Profile freezes the timing topology and Execution-session `trade_date` of each new OrderPlan. `next_session_open` preserves the prior-evening Decision and next-Trading-Day morning Execution. A designated-owner manual Decision made before 9:30 AM may explicitly freeze that same regular Trading Day with `--trade-date`; this is not available to scheduled or historical-backfill runs. `same_session_close` uses a 2:25–3:05 PM Decision and later 3:15–3:40 PM Execution on one regular New York Trading Day. V1 excludes early-close sessions and historical backfill for the same-session profile; a manual run bypasses only the clock window, not the frozen date, calendar, ordering, risk, or mode checks.
 
 | Mode | Scheduled selection | Execution behavior | Authority |
 |---|---|---|---|
