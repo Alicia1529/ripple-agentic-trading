@@ -125,7 +125,7 @@ class ShadowExecutionTests(unittest.TestCase):
             self.assertEqual(result["mode"], "shadow")
             self.assertEqual(plan.decision_run_kind, "manual")
             self.assertEqual(result["execution_run_kind"], "scheduled")
-            self.assertEqual(result["strategy_id"], "earnings_drift_v1")
+            self.assertEqual(result["strategy_id"], "earnings_drift_v2")
             self.assertEqual(result["fill_status"], "filled")
             self.assertEqual(result["shadow_fills"], [{
                 "order_id": result["actions"][0]["order_id"],

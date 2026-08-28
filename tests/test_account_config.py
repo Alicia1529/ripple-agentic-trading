@@ -75,6 +75,13 @@ class AccountCatalogTests(unittest.TestCase):
         )
         account_b = next(config for config in catalog if config.account_id == "account_b")
         account_c = next(config for config in catalog if config.account_id == "account_c")
+        self.assertEqual(account_b.strategy_id, "earnings_drift_v2")
+        strategy_text = account_b.strategy_path.read_text()
+        self.assertNotIn("`sue`", strategy_text)
+        self.assertIn(
+            "Rank passing candidates by `eps_surprise_pct` descending",
+            strategy_text,
+        )
         self.assertEqual(account_c.strategy_id, "closing_momentum_v1")
         self.assertEqual(account_c.shadow_initial_cash, account_b.shadow_initial_cash)
         self.assertEqual(account_c.universe, account_b.universe)

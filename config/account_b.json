@@ -1,6 +1,6 @@
 {
-  "description": "Shadow lane for comparing strategy evidence without broker writes. It applies Earnings Drift v1 to a fixed liquid large-cap and index universe, uses a $1000 virtual starting balance, and applies the shared deterministic position, loss, drawdown, quote-freshness, wash-sale, stop-loss, and take-profit constraints.",
-  "strategy": "earnings_drift_v1",
+  "description": "Shadow lane for comparing strategy evidence without broker writes. It applies Earnings Drift v2 to a fixed liquid large-cap and index universe, uses a $1000 virtual starting balance, and applies the shared deterministic position, loss, drawdown, quote-freshness, wash-sale, stop-loss, and take-profit constraints.",
+  "strategy": "earnings_drift_v2",
   "execution": {
     "mode": "shadow"
   },
