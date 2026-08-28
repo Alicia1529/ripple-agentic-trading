@@ -1,0 +1,181 @@
+{
+  "as_of": "2026-08-27T21:01:30-04:00",
+  "inputs": {
+    "account_mark": {
+      "cash": "1000",
+      "daily_pnl": "0",
+      "equity": "1000",
+      "high_water_mark": "1000",
+      "new_positions_today": 0,
+      "positions": {},
+      "source": "state/accounts/account_b/trading_days/2026-08-27/execution.json ending_account"
+    },
+    "event_queue": [
+      "NVDA"
+    ],
+    "facts": {
+      "NVDA": {
+        "atr20_pct": "0.03053287569085007456794455654",
+        "atr20_pct_as_of": "2026-08-27T16:00:00-04:00",
+        "atr20_pct_source": "20-session simple average of true range (6.960885) divided by 227.98, deterministically calculated from the dated EDT OHLC rows 2026-07-31 through 2026-08-27 plus 2026-07-30 prior close at https://chartexchange.com/symbol/nasdaq-nvda/historical/; true range uses max(high-low, abs(high-prior_close), abs(low-prior_close))",
+        "close": "227.98",
+        "close_as_of": "2026-08-27T16:00:00-04:00",
+        "close_source": "https://chartexchange.com/symbol/nasdaq-nvda/historical/ dated EDT row; independently matched by https://es.marketscreener.com/cotizacion/accion/NVIDIA-CORPORATION-57355629/ at 227.98 with 298,909,822 volume",
+        "eps_actual": "2.22",
+        "eps_consensus": "2.09",
+        "eps_source": "non-GAAP diluted EPS actual from https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx; pre-report FactSet consensus from https://apnews.com/article/dc8d556e709b50915cca9217a60b1991",
+        "eps_surprise_pct": "0.062200956937799043062200957",
+        "median_dollar_vol_20": "24664593310.4000",
+        "median_dollar_vol_20_as_of": "2026-08-27",
+        "median_dollar_vol_20_source": "median of close times volume for the 20 dated EDT sessions 2026-07-31 through 2026-08-27 at https://chartexchange.com/symbol/nasdaq-nvda/historical/",
+        "mktcap": "5522000000000",
+        "mktcap_as_of": "2026-08-27",
+        "mktcap_source": "https://ycharts.com/companies/NVDA/market_cap dated historical market-cap row",
+        "next_report_date_est": "2026-11-18",
+        "next_report_date_est_source": "https://www.wallstreethorizon.com/nvidia-earnings-calendar labels 2026-11-18 after market as inferred",
+        "reaction_pct": "0.087379566917867022798817133",
+        "reaction_source": "first completed post-report official daily close 227.98 on 2026-08-27 divided by the accepted 2026-08-26 pre-report close 209.66 from the lane's immutable prior snapshot, minus one",
+        "report_date": "2026-08-26",
+        "report_source": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx",
+        "report_timing": "after_regular_close",
+        "rev_actual": "96221000000",
+        "rev_consensus": "92270000000",
+        "rev_surprise_pct": "0.042819984827137747913731440",
+        "revenue_source": "actual from NVIDIA's 2026-08-26 release; pre-report FactSet consensus from https://apnews.com/article/dc8d556e709b50915cca9217a60b1991",
+        "sector": "Information Technology",
+        "sector_source": "https://www.moneycontrol.com/us-markets/technical-analysis/nvidia/NVDA/daily identifies sector Information Technology; issuer business description confirms accelerated computing",
+        "sessions_since_report": 1
+      }
+    },
+    "market": {
+      "SPY": {
+        "close": "771.10",
+        "close_as_of": "2026-08-27T16:00:00-04:00",
+        "close_source": "https://stockanalysis.com/etf/spy/history/ dated 2026-08-27 row; close 771.10",
+        "regime": "close 771.10 > sma200 709.41; base target weight 0.08",
+        "sma200": "709.41",
+        "sma200_as_of": "2026-08-27",
+        "sma200_source": "https://wallstreetnumbers.com/etfs/spy/moving-average dated 2026-08-27 200-day SMA"
+      }
+    },
+    "positions": {},
+    "rejected_candidates": [],
+    "research": {
+      "NVDA": {
+        "questions": {
+          "1_repeatable_operations": {
+            "answer": "yes",
+            "reason": "The non-GAAP EPS beat coincided with revenue growth of 106%, Data Center growth of 117%, flat 75.0% non-GAAP gross margin, and 124% growth in non-GAAP operating income; the evidence supports operating scale rather than a tax, share-count, FX, settlement, or one-time-gain explanation.",
+            "source": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx",
+            "source_as_of": "2026-08-26"
+          },
+          "2_forward_guidance": {
+            "answer": "yes",
+            "reason": "Management guided Q3 revenue to 108.0 billion plus or minus 2%, above the pre-report 106 billion Wall Street expectation, and did not rely on China Data Center compute revenue in that outlook.",
+            "source": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx and https://www.kiplinger.com/investing/stocks/17494/next-week-earnings-calendar-stocks",
+            "source_as_of": "2026-08-26T18:47:41-04:00"
+          },
+          "3_repeatable_driver": {
+            "answer": "yes",
+            "reason": "Management attributed growth to accelerating AI infrastructure demand and said Vera Rubin was in full production; Data Center revenue grew 18% sequentially, supporting continuation into the guided next quarter.",
+            "source": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx",
+            "source_as_of": "2026-08-26"
+          },
+          "4_leading_indicators": {
+            "answer": "yes",
+            "reason": "A contemporaneous customer commitment calls for AWS to deploy 2 million additional NVIDIA GPUs, while the reported ramp into full production and broad cloud-partner deployments show no material deterioration in the demand/deployment indicators disclosed for the driver.",
+            "source": "https://investor.nvidia.com/news/press-release-details/2026/AWS-and-NVIDIA-to-Deliver-2-Million-Additional-GPUs-and-Next-Generation-Infrastructure-for-Agentic-and-Physical-AI/default.aspx and https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx",
+            "source_as_of": "2026-08-26"
+          }
+        },
+        "rank": 1,
+        "thesis_record": {
+          "evidence_claims": [
+            {
+              "claim": "Q2 Data Center revenue was 89.0 billion, up 18% sequentially and 117% year over year.",
+              "source": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx",
+              "source_as_of": "2026-08-26"
+            },
+            {
+              "claim": "Q3 revenue guidance is 108.0 billion plus or minus 2%, above the 106 billion pre-report Wall Street expectation.",
+              "source": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx and https://www.kiplinger.com/investing/stocks/17494/next-week-earnings-calendar-stocks",
+              "source_as_of": "2026-08-26T18:47:41-04:00"
+            },
+            {
+              "claim": "AWS and NVIDIA plan deployment of 2 million additional NVIDIA GPUs.",
+              "source": "https://investor.nvidia.com/news/press-release-details/2026/AWS-and-NVIDIA-to-Deliver-2-Million-Additional-GPUs-and-Next-Generation-Infrastructure-for-Agentic-and-Physical-AI/default.aspx",
+              "source_as_of": "2026-08-26"
+            }
+          ],
+          "initial_stop_rule": "after a Shadow Fill, stop_price = fill_price * (1 - max(0.08, 2 * 0.03053287569085007456794455654))",
+          "intended_exit": "full exit after 30 completed sessions unless an earlier strategy exit applies",
+          "invalidation_conditions": [
+            {
+              "condition": "sessions_held >= 30",
+              "type": "quant"
+            },
+            {
+              "condition": "close <= stop_price",
+              "type": "quant"
+            },
+            {
+              "condition": "next_report_date_est is within three completed sessions",
+              "type": "quant"
+            },
+            {
+              "condition": "reported Data Center revenue declines sequentially",
+              "type": "quant"
+            },
+            {
+              "condition": "guidance is cut or withdrawn, or disclosed Vera Rubin/cloud deployment demand materially reverses",
+              "type": "judgment"
+            }
+          ],
+          "summary": "Accelerating AI infrastructure demand and the full-production Vera Rubin ramp should sustain Data Center growth into the next guided quarter."
+        }
+      }
+    },
+    "retrieval": {
+      "note": "Retrieval occurred after the historical cutoff, but every accepted input is an explicitly dated observation or issuer disclosure available by the cutoff; later 2026-08-28 market activity was excluded.",
+      "retrieved_at": "2026-08-28T17:01:48Z"
+    },
+    "universe_screen": {
+      "completed_sessions": [
+        "2026-08-25",
+        "2026-08-26",
+        "2026-08-27"
+      ],
+      "result": "Only NVDA among the configured universe reported within the three-session window.",
+      "source": "https://finance.yahoo.com/calendar/earnings?day=2026-06-30&from=2026-06-30&to=2026-07-06 resolved to the Aug 23-29 calendar, cross-checked with https://www.kiplinger.com/investing/stocks/17494/next-week-earnings-calendar-stocks and NVIDIA issuer release",
+      "source_as_of": "2026-08-27T21:01:30-04:00"
+    },
+    "warnings": [
+      "Historical point-in-time cutoff is 2026-08-27T21:02:00-04:00; expected_latest_session is 2026-08-27. No 2026-08-28 market value or news was used in the decision.",
+      "NVDA 2026-08-27 providers disagreed during the session: Investing.com retained a 224.44 row with only 72.20M volume, while the completed Nasdaq-dated records at ChartExchange and MarketScreener matched at 227.98 with 298,909,822 volume. The completed-session 227.98 value was accepted; no values were averaged.",
+      "ATR20 and median_dollar_vol_20 were derived deterministically from the cited 20 completed daily OHLCV rows; no intraday 2026-08-28 bar entered either calculation.",
+      "The next report date is inferred, not issuer-confirmed; it remains more than 25 sessions away under the checked-in calendar.",
+      "No prompt-injection or instruction-like content was encountered in the cited sources."
+    ]
+  },
+  "snapshot_id": "b93f2ea2-d9f1-4a5f-8501-b645b6721566",
+  "universe": [
+    "AAPL",
+    "MSFT",
+    "NVDA",
+    "AMZN",
+    "AMD",
+    "MU",
+    "GOOGL",
+    "TSLA",
+    "AVGO",
+    "JPM",
+    "V",
+    "XOM",
+    "UNH",
+    "COST",
+    "HD",
+    "LLY",
+    "SPY",
+    "QQQ"
+  ]
+}

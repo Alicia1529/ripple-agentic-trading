@@ -1,0 +1,37 @@
+{
+  "account_baseline": {
+    "cash": "1000",
+    "positions": {}
+  },
+  "account_id": "account_b",
+  "cycle_profile": "next_session_open",
+  "decision_rationale": "No holding exists, so no exit applies. NVDA is the only configured-universe earnings event in the last three completed sessions and passes every hard filter: 6.22% EPS surprise, 4.28% revenue surprise, 8.74% completed-session reaction, 3.05% ATR20, sufficient size and liquidity, and a distant next report. Its operating beat, above-consensus guidance, full-production Vera Rubin demand driver, and AWS deployment evidence clear all four research questions. With SPY above its 200-day SMA, target an 8% NVDA position and retain 92% cash.",
+  "decision_run_kind": "backfill",
+  "decision_snapshot_id": "b93f2ea2-d9f1-4a5f-8501-b645b6721566",
+  "decision_time": "2026-08-27T21:02:00-04:00",
+  "market_snapshot_as_of": "2026-08-27T21:01:30-04:00",
+  "model_config_version": "earnings_drift_v2_backfill_2026_08_28",
+  "order_plan_id": "15acbb8b-97a3-5338-ac71-ea67f8bd275e",
+  "orders": [
+    {
+      "buy_reason": "Accelerating AI infrastructure demand and the full-production Vera Rubin ramp support continued Data Center growth; detailed evidence and invalidations are in snapshot.inputs.research.NVDA.",
+      "gap_cancel_above": "237.09",
+      "limit_price": "229.72",
+      "market_hours": "regular_hours",
+      "order_id": "e9c6da1c-4a07-5eac-8545-5fa040f6f822",
+      "order_type": "LIMIT",
+      "price_tolerance_pct": "0.007633218922712518641986139135",
+      "quantity": "0.348",
+      "reference_price_at_decision": "227.98",
+      "side": "BUY",
+      "symbol": "NVDA",
+      "time_in_force": "gfd"
+    }
+  ],
+  "strategy_id": "earnings_drift_v2",
+  "target_portfolio": {
+    "NVDA": "0.08",
+    "cash": "0.92"
+  },
+  "trade_date": "2026-08-28"
+}
