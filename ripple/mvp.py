@@ -254,7 +254,7 @@ def _build_plan(
         if decision_at.time() >= time(9, 30):
             raise ValueError("same-day manual Decision must occur before the market opens")
         trade_date = trade_date_override
-    plan_id = str(uuid5(NAMESPACE_URL, f"ripple:{config.account_id}:{_date(decision_time)}"))
+    plan_id = str(uuid5(NAMESPACE_URL, f"ripple:{config.account_id}:{trade_date}"))
     orders = []
     for index, proposed_order in enumerate(decision["orders"]):
         if not isinstance(proposed_order, Mapping) or "order_id" in proposed_order:

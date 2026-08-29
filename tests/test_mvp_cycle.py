@@ -79,6 +79,39 @@ class MvpDryCycleTests(unittest.TestCase):
                 root / "account_a" / "trading_days" / "2026-08-27" / "order_plan.json"
             ).is_file())
 
+    def test_order_plan_id_is_unique_per_trade_date(self):
+        fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
+        config = load_account_config(ROOT / "config" / "account_a.json")
+        from ripple.mvp import _build_plan
+
+        manual_input = json.loads(json.dumps({
+            key: fixture[key] for key in ("snapshot", "account_baseline", "decision")
+        }))
+        manual_input["snapshot"]["as_of"] = "2026-08-27T01:15:00-04:00"
+        manual_input["decision"]["decision_time"] = "2026-08-27T01:16:00-04:00"
+        manual_plan = _build_plan(
+            manual_input,
+            config,
+            enforce_schedule=False,
+            decision_run_kind="manual",
+            trade_date_override="2026-08-27",
+        )
+
+        scheduled_input = json.loads(json.dumps({
+            key: fixture[key] for key in ("snapshot", "account_baseline", "decision")
+        }))
+        scheduled_input["snapshot"]["as_of"] = "2026-08-27T21:00:00-04:00"
+        scheduled_input["decision"]["decision_time"] = "2026-08-27T21:00:00-04:00"
+        scheduled_plan = _build_plan(
+            scheduled_input,
+            config,
+            decision_run_kind="scheduled",
+        )
+
+        self.assertEqual(manual_plan.trade_date, "2026-08-27")
+        self.assertEqual(scheduled_plan.trade_date, "2026-08-28")
+        self.assertNotEqual(manual_plan.order_plan_id, scheduled_plan.order_plan_id)
+
     def test_closing_momentum_v1_fixture_uses_shared_unbound_shadow_path(self):
         fixture_path = ROOT / "fixtures" / "mvp" / "closing_momentum_v1_cycle.json"
         config_path = ROOT / "fixtures" / "mvp" / "closing_momentum_v1_account.json"
