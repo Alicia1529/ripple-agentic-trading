@@ -14,7 +14,7 @@ Repository implementation now validates account/strategy configuration, enforces
 ## Live acceptance and loop
 
 - [x] Select the reviewed first live candidate.
-- [x] Implement and review the narrow Agentic Robinhood read/review/place/cancel loop without changing Decision, risk, timing, schema, or state semantics.
+- [x] Implement and review the narrow Agentic Robinhood read/place/cancel loop without changing Decision, risk, timing, schema, or state semantics.
 - [x] Verify the hosted connection selects the intended broker account and reconcile its real cash/positions against the selected lane before mode change.
 - [x] Preserve one live scheduler per phase, stable IDs, repository/broker-history duplicate checks, and no blind retry after an ambiguous outcome.
 - [x] Observe the required scheduled no-write acceptance cycle in the intended hosted environment.

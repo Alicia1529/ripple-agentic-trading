@@ -147,7 +147,7 @@ The published plan remains unchanged. Git carries credential-free artifacts into
 
 Execution loads the plan from the current trade-date directory, current account state, loss-sale history, and fresh quotes. Before risk evaluation, it requires that directory's immutable `decision_snapshot.json` and `order_plan.json` to exist and match the execution input. This binding applies equally to scheduled and explicitly authorized manual runs. It then runs the shared deterministic risk module.
 
-Live execution submits only script-allowed actions exactly as emitted through the reviewed Robinhood read/review/place/cancel loop. Because Robinhood supports fractional shares only as regular-hours market orders, deterministic risk converts a Live action whose final quantity is fractional from the immutable planned LIMIT intent to `MARKET + regular_hours` only after the current quote satisfies that planned limit. Integer-share Live actions remain LIMIT orders. The plan's limit remains the BUY sizing basis, but the market fill has no hard price cap and may slip beyond it. A selected `live` configuration records owner activation for its reviewed small-canary allocation; routines cannot enable a lane, change strategy or capital, clear a tier-two lock, or retry an ambiguous broker outcome.
+Live execution submits only script-allowed actions exactly as emitted through the reviewed Robinhood read/place/cancel loop. The designated owner's standing approval authorizes Scheduled Live Execution to place each emitted action once without Robinhood review or per-order confirmation; an explicit `--manual-run` supplies the equivalent authority for that manual cycle. Because Robinhood supports fractional shares only as regular-hours market orders, deterministic risk converts a Live action whose final quantity is fractional from the immutable planned LIMIT intent to `MARKET + regular_hours` only after the current quote satisfies that planned limit. Integer-share Live actions remain LIMIT orders. The plan's limit remains the BUY sizing basis, but the market fill has no hard price cap and may slip beyond it. A selected `live` configuration records owner activation for its reviewed small-canary allocation; routines cannot enable a lane, change strategy or capital, clear a tier-two lock, or retry an ambiguous broker outcome.
 
 Shadow execution uses the same risk output but never calls Robinhood. For each allowed action:
 
@@ -171,7 +171,7 @@ The plan freezes its Cycle Profile and Trading Day. Every fill attempt occurs af
 | `OrderPlan` | Represent strategy-attributed decision intent | Decision rationale, strict order shape, account baseline, portfolio weights, immutable nested values |
 | Risk module | Return allowed, clipped, rejected, or aborted actions | Account binding, freshness, sizing, cash reservation, loss/drawdown/wash-sale/exit rules |
 | Shadow adapter | Return fill attempts and ending virtual state | Profile-attributed marketability, Execution-quote fills, position/cash state transition, no broker I/O |
-| Live adapter | Use deterministic output with Robinhood | Account binding, duplicate/history checks, review/place fidelity, ambiguity stop, credential-free evidence |
+| Live adapter | Use deterministic output with Robinhood | Account binding, duplicate/history checks, exact one-call placement, ambiguity stop, credential-free evidence |
 | Lane State | Carry credential-free evidence across fresh sessions | Per-lane trade-date cycles and an optional active risk lock |
 
 ## Artifacts and state

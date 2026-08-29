@@ -8,7 +8,7 @@ A scheduled invocation must run on a trading day around 9:35 AM `America/New_Yor
 
 ## Live authority
 
-The reviewed Agentic Robinhood read/review/place/cancel loop and live acceptance are complete. A catalog-selected `live` configuration records the designated owner's mode approval; the routine may operate only that lane and only within its approved small-canary allocation. This routine cannot enable live mode, select another lane or strategy, increase capital, or clear a tier-two lock.
+The reviewed Agentic Robinhood read/place/cancel loop and live acceptance are complete. A catalog-selected `live` configuration records the designated owner's mode approval, and the designated owner has approved automatic Scheduled Live placement without Robinhood review or per-order confirmation inside the reviewed small-canary allocation. An explicit `--manual-run` invocation authorizes its own in-scope placement under the same checks. This routine cannot enable live mode, select another lane or strategy, increase capital, or clear a tier-two lock.
 
 ## Cohort selection
 
@@ -23,7 +23,7 @@ The reviewed loop must:
 3. gather the current cash basis required by the selected Strategy Spec, positions, taxpayer-wide loss-sale history, order history, and fresh held/planned-symbol quotes without persisting raw responses; map the broker's current `unleveraged_buying_power` exactly to `execution_context.account.cash` when the selected Strategy Spec requires it, never add pending deposits or other cash fields, and stop when that value is missing, negative, stale, or ambiguous; record the credential-free cash-basis name, value, as-of time, and pending-deposit total when available, then let deterministic baseline matching abort if it differs from `account_baseline.cash`; when a BUY freezes `gap_cancel_above`, also provide that symbol's actual regular-session `session_open`, and stop if it is unavailable;
 4. run the checked-in deterministic risk calculation and use its result verbatim;
 5. stop on whole-plan abort, ambiguous broker history, MCP error, or prior success;
-6. for each allowed action, call Robinhood review with the emitted `broker_order`, stop on any review alert or mismatch, then place exactly the reviewed action without increasing quantity or changing symbol, side, type, price, market hours, or time in force;
+6. for each allowed action, place the emitted `broker_order` exactly once with its stable order ID as `ref_id`, without increasing quantity or changing symbol, side, type, price, market hours, or time in force; Robinhood review is outside this approved direct-placement flow and must not be called;
 7. treat a timeout, malformed response, or uncertain placement outcome as ambiguous and stop without retrying; and
 8. record compact credential-free deterministic and broker evidence, run the core tests, inspect new artifacts for secrets, commit only the new lane evidence with an `Execution:` subject, and push normally without force.
 
