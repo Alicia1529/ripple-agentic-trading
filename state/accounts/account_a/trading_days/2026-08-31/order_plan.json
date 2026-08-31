@@ -1,0 +1,40 @@
+{
+  "account_baseline": {
+    "cash": "901.3700",
+    "positions": {
+      "JPM": "0.279000"
+    }
+  },
+  "account_id": "account_a",
+  "cycle_profile": "next_session_open",
+  "decision_rationale": "SPY is above its 50-session average; the existing JPM holding has no exit trigger; V is the highest-ranked eligible candidate and cleared all four primary-source research gates, so retain JPM at 10%, target V at 10%, and retain 80% cash.",
+  "decision_run_kind": "scheduled",
+  "decision_snapshot_id": "df52126c-8858-40e4-ba27-fb949cf17c0f",
+  "decision_time": "2026-08-30T21:06:00-04:00",
+  "market_snapshot_as_of": "2026-08-30T21:06:00-04:00",
+  "model_config_version": "growth_momentum_v2_lite_compact_v2",
+  "order_plan_id": "b207a602-0de2-5111-a413-5322dbb7ccb3",
+  "orders": [
+    {
+      "buy_reason": "Visa's broad recurring growth in payments volume, cross-border volume, and processed transactions, together with maintained FY2026 growth guidance, should support appreciation.",
+      "gap_cancel_above": "393.048",
+      "limit_price": "383.50",
+      "market_hours": "regular_hours",
+      "order_id": "4cc6b315-4333-539f-a75c-6017f565abee",
+      "order_type": "LIMIT",
+      "price_tolerance_pct": "0.005",
+      "quantity": "0.261",
+      "reference_price_at_decision": "381.6",
+      "side": "BUY",
+      "symbol": "V",
+      "time_in_force": "gfd"
+    }
+  ],
+  "strategy_id": "growth_momentum_v2_lite_compact_v2",
+  "target_portfolio": {
+    "JPM": "0.10",
+    "V": "0.10",
+    "cash": "0.80"
+  },
+  "trade_date": "2026-08-31"
+}
