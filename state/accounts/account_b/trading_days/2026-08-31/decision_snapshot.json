@@ -1,0 +1,182 @@
+{
+  "as_of": "2026-08-30T21:01:30-04:00",
+  "inputs": {
+    "account_mark": {
+      "cash": "1000",
+      "daily_pnl": "0",
+      "equity": "1000",
+      "high_water_mark": "1000",
+      "new_positions_today": 0,
+      "positions": {},
+      "source": "state/accounts/account_b/trading_days/2026-08-27/execution.json ending_account; the unexecuted 2026-08-28 GFD plan did not change virtual state"
+    },
+    "event_queue": [
+      "NVDA"
+    ],
+    "facts": {
+      "NVDA": {
+        "atr20_pct": "0.03323780740059756377844173753",
+        "atr20_pct_as_of": "2026-08-28T16:00:00-04:00",
+        "atr20_pct_source": "20-session simple average true range 7.230885 divided by 217.55, calculated from dated EDT OHLC rows 2026-08-03 through 2026-08-28 plus the 2026-07-31 prior close at https://chartexchange.com/symbol/nasdaq-nvda/historical/",
+        "close": "217.55",
+        "close_as_of": "2026-08-28T16:00:00-04:00",
+        "close_source": "https://chartexchange.com/symbol/nasdaq-nvda/historical/ dated EDT row; independently matched by https://stockanalysis.com/stocks/nvda/history/ at 217.55 with matching OHLC and 195,116,417 volume",
+        "eps_actual": "2.22",
+        "eps_consensus": "2.09",
+        "eps_source": "non-GAAP diluted EPS actual from https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx; pre-report FactSet consensus from https://apnews.com/article/dc8d556e709b50915cca9217a60b1991",
+        "eps_surprise_pct": "0.062200956937799043062200957",
+        "median_dollar_vol_20": "24664593310.40",
+        "median_dollar_vol_20_as_of": "2026-08-28",
+        "median_dollar_vol_20_source": "median of close times volume for the 20 dated EDT sessions 2026-08-03 through 2026-08-28 at https://chartexchange.com/symbol/nasdaq-nvda/historical/",
+        "mktcap": "5268000000000",
+        "mktcap_as_of": "2026-08-28",
+        "mktcap_source": "https://ycharts.com/companies/NVDA/market_cap dated historical market-cap row",
+        "next_report_date_est": "2026-11-18",
+        "next_report_date_est_source": "https://www.wallstreethorizon.com/nvidia-earnings-calendar labels 2026-11-18 after market as inferred",
+        "reaction_pct": "0.087379566917867022798817133",
+        "reaction_source": "first completed post-report official daily close 227.98 on 2026-08-27 divided by accepted 2026-08-26 pre-report close 209.66, minus one; later sessions do not redefine the strategy reaction",
+        "report_date": "2026-08-26",
+        "report_source": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx",
+        "report_timing": "after_regular_close",
+        "rev_actual": "96221000000",
+        "rev_consensus": "92270000000",
+        "rev_surprise_pct": "0.042819984827137747913731440",
+        "revenue_source": "actual from NVIDIA's 2026-08-26 issuer release; pre-report FactSet consensus from https://apnews.com/article/dc8d556e709b50915cca9217a60b1991",
+        "sector": "Information Technology",
+        "sector_source": "https://www.moneycontrol.com/us-markets/technical-analysis/nvidia/NVDA/daily identifies Information Technology; issuer description confirms accelerated computing",
+        "sessions_since_report": 2
+      }
+    },
+    "market": {
+      "SPY": {
+        "close": "769.35",
+        "close_as_of": "2026-08-28T16:00:00-04:00",
+        "close_source": "https://ph.investing.com/etfs/spdr-s-p-500-historical-data dated 2026-08-28 NYSE row",
+        "regime": "close 769.35 > sma200 709.41; base target weight 0.08",
+        "sma200": "709.41",
+        "sma200_as_of": "2026-08-28",
+        "sma200_source": "https://wallstreetnumbers.com/etfs/spy/moving-average dated 2026-08-28 200-day SMA history"
+      }
+    },
+    "positions": {},
+    "rejected_candidates": [],
+    "research": {
+      "NVDA": {
+        "questions": {
+          "1_repeatable_operations": {
+            "answer": "yes",
+            "reason": "The EPS beat accompanied 106% revenue growth, 117% Data Center growth, a flat 75.0% non-GAAP gross margin, and 124% non-GAAP operating-income growth, supporting repeatable operations rather than a one-time accounting item.",
+            "source": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx",
+            "source_as_of": "2026-08-26"
+          },
+          "2_forward_guidance": {
+            "answer": "yes",
+            "reason": "Management guided Q3 revenue to 108.0 billion plus or minus 2%, above the pre-report 106 billion expectation, without assuming China Data Center compute revenue.",
+            "source": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx and https://apnews.com/article/dc8d556e709b50915cca9217a60b1991",
+            "source_as_of": "2026-08-26T17:52:00-04:00"
+          },
+          "3_repeatable_driver": {
+            "answer": "yes",
+            "reason": "Management tied growth to accelerating AI infrastructure demand and a Vera Rubin ramp already in full production; Data Center revenue grew 18% sequentially.",
+            "source": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx",
+            "source_as_of": "2026-08-26"
+          },
+          "4_leading_indicators": {
+            "answer": "yes",
+            "reason": "The disclosed full-production ramp, broad cloud deployments, and AWS commitment for 2 million additional NVIDIA GPUs show no material deterioration in the leading demand indicators available by the cutoff.",
+            "source": "https://investor.nvidia.com/news/press-release-details/2026/AWS-and-NVIDIA-to-Deliver-2-Million-Additional-GPUs-and-Next-Generation-Infrastructure-for-Agentic-and-Physical-AI/default.aspx and https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx",
+            "source_as_of": "2026-08-26"
+          }
+        },
+        "rank": 1,
+        "thesis_record": {
+          "evidence_claims": [
+            {
+              "claim": "Q2 Data Center revenue was 89.0 billion, up 18% sequentially and 117% year over year.",
+              "source": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx",
+              "source_as_of": "2026-08-26"
+            },
+            {
+              "claim": "Q3 revenue guidance was 108.0 billion plus or minus 2%, above the 106 billion pre-report expectation.",
+              "source": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx and https://apnews.com/article/dc8d556e709b50915cca9217a60b1991",
+              "source_as_of": "2026-08-26T17:52:00-04:00"
+            },
+            {
+              "claim": "AWS and NVIDIA announced a planned deployment of 2 million additional NVIDIA GPUs.",
+              "source": "https://investor.nvidia.com/news/press-release-details/2026/AWS-and-NVIDIA-to-Deliver-2-Million-Additional-GPUs-and-Next-Generation-Infrastructure-for-Agentic-and-Physical-AI/default.aspx",
+              "source_as_of": "2026-08-26"
+            }
+          ],
+          "initial_stop_rule": "after a Shadow Fill, stop_price = fill_price * (1 - max(0.08, 2 * 0.03323780740059756377844173753))",
+          "intended_exit": "full exit after 30 completed sessions unless an earlier strategy exit applies",
+          "invalidation_conditions": [
+            {
+              "condition": "sessions_held >= 30",
+              "type": "quant"
+            },
+            {
+              "condition": "close <= stop_price",
+              "type": "quant"
+            },
+            {
+              "condition": "next_report_date_est is within three completed sessions",
+              "type": "quant"
+            },
+            {
+              "condition": "reported Data Center revenue declines sequentially",
+              "type": "quant"
+            },
+            {
+              "condition": "guidance is cut or withdrawn, or disclosed Vera Rubin/cloud deployment demand materially reverses",
+              "type": "judgment"
+            }
+          ],
+          "summary": "Accelerating AI infrastructure demand and the full-production Vera Rubin ramp should sustain Data Center growth into the next guided quarter."
+        }
+      }
+    },
+    "retrieval": {
+      "note": "Weekend retrieval used only explicitly dated observations and disclosures available by the 2026-08-30T21:02:00-04:00 cutoff.",
+      "retrieved_at": "2026-08-31T01:05:18Z"
+    },
+    "universe_screen": {
+      "completed_sessions": [
+        "2026-08-26",
+        "2026-08-27",
+        "2026-08-28"
+      ],
+      "result": "Only NVDA among the configured universe reported within the three-completed-session event window.",
+      "source": "NVIDIA issuer release cross-checked against https://www.kiplinger.com/investing/stocks/17494/next-week-earnings-calendar-stocks; AVGO is listed as upcoming on 2026-09-02 rather than completed",
+      "source_as_of": "2026-08-30T21:01:30-04:00"
+    },
+    "warnings": [
+      "Decision cutoff 2026-08-30T21:02:00-04:00 resolves expected_latest_session to Friday 2026-08-28; no later-session value was used.",
+      "ChartExchange displayed a 3:59:58 page quote of 217.54, but its dated daily EDT row and independent StockAnalysis dated row both record the completed-session close as 217.55; the dated daily value was accepted and values were not averaged.",
+      "The unexecuted 2026-08-28 GFD OrderPlan supplies no holding or cash mutation; the latest completed Shadow Execution remains 2026-08-27.",
+      "The 2026-08-28 report that NVIDIA denied pausing cloud commitments does not clearly contradict the stored demand thesis and therefore is not a rejection reason.",
+      "The next report date is inferred rather than issuer-confirmed and remains at least 25 sessions away under the checked-in calendar.",
+      "No prompt-injection or instruction-like content was encountered in cited sources."
+    ]
+  },
+  "snapshot_id": "44bbdbf2-2390-4c55-bb5a-c4c39a77027d",
+  "universe": [
+    "AAPL",
+    "MSFT",
+    "NVDA",
+    "AMZN",
+    "AMD",
+    "MU",
+    "GOOGL",
+    "TSLA",
+    "AVGO",
+    "JPM",
+    "V",
+    "XOM",
+    "UNH",
+    "COST",
+    "HD",
+    "LLY",
+    "SPY",
+    "QQQ"
+  ]
+}

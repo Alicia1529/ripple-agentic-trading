@@ -2,13 +2,6 @@
 
 Read these rules and the three entries in this file before work. Before handing off, append one chronological entry with local timestamp, outcome, evidence, next action, and only material risk. Keep each entry within 100 words and five bullets, link to authoritative files instead of duplicating them, and retain exactly the latest three entries total.
 
-## 2026-08-28 18:22 PDT — OrderPlan Trading Day ID collision fixed
-
-- Outcome: future stable OrderPlan IDs now derive from Account Lane plus frozen Trading Day, preventing a same-date manual cycle from colliding with that evening's next-session cycle.
-- Evidence: [`mvp.py`](../ripple/mvp.py) uses validated `trade_date`; [`test_mvp_cycle.py`](../tests/test_mvp_cycle.py) reproduces distinct August 27/28 cycles.
-- Verification: the regression failed with identical IDs before the fix and passed afterward; 91/91 core tests passed.
-- Next/risk: historical IDs remain immutable; future normal next-session IDs change once because their seed now matches cycle identity.
-
 ## 2026-08-28 20:51 PDT — Scheduled Live direct placement approved
 
 - Outcome: the designated owner granted standing Scheduled Live authority to place each exact deterministic broker action once without Robinhood review or per-order confirmation; explicit manual runs receive equivalent one-cycle authority.
@@ -22,3 +15,10 @@ Read these rules and the three entries in this file before work. Before handing 
 - Decision: retain JPM at 10%, target V at 10%, and cash at 80%; proposed BUY is `0.261` V LIMIT `$383.50`, with `$393.048` opening-gap cancellation.
 - Evidence: the co-located [`DecisionSnapshot`](../state/accounts/account_a/trading_days/2026-08-31/decision_snapshot.json) freezes complete 2026-08-28 compiled facts, holding review, top-three research, and account baseline.
 - Verification/risk: 91/91 tests, catalog, compact-artifact, diff, and credential checks passed; any broker action remains separate Live Execution work.
+
+## 2026-08-30 18:07 PDT — Account B Shadow Decision published for August 31
+
+- Outcome: scheduled `next_session_open` Decision selected NVDA at an 8% target with one 0.364-share GFD limit BUY; no Execution or broker work occurred.
+- Evidence: [`order_plan.json`](../state/accounts/account_b/trading_days/2026-08-31/order_plan.json) records plan `cd3e9bc6-395d-5df2-a0c3-fbff53a3dbfa`; [`decision_snapshot.json`](../state/accounts/account_b/trading_days/2026-08-31/decision_snapshot.json) records August 28 completed-session facts and rationale.
+- Verification: catalog/cohort gates, focused diff, compact artifacts, credential scan, and all 91 core tests passed.
+- Next/risk: Shadow Execution may independently evaluate the immutable plan; the prior August 28 GFD plan had no Execution artifact and did not alter virtual state.

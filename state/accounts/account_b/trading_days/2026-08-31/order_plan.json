@@ -1,0 +1,37 @@
+{
+  "account_baseline": {
+    "cash": "1000",
+    "positions": {}
+  },
+  "account_id": "account_b",
+  "cycle_profile": "next_session_open",
+  "decision_rationale": "No holding exists, so no exit applies. The prior GFD plan was not executed and did not alter virtual state. NVDA remains within the strategy's event window at sessions_since_report=2 and passes every hard filter: 6.22% EPS surprise, 4.28% revenue surprise, 8.74% first completed-session reaction, 3.32% ATR20, sufficient size and liquidity, and a distant next report. All four research questions remain supported, and the 2026-08-28 denial of a cloud-commitment pause does not establish a thesis break. With SPY above its 200-day SMA, target an 8% NVDA position and retain 92% cash.",
+  "decision_run_kind": "scheduled",
+  "decision_snapshot_id": "44bbdbf2-2390-4c55-bb5a-c4c39a77027d",
+  "decision_time": "2026-08-30T21:02:00-04:00",
+  "market_snapshot_as_of": "2026-08-30T21:01:30-04:00",
+  "model_config_version": "earnings_drift_v2_scheduled_2026_08_31",
+  "order_plan_id": "cd3e9bc6-395d-5df2-a0c3-fbff53a3dbfa",
+  "orders": [
+    {
+      "buy_reason": "Accelerating AI infrastructure demand and the full-production Vera Rubin ramp support continued Data Center growth; detailed evidence and invalidations are in snapshot.inputs.research.NVDA.",
+      "gap_cancel_above": "226.25",
+      "limit_price": "219.35",
+      "market_hours": "regular_hours",
+      "order_id": "ddba94e0-d146-523e-8542-a03c0d6cc319",
+      "order_type": "LIMIT",
+      "price_tolerance_pct": "0.008309451850149390944610434382",
+      "quantity": "0.364",
+      "reference_price_at_decision": "217.55",
+      "side": "BUY",
+      "symbol": "NVDA",
+      "time_in_force": "gfd"
+    }
+  ],
+  "strategy_id": "earnings_drift_v2",
+  "target_portfolio": {
+    "NVDA": "0.08",
+    "cash": "0.92"
+  },
+  "trade_date": "2026-08-31"
+}
