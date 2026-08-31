@@ -1,0 +1,70 @@
+{
+  "abort_reason": null,
+  "account_id": "account_b",
+  "actions": [
+    {
+      "abort_reason": null,
+      "actual_sizing": {
+        "field": "quantity",
+        "value": "0.364"
+      },
+      "allowed": true,
+      "broker_order": {
+        "limit_price": "219.35",
+        "market_hours": "regular_hours",
+        "quantity": "0.364",
+        "ref_id": "ddba94e0-d146-523e-8542-a03c0d6cc319",
+        "side": "buy",
+        "symbol": "NVDA",
+        "time_in_force": "gfd",
+        "type": "limit"
+      },
+      "buy_reason": "Accelerating AI infrastructure demand and the full-production Vera Rubin ramp support continued Data Center growth; detailed evidence and invalidations are in snapshot.inputs.research.NVDA.",
+      "desired_buy_price": "219.35",
+      "order_id": "ddba94e0-d146-523e-8542-a03c0d6cc319",
+      "original_sizing": {
+        "field": "quantity",
+        "value": "0.364"
+      },
+      "reason_code": "allowed",
+      "side": "BUY",
+      "symbol": "NVDA"
+    }
+  ],
+  "cycle_profile": "next_session_open",
+  "ending_account": {
+    "cash": "921.16852",
+    "daily_pnl": "0",
+    "equity": "1000",
+    "high_water_mark": "1000",
+    "loss_sales": [],
+    "new_positions_today": 1,
+    "positions": {
+      "NVDA": {
+        "average_cost": "216.57",
+        "quantity": "0.364"
+      }
+    }
+  },
+  "execution_run_kind": "scheduled",
+  "fill_status": "filled",
+  "manual_restart_required": false,
+  "mode": "shadow",
+  "order_plan_id": "cd3e9bc6-395d-5df2-a0c3-fbff53a3dbfa",
+  "position_alerts": [],
+  "shadow_fills": [
+    {
+      "filled_at": "2026-08-31T09:35:41-04:00",
+      "order_id": "ddba94e0-d146-523e-8542-a03c0d6cc319",
+      "price": "216.57",
+      "quantity": "0.364",
+      "reason_code": "assumed_t_plus_one_quote_fill",
+      "side": "BUY",
+      "status": "filled",
+      "symbol": "NVDA"
+    }
+  ],
+  "status": "allowed",
+  "strategy_id": "earnings_drift_v2",
+  "trade_date": "2026-08-31"
+}
