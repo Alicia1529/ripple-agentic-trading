@@ -1,0 +1,94 @@
+{
+  "account_id": "account_a",
+  "broker_binding": {
+    "accessible_account_count": 1,
+    "account_state": "active",
+    "account_type": "limited_margin"
+  },
+  "broker_outcomes": [
+    {
+      "final_verification": {
+        "average_fill_price": "381.249900",
+        "cumulative_quantity": "0.261000",
+        "fees": "0.000000",
+        "filled_at": "2026-08-31T13:38:56.027Z",
+        "position_quantity": "0.261000",
+        "state": "filled",
+        "unleveraged_buying_power": "801.8600"
+      },
+      "order_id": "4cc6b315-4333-539f-a75c-6017f565abee",
+      "outcome": "filled",
+      "placement": {
+        "attempted": true,
+        "broker_order_id": "6a9583ef-1c76-4972-b1f7-a0495e8591b5",
+        "initial_state": "unconfirmed",
+        "retried": false
+      },
+      "placement_authority": "standing_scheduled_direct_placement",
+      "stage": "broker_fill"
+    }
+  ],
+  "cash_basis": {
+    "as_of": "2026-08-31T13:38:30Z",
+    "name": "broker_unleveraged_buying_power",
+    "pending_deposits": "0",
+    "value": "901.3700"
+  },
+  "execution_run_kind": "scheduled",
+  "mode": "live",
+  "order_plan_id": "b207a602-0de2-5111-a413-5322dbb7ccb3",
+  "preconditions": {
+    "agentic_symbol_orders_found": 0,
+    "loss_sales_found": 0,
+    "planned_symbol_quote": {
+      "as_of": "2026-08-31T13:37:29.341746547Z",
+      "price": "380.630000",
+      "session_open": "380.398300"
+    },
+    "positions": {
+      "JPM": "0.279000"
+    }
+  },
+  "risk_result": {
+    "abort_reason": null,
+    "account_id": "account_a",
+    "actions": [
+      {
+        "abort_reason": null,
+        "actual_sizing": {
+          "field": "quantity",
+          "value": "0.261"
+        },
+        "allowed": true,
+        "broker_order": {
+          "market_hours": "regular_hours",
+          "quantity": "0.261",
+          "ref_id": "4cc6b315-4333-539f-a75c-6017f565abee",
+          "side": "buy",
+          "symbol": "V",
+          "time_in_force": "gfd",
+          "type": "market"
+        },
+        "buy_reason": "Visa's broad recurring growth in payments volume, cross-border volume, and processed transactions, together with maintained FY2026 growth guidance, should support appreciation.",
+        "desired_buy_price": "383.50",
+        "order_id": "4cc6b315-4333-539f-a75c-6017f565abee",
+        "original_sizing": {
+          "field": "quantity",
+          "value": "0.261"
+        },
+        "reason_code": "allowed",
+        "side": "BUY",
+        "symbol": "V"
+      }
+    ],
+    "manual_restart_required": false,
+    "mode": "live",
+    "order_plan_id": "b207a602-0de2-5111-a413-5322dbb7ccb3",
+    "position_alerts": [],
+    "status": "allowed",
+    "strategy_id": "growth_momentum_v2_lite_compact_v2"
+  },
+  "status": "filled",
+  "strategy_id": "growth_momentum_v2_lite_compact_v2",
+  "trade_date": "2026-08-31"
+}
