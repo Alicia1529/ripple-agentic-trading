@@ -1,0 +1,649 @@
+{
+  "as_of": "2026-09-01T14:32:37-04:00",
+  "inputs": {
+    "account": {
+      "as_of": "2026-09-01T14:32:37-04:00",
+      "cash_available_to_trade": "1000",
+      "cash_basis": "lane_available_virtual_cash",
+      "cash_source": "state/accounts/account_c/trading_days/2026-08-31/execution.json ending_account",
+      "daily_pnl": "0",
+      "equity": "1000",
+      "high_water_mark": "1000",
+      "new_positions_today": 0,
+      "positions": []
+    },
+    "compiled_facts": {
+      "as_of": "2026-09-01",
+      "expected_latest_session": "2026-08-31",
+      "facts": {
+        "AAPL": {
+          "asset_role": "security",
+          "atr20_pct": "0.02019093880775430805815426795",
+          "close": "316.8500061035156",
+          "days_to_earnings": null,
+          "mom_60_10": "-0.0181216927974380271822735403",
+          "rel_mom_qqq": "-0.0036201461712785108286818519",
+          "rel_mom_streak": 1,
+          "sector": null,
+          "sma50": "312.376799316406251",
+          "status": "available"
+        },
+        "AMD": {
+          "asset_role": "security",
+          "atr20_pct": "0.04569700982582769150425237278",
+          "close": "470.7200012207031",
+          "days_to_earnings": null,
+          "mom_60_10": "-0.0328746403014706424907692302",
+          "rel_mom_qqq": "-0.0183730936753111261371775418",
+          "rel_mom_streak": 5,
+          "sector": null,
+          "sma50": "504.742400512695314",
+          "status": "available"
+        },
+        "AMZN": {
+          "asset_role": "security",
+          "atr20_pct": "0.02460830075340605751393979434",
+          "close": "259.7699890136719",
+          "days_to_earnings": null,
+          "mom_60_10": "0.029630814734222408894647341",
+          "rel_mom_qqq": "0.0441323613603819252482390294",
+          "rel_mom_streak": 0,
+          "sector": null,
+          "sma50": "251.9667993164062514",
+          "status": "available"
+        },
+        "AVGO": {
+          "asset_role": "security",
+          "atr20_pct": "0.03655964940630644340751537961",
+          "close": "370.3399963378906",
+          "days_to_earnings": null,
+          "mom_60_10": "-0.0632116940508462701450712472",
+          "rel_mom_qqq": "-0.0487101474246867537914795588",
+          "rel_mom_streak": 5,
+          "sector": null,
+          "sma50": "385.287200317382815",
+          "status": "available"
+        },
+        "COST": {
+          "asset_role": "security",
+          "atr20_pct": "0.01805242315172870539824454334",
+          "close": "943.8900146484375",
+          "days_to_earnings": null,
+          "mom_60_10": "-0.0193859989296328374484385206",
+          "rel_mom_qqq": "-0.0048844523034733210948468322",
+          "rel_mom_streak": 1,
+          "sector": null,
+          "sma50": "945.628996582031256",
+          "status": "available"
+        },
+        "GOOGL": {
+          "asset_role": "security",
+          "atr20_pct": "0.02332695373423723731429134508",
+          "close": "339.3500061035156",
+          "days_to_earnings": null,
+          "mom_60_10": "-0.0757408910945806311322751982",
+          "rel_mom_qqq": "-0.0612393444684211147786835098",
+          "rel_mom_streak": 5,
+          "sector": null,
+          "sma50": "349.203999023437502",
+          "status": "available"
+        },
+        "HD": {
+          "asset_role": "security",
+          "atr20_pct": "0.02404292903599245125020491045",
+          "close": "327.8299865722656",
+          "days_to_earnings": null,
+          "mom_60_10": "0.090111281096273675367810893",
+          "rel_mom_qqq": "0.1046128277224331917214025814",
+          "rel_mom_streak": 0,
+          "sector": null,
+          "sma50": "340.351396484374997",
+          "status": "available"
+        },
+        "JPM": {
+          "asset_role": "security",
+          "atr20_pct": "0.01513960622362489123516944676",
+          "close": "356.0199890136719",
+          "days_to_earnings": null,
+          "mom_60_10": "0.161053666722815236466310221",
+          "rel_mom_qqq": "0.1755552133489747528199019094",
+          "rel_mom_streak": 0,
+          "sector": null,
+          "sma50": "347.821599731445309",
+          "status": "available"
+        },
+        "LLY": {
+          "asset_role": "security",
+          "atr20_pct": "0.03537687374708894069733721179",
+          "close": "1156.72998046875",
+          "days_to_earnings": null,
+          "mom_60_10": "0.051445442999141265139052996",
+          "rel_mom_qqq": "0.0659469896253007814926446844",
+          "rel_mom_streak": 0,
+          "sector": null,
+          "sma50": "1188.00400390625",
+          "status": "available"
+        },
+        "MSFT": {
+          "asset_role": "security",
+          "atr20_pct": "0.02080072892307042005419415411",
+          "close": "507.2900085449219",
+          "days_to_earnings": null,
+          "mom_60_10": "0.122182034346517372868849198",
+          "rel_mom_qqq": "0.1366835809726768892224408864",
+          "rel_mom_streak": 0,
+          "sector": null,
+          "sma50": "433.210398559570308",
+          "status": "available"
+        },
+        "MU": {
+          "asset_role": "security",
+          "atr20_pct": "0.05488093455544979090685461877",
+          "close": "958.72998046875",
+          "days_to_earnings": null,
+          "mom_60_10": "0.015813253012048192771084337",
+          "rel_mom_qqq": "0.0303147996382077091246760254",
+          "rel_mom_streak": 0,
+          "sector": null,
+          "sma50": "951.498604736328122",
+          "status": "available"
+        },
+        "NVDA": {
+          "asset_role": "security",
+          "atr20_pct": "0.03121206123033194820861150382",
+          "close": "220.77999877929688",
+          "days_to_earnings": null,
+          "mom_60_10": "0.029040477171760523870940796",
+          "rel_mom_qqq": "0.0435420237979200402245324844",
+          "rel_mom_streak": 0,
+          "sector": null,
+          "sma50": "208.621799316406249",
+          "status": "available"
+        },
+        "QQQ": {
+          "asset_role": "benchmark",
+          "atr20_pct": "0.0127978610275937320754575593",
+          "close": "716.760009765625",
+          "days_to_earnings": null,
+          "mom_60_10": "-0.0145015466261595163535916884",
+          "rel_mom_qqq": "0",
+          "rel_mom_streak": 5,
+          "sector": null,
+          "sma50": "711.586800537109374",
+          "status": "available"
+        },
+        "SPY": {
+          "asset_role": "benchmark",
+          "atr20_pct": "0.007315680867250667617198302358",
+          "close": "767.0499877929688",
+          "days_to_earnings": null,
+          "mom_60_10": "0.020578736348433856016072925",
+          "rel_mom_qqq": "0.0350802829745933723696646134",
+          "rel_mom_streak": 0,
+          "sector": null,
+          "sma50": "754.361401367187502",
+          "status": "available"
+        },
+        "TSLA": {
+          "asset_role": "security",
+          "atr20_pct": "0.03250577300164400914125636374",
+          "close": "367.95001220703125",
+          "days_to_earnings": null,
+          "mom_60_10": "-0.1891504889594851722279472307",
+          "rel_mom_qqq": "-0.1746489423333256558743555423",
+          "rel_mom_streak": 5,
+          "sector": null,
+          "sma50": "359.822998046874997",
+          "status": "available"
+        },
+        "UNH": {
+          "asset_role": "security",
+          "atr20_pct": "0.02247246454930480427524745846",
+          "close": "389.4100036621094",
+          "days_to_earnings": null,
+          "mom_60_10": "-0.0021439354828826678181076259",
+          "rel_mom_qqq": "0.0123576111432768485354840625",
+          "rel_mom_streak": 0,
+          "sector": null,
+          "sma50": "412.60279846191406",
+          "status": "available"
+        },
+        "V": {
+          "asset_role": "security",
+          "atr20_pct": "0.0163877031622701501094504503",
+          "close": "379.3699951171875",
+          "days_to_earnings": null,
+          "mom_60_10": "0.120744595372818974922743383",
+          "rel_mom_qqq": "0.1352461419989784912763350714",
+          "rel_mom_streak": 0,
+          "sector": null,
+          "sma50": "359.451603393554688",
+          "status": "available"
+        },
+        "XOM": {
+          "asset_role": "security",
+          "atr20_pct": "0.02211555079678939512518329624",
+          "close": "160.9499969482422",
+          "days_to_earnings": null,
+          "mom_60_10": "0.061957470690006776247026196",
+          "rel_mom_qqq": "0.0764590173161662926006178844",
+          "rel_mom_streak": 0,
+          "sector": null,
+          "sma50": "151.0058001708984374",
+          "status": "available"
+        }
+      },
+      "provenance": {
+        "AAPL": {
+          "accepted_bar_count": 127,
+          "earnings": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/AAPL?modules=assetProfile%2CcalendarEvents",
+          "expected_latest_session": "2026-08-31",
+          "interpolated_bar_count": 0,
+          "next_earnings_date": null,
+          "prices": "https://query1.finance.yahoo.com/v8/finance/chart/AAPL?period1=1772323200&period2=1788220800&interval=1d&events=splits&includeAdjustedClose=true",
+          "prices_as_of": "2026-08-31",
+          "requested_bar_count": 127,
+          "sector": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/AAPL?modules=assetProfile%2CcalendarEvents"
+        },
+        "AMD": {
+          "accepted_bar_count": 127,
+          "earnings": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/AMD?modules=assetProfile%2CcalendarEvents",
+          "expected_latest_session": "2026-08-31",
+          "interpolated_bar_count": 0,
+          "next_earnings_date": null,
+          "prices": "https://query1.finance.yahoo.com/v8/finance/chart/AMD?period1=1772323200&period2=1788220800&interval=1d&events=splits&includeAdjustedClose=true",
+          "prices_as_of": "2026-08-31",
+          "requested_bar_count": 127,
+          "sector": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/AMD?modules=assetProfile%2CcalendarEvents"
+        },
+        "AMZN": {
+          "accepted_bar_count": 127,
+          "earnings": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/AMZN?modules=assetProfile%2CcalendarEvents",
+          "expected_latest_session": "2026-08-31",
+          "interpolated_bar_count": 0,
+          "next_earnings_date": null,
+          "prices": "https://query1.finance.yahoo.com/v8/finance/chart/AMZN?period1=1772323200&period2=1788220800&interval=1d&events=splits&includeAdjustedClose=true",
+          "prices_as_of": "2026-08-31",
+          "requested_bar_count": 127,
+          "sector": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/AMZN?modules=assetProfile%2CcalendarEvents"
+        },
+        "AVGO": {
+          "accepted_bar_count": 127,
+          "earnings": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/AVGO?modules=assetProfile%2CcalendarEvents",
+          "expected_latest_session": "2026-08-31",
+          "interpolated_bar_count": 0,
+          "next_earnings_date": null,
+          "prices": "https://query1.finance.yahoo.com/v8/finance/chart/AVGO?period1=1772323200&period2=1788220800&interval=1d&events=splits&includeAdjustedClose=true",
+          "prices_as_of": "2026-08-31",
+          "requested_bar_count": 127,
+          "sector": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/AVGO?modules=assetProfile%2CcalendarEvents"
+        },
+        "COST": {
+          "accepted_bar_count": 127,
+          "earnings": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/COST?modules=assetProfile%2CcalendarEvents",
+          "expected_latest_session": "2026-08-31",
+          "interpolated_bar_count": 0,
+          "next_earnings_date": null,
+          "prices": "https://query1.finance.yahoo.com/v8/finance/chart/COST?period1=1772323200&period2=1788220800&interval=1d&events=splits&includeAdjustedClose=true",
+          "prices_as_of": "2026-08-31",
+          "requested_bar_count": 127,
+          "sector": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/COST?modules=assetProfile%2CcalendarEvents"
+        },
+        "GOOGL": {
+          "accepted_bar_count": 127,
+          "earnings": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/GOOGL?modules=assetProfile%2CcalendarEvents",
+          "expected_latest_session": "2026-08-31",
+          "interpolated_bar_count": 0,
+          "next_earnings_date": null,
+          "prices": "https://query1.finance.yahoo.com/v8/finance/chart/GOOGL?period1=1772323200&period2=1788220800&interval=1d&events=splits&includeAdjustedClose=true",
+          "prices_as_of": "2026-08-31",
+          "requested_bar_count": 127,
+          "sector": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/GOOGL?modules=assetProfile%2CcalendarEvents"
+        },
+        "HD": {
+          "accepted_bar_count": 127,
+          "earnings": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/HD?modules=assetProfile%2CcalendarEvents",
+          "expected_latest_session": "2026-08-31",
+          "interpolated_bar_count": 0,
+          "next_earnings_date": null,
+          "prices": "https://query1.finance.yahoo.com/v8/finance/chart/HD?period1=1772323200&period2=1788220800&interval=1d&events=splits&includeAdjustedClose=true",
+          "prices_as_of": "2026-08-31",
+          "requested_bar_count": 127,
+          "sector": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/HD?modules=assetProfile%2CcalendarEvents"
+        },
+        "JPM": {
+          "accepted_bar_count": 127,
+          "earnings": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/JPM?modules=assetProfile%2CcalendarEvents",
+          "expected_latest_session": "2026-08-31",
+          "interpolated_bar_count": 0,
+          "next_earnings_date": null,
+          "prices": "https://query1.finance.yahoo.com/v8/finance/chart/JPM?period1=1772323200&period2=1788220800&interval=1d&events=splits&includeAdjustedClose=true",
+          "prices_as_of": "2026-08-31",
+          "requested_bar_count": 127,
+          "sector": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/JPM?modules=assetProfile%2CcalendarEvents"
+        },
+        "LLY": {
+          "accepted_bar_count": 127,
+          "earnings": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/LLY?modules=assetProfile%2CcalendarEvents",
+          "expected_latest_session": "2026-08-31",
+          "interpolated_bar_count": 0,
+          "next_earnings_date": null,
+          "prices": "https://query1.finance.yahoo.com/v8/finance/chart/LLY?period1=1772323200&period2=1788220800&interval=1d&events=splits&includeAdjustedClose=true",
+          "prices_as_of": "2026-08-31",
+          "requested_bar_count": 127,
+          "sector": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/LLY?modules=assetProfile%2CcalendarEvents"
+        },
+        "MSFT": {
+          "accepted_bar_count": 127,
+          "earnings": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/MSFT?modules=assetProfile%2CcalendarEvents",
+          "expected_latest_session": "2026-08-31",
+          "interpolated_bar_count": 0,
+          "next_earnings_date": null,
+          "prices": "https://query1.finance.yahoo.com/v8/finance/chart/MSFT?period1=1772323200&period2=1788220800&interval=1d&events=splits&includeAdjustedClose=true",
+          "prices_as_of": "2026-08-31",
+          "requested_bar_count": 127,
+          "sector": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/MSFT?modules=assetProfile%2CcalendarEvents"
+        },
+        "MU": {
+          "accepted_bar_count": 127,
+          "earnings": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/MU?modules=assetProfile%2CcalendarEvents",
+          "expected_latest_session": "2026-08-31",
+          "interpolated_bar_count": 0,
+          "next_earnings_date": null,
+          "prices": "https://query1.finance.yahoo.com/v8/finance/chart/MU?period1=1772323200&period2=1788220800&interval=1d&events=splits&includeAdjustedClose=true",
+          "prices_as_of": "2026-08-31",
+          "requested_bar_count": 127,
+          "sector": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/MU?modules=assetProfile%2CcalendarEvents"
+        },
+        "NVDA": {
+          "accepted_bar_count": 127,
+          "earnings": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/NVDA?modules=assetProfile%2CcalendarEvents",
+          "expected_latest_session": "2026-08-31",
+          "interpolated_bar_count": 0,
+          "next_earnings_date": null,
+          "prices": "https://query1.finance.yahoo.com/v8/finance/chart/NVDA?period1=1772323200&period2=1788220800&interval=1d&events=splits&includeAdjustedClose=true",
+          "prices_as_of": "2026-08-31",
+          "requested_bar_count": 127,
+          "sector": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/NVDA?modules=assetProfile%2CcalendarEvents"
+        },
+        "QQQ": {
+          "accepted_bar_count": 127,
+          "earnings": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/QQQ?modules=assetProfile%2CcalendarEvents",
+          "expected_latest_session": "2026-08-31",
+          "interpolated_bar_count": 0,
+          "next_earnings_date": null,
+          "prices": "https://query1.finance.yahoo.com/v8/finance/chart/QQQ?period1=1772323200&period2=1788220800&interval=1d&events=splits&includeAdjustedClose=true",
+          "prices_as_of": "2026-08-31",
+          "requested_bar_count": 127,
+          "sector": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/QQQ?modules=assetProfile%2CcalendarEvents"
+        },
+        "SPY": {
+          "accepted_bar_count": 127,
+          "earnings": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/SPY?modules=assetProfile%2CcalendarEvents",
+          "expected_latest_session": "2026-08-31",
+          "interpolated_bar_count": 0,
+          "next_earnings_date": null,
+          "prices": "https://query1.finance.yahoo.com/v8/finance/chart/SPY?period1=1772323200&period2=1788220800&interval=1d&events=splits&includeAdjustedClose=true",
+          "prices_as_of": "2026-08-31",
+          "requested_bar_count": 127,
+          "sector": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/SPY?modules=assetProfile%2CcalendarEvents"
+        },
+        "TSLA": {
+          "accepted_bar_count": 127,
+          "earnings": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/TSLA?modules=assetProfile%2CcalendarEvents",
+          "expected_latest_session": "2026-08-31",
+          "interpolated_bar_count": 0,
+          "next_earnings_date": null,
+          "prices": "https://query1.finance.yahoo.com/v8/finance/chart/TSLA?period1=1772323200&period2=1788220800&interval=1d&events=splits&includeAdjustedClose=true",
+          "prices_as_of": "2026-08-31",
+          "requested_bar_count": 127,
+          "sector": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/TSLA?modules=assetProfile%2CcalendarEvents"
+        },
+        "UNH": {
+          "accepted_bar_count": 127,
+          "earnings": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/UNH?modules=assetProfile%2CcalendarEvents",
+          "expected_latest_session": "2026-08-31",
+          "interpolated_bar_count": 0,
+          "next_earnings_date": null,
+          "prices": "https://query1.finance.yahoo.com/v8/finance/chart/UNH?period1=1772323200&period2=1788220800&interval=1d&events=splits&includeAdjustedClose=true",
+          "prices_as_of": "2026-08-31",
+          "requested_bar_count": 127,
+          "sector": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/UNH?modules=assetProfile%2CcalendarEvents"
+        },
+        "V": {
+          "accepted_bar_count": 127,
+          "earnings": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/V?modules=assetProfile%2CcalendarEvents",
+          "expected_latest_session": "2026-08-31",
+          "interpolated_bar_count": 0,
+          "next_earnings_date": null,
+          "prices": "https://query1.finance.yahoo.com/v8/finance/chart/V?period1=1772323200&period2=1788220800&interval=1d&events=splits&includeAdjustedClose=true",
+          "prices_as_of": "2026-08-31",
+          "requested_bar_count": 127,
+          "sector": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/V?modules=assetProfile%2CcalendarEvents"
+        },
+        "XOM": {
+          "accepted_bar_count": 127,
+          "earnings": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/XOM?modules=assetProfile%2CcalendarEvents",
+          "expected_latest_session": "2026-08-31",
+          "interpolated_bar_count": 0,
+          "next_earnings_date": null,
+          "prices": "https://query1.finance.yahoo.com/v8/finance/chart/XOM?period1=1772323200&period2=1788220800&interval=1d&events=splits&includeAdjustedClose=true",
+          "prices_as_of": "2026-08-31",
+          "requested_bar_count": 127,
+          "sector": "https://query1.finance.yahoo.com/v10/finance/quoteSummary/XOM?modules=assetProfile%2CcalendarEvents"
+        }
+      },
+      "retrieved_at": "2026-09-01T14:32:09-04:00"
+    },
+    "current_session": {
+      "retrieved_at": "2026-09-01T14:32:09-04:00",
+      "symbols": {
+        "AAPL": {
+          "current_price": "324.6600036621094",
+          "open_as_of": "2026-09-01T09:30:00-04:00",
+          "open_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/AAPL?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "price_as_of": "2026-09-01T14:32:09-04:00",
+          "price_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/AAPL?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "session_open": "316.9800109863281"
+        },
+        "AMD": {
+          "current_price": "455.3699951171875",
+          "open_as_of": "2026-09-01T09:30:00-04:00",
+          "open_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/AMD?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "price_as_of": "2026-09-01T14:32:09-04:00",
+          "price_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/AMD?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "session_open": "459.29998779296875"
+        },
+        "AMZN": {
+          "current_price": "254.8350067138672",
+          "open_as_of": "2026-09-01T09:30:00-04:00",
+          "open_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/AMZN?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "price_as_of": "2026-09-01T14:32:09-04:00",
+          "price_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/AMZN?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "session_open": "254.8300018310547"
+        },
+        "AVGO": {
+          "current_price": "368.5",
+          "open_as_of": "2026-09-01T09:30:00-04:00",
+          "open_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/AVGO?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "price_as_of": "2026-09-01T14:32:12-04:00",
+          "price_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/AVGO?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "session_open": "364.3599853515625"
+        },
+        "COST": {
+          "current_price": "939.9249877929688",
+          "open_as_of": "2026-09-01T09:30:00-04:00",
+          "open_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/COST?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "price_as_of": "2026-09-01T14:32:03-04:00",
+          "price_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/COST?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "session_open": "945.530029296875"
+        },
+        "GOOGL": {
+          "current_price": "334.0",
+          "open_as_of": "2026-09-01T09:30:00-04:00",
+          "open_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/GOOGL?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "price_as_of": "2026-09-01T14:32:10-04:00",
+          "price_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/GOOGL?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "session_open": "336.0"
+        },
+        "HD": {
+          "current_price": "319.9100036621094",
+          "open_as_of": "2026-09-01T09:30:00-04:00",
+          "open_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/HD?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "price_as_of": "2026-09-01T14:32:09-04:00",
+          "price_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/HD?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "session_open": "326.010009765625"
+        },
+        "JPM": {
+          "current_price": "355.2659912109375",
+          "open_as_of": "2026-09-01T09:30:00-04:00",
+          "open_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/JPM?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "price_as_of": "2026-09-01T14:32:11-04:00",
+          "price_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/JPM?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "session_open": "355.7300109863281"
+        },
+        "LLY": {
+          "current_price": "1163.4100341796875",
+          "open_as_of": "2026-09-01T09:30:00-04:00",
+          "open_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/LLY?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "price_as_of": "2026-09-01T14:32:09-04:00",
+          "price_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/LLY?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "session_open": "1188.0"
+        },
+        "MSFT": {
+          "current_price": "501.1549987792969",
+          "open_as_of": "2026-09-01T09:30:00-04:00",
+          "open_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/MSFT?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "price_as_of": "2026-09-01T14:32:08-04:00",
+          "price_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/MSFT?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "session_open": "498.010009765625"
+        },
+        "MU": {
+          "current_price": "931.5800170898438",
+          "open_as_of": "2026-09-01T09:30:00-04:00",
+          "open_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/MU?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "price_as_of": "2026-09-01T14:32:11-04:00",
+          "price_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/MU?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "session_open": "939.47998046875"
+        },
+        "NVDA": {
+          "current_price": "217.42999267578125",
+          "open_as_of": "2026-09-01T09:30:00-04:00",
+          "open_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/NVDA?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "price_as_of": "2026-09-01T14:32:10-04:00",
+          "price_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/NVDA?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "session_open": "216.61000061035156"
+        },
+        "QQQ": {
+          "current_price": "706.8300170898438",
+          "open_as_of": "2026-09-01T09:30:00-04:00",
+          "open_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/QQQ?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "price_as_of": "2026-09-01T14:32:17-04:00",
+          "price_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/QQQ?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "session_open": "707.4299926757812"
+        },
+        "SPY": {
+          "current_price": "761.030029296875",
+          "open_as_of": "2026-09-01T09:30:00-04:00",
+          "open_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/SPY?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "price_as_of": "2026-09-01T14:32:16-04:00",
+          "price_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/SPY?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "session_open": "762.010009765625"
+        },
+        "TSLA": {
+          "current_price": "354.7650146484375",
+          "open_as_of": "2026-09-01T09:30:00-04:00",
+          "open_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/TSLA?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "price_as_of": "2026-09-01T14:32:12-04:00",
+          "price_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/TSLA?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "session_open": "360.8550109863281"
+        },
+        "UNH": {
+          "current_price": "395.54998779296875",
+          "open_as_of": "2026-09-01T09:30:00-04:00",
+          "open_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/UNH?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "price_as_of": "2026-09-01T14:32:10-04:00",
+          "price_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/UNH?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "session_open": "392.0799865722656"
+        },
+        "V": {
+          "current_price": "375.0",
+          "open_as_of": "2026-09-01T09:30:00-04:00",
+          "open_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/V?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "price_as_of": "2026-09-01T14:32:11-04:00",
+          "price_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/V?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "session_open": "379.6499938964844"
+        },
+        "XOM": {
+          "current_price": "164.3350067138672",
+          "open_as_of": "2026-09-01T09:30:00-04:00",
+          "open_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/XOM?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "price_as_of": "2026-09-01T14:32:13-04:00",
+          "price_source_url": "https://query1.finance.yahoo.com/v8/finance/chart/XOM?period1=1788235200&period2=1788321600&interval=1m&includePrePost=false",
+          "session_open": "163.60000610351562"
+        }
+      },
+      "trade_date": "2026-09-01"
+    },
+    "entry_evaluation": {
+      "buy_enabled": false,
+      "eligible_candidates": [],
+      "ranking": [],
+      "regime_conditions": {
+        "qqq_close_above_sma50": true,
+        "qqq_current_above_completed_close": false,
+        "qqq_momentum_positive": false,
+        "spy_close_above_sma50": true,
+        "spy_current_above_completed_close": false,
+        "spy_momentum_positive": true
+      },
+      "selected_candidate": null
+    },
+    "holding_evaluations": [],
+    "warnings": [
+      {
+        "code": "candidate_metadata_unavailable",
+        "message": "Sector and next-earnings metadata were unavailable from the recorded HTTPS profile endpoints. The negative benchmark regime independently disabled BUY work before candidate evaluation.",
+        "symbols": [
+          "AAPL",
+          "MSFT",
+          "NVDA",
+          "AMZN",
+          "AMD",
+          "MU",
+          "GOOGL",
+          "TSLA",
+          "AVGO",
+          "JPM",
+          "V",
+          "XOM",
+          "UNH",
+          "COST",
+          "HD",
+          "LLY"
+        ]
+      }
+    ]
+  },
+  "snapshot_id": "338acc2e-0606-48a1-a6af-672b7e853197",
+  "universe": [
+    "AAPL",
+    "MSFT",
+    "NVDA",
+    "AMZN",
+    "AMD",
+    "MU",
+    "GOOGL",
+    "TSLA",
+    "AVGO",
+    "JPM",
+    "V",
+    "XOM",
+    "UNH",
+    "COST",
+    "HD",
+    "LLY",
+    "SPY",
+    "QQQ"
+  ]
+}
