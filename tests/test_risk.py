@@ -354,6 +354,31 @@ class RiskEvaluationTests(unittest.TestCase):
         self.assertEqual(result["status"], "aborted")
         self.assertEqual(result["actions"][0]["reason_code"], "account_state_mismatch")
 
+    def test_cash_increase_preserves_frozen_cash_limit(self):
+        plan = self.plan()
+        plan["account_baseline"]["cash"] = "150"
+        plan["orders"][0]["quantity"] = "3"
+        context = self.context()
+        context["account"]["cash"] = "150.56"
+
+        result = evaluate_plan(plan, context, self.rules())
+
+        self.assertIsNone(result["abort_reason"])
+        self.assertEqual(result["status"], "partial")
+        self.assertEqual(result["actions"][0]["reason_code"], "available_cash")
+        self.assertEqual(result["actions"][0]["broker_order"]["quantity"], "1.485148")
+
+    def test_position_state_mismatch_still_aborts_plan(self):
+        context = self.context()
+        context["account"]["positions"] = {
+            "AAPL": {"quantity": "1", "average_cost": "100"},
+        }
+
+        result = evaluate_plan(self.plan(), context, self.rules())
+
+        self.assertEqual(result["status"], "aborted")
+        self.assertEqual(result["actions"][0]["reason_code"], "account_state_mismatch")
+
     def test_account_baseline_compares_decimal_values_not_string_formatting(self):
         plan = self.plan()
         plan["account_baseline"] = {"cash": "500.00", "positions": {"AAPL": "1.0"}}

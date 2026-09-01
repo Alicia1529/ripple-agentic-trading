@@ -131,7 +131,7 @@ def _risk_exit_action(
 
 
 def _account_baseline_matches(plan: OrderPlan, account: Mapping[str, Any]) -> bool:
-    if Decimal(plan.account_baseline["cash"]) != Decimal(account["cash"]):
+    if Decimal(account["cash"]) < Decimal(plan.account_baseline["cash"]):
         return False
     current_positions = {
         symbol: Decimal(position["quantity"])
@@ -337,7 +337,7 @@ def evaluate_plan(
     )
     actions = list(risk_exit_actions)
     new_positions_reserved = account["new_positions_today"]
-    cash_remaining = Decimal(account["cash"])
+    cash_remaining = Decimal(plan.account_baseline["cash"])
     for order in plan.orders:
         symbol = order["symbol"]
         if symbol not in universe:

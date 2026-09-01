@@ -83,6 +83,8 @@ Robinhood accepts fractional shares only as regular-hours market orders. Ripple 
 
 The designated owner's standing approval authorizes Scheduled Live Execution to place each exact deterministic `broker_order` once without Robinhood review or per-order confirmation. An explicit `--manual-run` invocation supplies the equivalent authority for that manual cycle. Account binding, immutable-plan matching, fresh facts, deterministic risk, stable-ID duplicate checks, the reviewed allocation, and fail-closed ambiguity handling remain mandatory; placement errors and uncertain outcomes stop without retry.
 
+Execution requires positions to match the immutable account baseline exactly. Current broker cash below the frozen baseline aborts the plan; current cash above it is recorded but does not abort and cannot enlarge the plan, because deterministic BUY reservation remains capped at the lower frozen cash value.
+
 For shadow execution, a risk-allowed BUY limit is marketable when the next-trading-day quote is at or below the limit; a SELL limit is marketable when the quote is at or above it. A marketable action is assumed filled at that quote with zero fees and zero slippage. The result records fill attempts and ending virtual account state. These are explicit assumptions, not broker fills.
 
 ### Why Decision is prior-evening and Execution is at 9:35 AM
