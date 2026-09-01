@@ -2,13 +2,6 @@
 
 Read these rules and the three entries in this file before work. Before handing off, append one chronological entry with local timestamp, outcome, evidence, next action, and only material risk. Keep each entry within 100 words and five bullets, link to authoritative files instead of duplicating them, and retain exactly the latest three entries total.
 
-## 2026-08-31 06:39 PDT — Account A Scheduled Live fill completed
-
-- Outcome: deterministic risk allowed the exact `0.261` V BUY; standing Scheduled Live authority placed it once without Robinhood review, and it filled at `$381.249900` with zero fees.
-- Evidence: [`execution.json`](../state/accounts/account_a/trading_days/2026-08-31/execution.json) records the stable ID, direct-placement authority, broker outcome, and post-fill verification; [`report.md`](../state/accounts/account_a/trading_days/2026-08-31/report.md) is reviewable.
-- Safety: binding, baseline, history, fresh-quote, opening-gap, risk, and ambiguity gates passed; no retry occurred.
-- Verification/next: 91/91 tests, JSON, diff, and credential checks passed; the focused `Execution:` commit may push normally.
-
 ## 2026-08-31 11:33 PDT — Account C close Decision published
 
 - Outcome: scheduled `same_session_close` Decision published plan `b0692199-d718-5e1c-a2ac-80d27bb2a9e7` with zero orders and 100% cash; no Execution or broker work occurred.
@@ -22,3 +15,10 @@ Read these rules and the three entries in this file before work. Before handing 
 - Evidence: [`execution.json`](../state/accounts/account_c/trading_days/2026-08-31/execution.json) records `fill_status=no_actions`, no fills, and unchanged $1000 cash/equity with no positions; [`report.md`](../state/accounts/account_c/trading_days/2026-08-31/report.md) is reviewable.
 - Verification: repository, catalog/cohort, session, binding, credential, and 91/91 core-test checks passed.
 - Next/risk: continue accumulating close-profile cycles; shadow evidence remains a zero-fee/zero-slippage assumption, not a broker fill.
+
+## 2026-08-31 18:05 PDT — Account A scheduled Live Decision published
+
+- Outcome: scheduled Live Decision published [`OrderPlan`](../state/accounts/account_a/trading_days/2026-09-01/order_plan.json) `721cee46-1d28-5550-9e0a-b9697d8226d5`; no Execution or broker write occurred.
+- Decision: retain JPM and V at 10% each, target MSFT at 10%, and cash at 70%; proposed BUY is `0.196` MSFT LIMIT `$509.92`, with `$522.5087` opening-gap cancellation.
+- Evidence: the co-located [`DecisionSnapshot`](../state/accounts/account_a/trading_days/2026-09-01/decision_snapshot.json) freezes complete repaired 2026-08-31 facts, both holding reviews, top-three research, and the broker baseline.
+- Verification/risk: 91/91 tests, catalog, compact-artifact, diff, and credential checks passed; any broker action remains separate Live Execution work.

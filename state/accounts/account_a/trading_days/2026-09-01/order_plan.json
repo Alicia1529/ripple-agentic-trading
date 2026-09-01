@@ -1,0 +1,42 @@
+{
+  "account_baseline": {
+    "cash": "801.8600",
+    "positions": {
+      "JPM": "0.279000",
+      "V": "0.261000"
+    }
+  },
+  "account_id": "account_a",
+  "cycle_profile": "next_session_open",
+  "decision_rationale": "SPY is above its 50-session average; JPM and V have no exit trigger; MSFT is the highest-ranked eligible candidate and cleared all four primary-source research gates, so retain JPM and V at 10% each, target MSFT at 10%, and retain 70% cash.",
+  "decision_run_kind": "scheduled",
+  "decision_snapshot_id": "c771f54f-affe-46db-b841-99dec6903076",
+  "decision_time": "2026-08-31T21:04:00-04:00",
+  "market_snapshot_as_of": "2026-08-31T21:04:00-04:00",
+  "model_config_version": "growth_momentum_v2_lite_compact_v2",
+  "order_plan_id": "721cee46-1d28-5550-9e0a-b9697d8226d5",
+  "orders": [
+    {
+      "buy_reason": "Microsoft's broad recurring cloud and AI demand, expanding contracted backlog, and maintained double-digit FY2027 growth outlook should support appreciation.",
+      "gap_cancel_above": "522.5087",
+      "limit_price": "509.92",
+      "market_hours": "regular_hours",
+      "order_id": "bab8de1c-c95c-53b4-9bc0-c3b0f3c8d54f",
+      "order_type": "LIMIT",
+      "price_tolerance_pct": "0.005199612154783260068205562892",
+      "quantity": "0.196",
+      "reference_price_at_decision": "507.29",
+      "side": "BUY",
+      "symbol": "MSFT",
+      "time_in_force": "gfd"
+    }
+  ],
+  "strategy_id": "growth_momentum_v2_lite_compact_v2",
+  "target_portfolio": {
+    "JPM": "0.10",
+    "MSFT": "0.10",
+    "V": "0.10",
+    "cash": "0.70"
+  },
+  "trade_date": "2026-09-01"
+}
