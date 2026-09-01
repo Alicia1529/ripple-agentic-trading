@@ -1,0 +1,25 @@
+{
+  "abort_reason": null,
+  "account_id": "account_c",
+  "actions": [],
+  "cycle_profile": "same_session_close",
+  "ending_account": {
+    "cash": "1000",
+    "daily_pnl": "0",
+    "equity": "1000",
+    "high_water_mark": "1000",
+    "loss_sales": [],
+    "new_positions_today": 0,
+    "positions": {}
+  },
+  "execution_run_kind": "scheduled",
+  "fill_status": "no_actions",
+  "manual_restart_required": false,
+  "mode": "shadow",
+  "order_plan_id": "a3506e4d-70ca-5511-8123-34137775e39b",
+  "position_alerts": [],
+  "shadow_fills": [],
+  "status": "allowed",
+  "strategy_id": "closing_momentum_v1",
+  "trade_date": "2026-09-01"
+}
