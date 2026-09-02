@@ -1,0 +1,46 @@
+{
+  "account_id": "account_a",
+  "broker_binding": {
+    "accessible_account_count": 1,
+    "account_state": "active",
+    "account_type": "limited_margin"
+  },
+  "broker_outcomes": [],
+  "cash_basis": {
+    "as_of": "2026-09-02T13:38:30Z",
+    "frozen_baseline": "704.2800",
+    "name": "broker_unleveraged_buying_power",
+    "pending_deposits": "0",
+    "value": "704.2800"
+  },
+  "execution_run_kind": "scheduled",
+  "mode": "live",
+  "order_plan_id": "bcbe0fe2-84c4-5e1d-9cb7-a2aa3e40732e",
+  "preconditions": {
+    "loss_sales_found": 0,
+    "positions": {
+      "JPM": "0.279000",
+      "MSFT": "0.196000",
+      "V": "0.261000"
+    },
+    "quotes": {
+      "JPM": {"as_of": "2026-09-02T13:38:15.310459984Z", "price": "358.170000"},
+      "MSFT": {"as_of": "2026-09-02T13:38:29.520745915Z", "price": "495.600000"},
+      "V": {"as_of": "2026-09-02T13:38:28.32635773Z", "price": "376.679000"}
+    }
+  },
+  "risk_result": {
+    "abort_reason": null,
+    "account_id": "account_a",
+    "actions": [],
+    "manual_restart_required": false,
+    "mode": "live",
+    "order_plan_id": "bcbe0fe2-84c4-5e1d-9cb7-a2aa3e40732e",
+    "position_alerts": [],
+    "status": "allowed",
+    "strategy_id": "growth_momentum_v2_lite_compact_v2"
+  },
+  "status": "no_action",
+  "strategy_id": "growth_momentum_v2_lite_compact_v2",
+  "trade_date": "2026-09-02"
+}
