@@ -1,0 +1,867 @@
+{
+  "as_of": "2026-09-01T21:05:46-04:00",
+  "inputs": {
+    "account_evidence": {
+      "account_count": 1,
+      "account_status": "active",
+      "account_type": "individual",
+      "cash": "704.28",
+      "cash_available_to_trade": "704.2800",
+      "cash_available_to_trade_as_of": "2026-09-01T21:05:46-04:00",
+      "cash_available_to_trade_basis": "broker_unleveraged_buying_power",
+      "cash_available_to_trade_source": "https://robinhood.com/account",
+      "equity": "998.79394",
+      "margin_type": "limited_margin",
+      "pending_deposits": "0",
+      "positions": {
+        "JPM": {
+          "entry_date": "2026-08-27",
+          "quantity": "0.279000",
+          "weight": "0.09915901171767221575253049693"
+        },
+        "MSFT": {
+          "entry_date": "2026-09-01",
+          "quantity": "0.196000",
+          "weight": "0.09824000333842634247460492201"
+        },
+        "V": {
+          "entry_date": "2026-08-31",
+          "quantity": "0.261000",
+          "weight": "0.09747055533797091319957347759"
+        }
+      }
+    },
+    "compiled_facts": {
+      "as_of": "2026-09-01",
+      "expected_latest_session": "2026-09-01",
+      "facts": {
+        "AAPL": {
+          "asset_role": "security",
+          "atr20_pct": "0.02020854735029065296958139821",
+          "close": "325.13",
+          "days_to_earnings": 58,
+          "mom_60_10": "0.008752521637274679508036702",
+          "rel_mom_qqq": "-0.008905550016201620381334415",
+          "rel_mom_streak": 2,
+          "sector": "Electronic Technology",
+          "sma50": "312.9392",
+          "status": "available"
+        },
+        "AMD": {
+          "asset_role": "security",
+          "atr20_pct": "0.04385707447618633189008072061",
+          "close": "459.61",
+          "days_to_earnings": 63,
+          "mom_60_10": "0.03861657875552124876709979",
+          "rel_mom_qqq": "0.020958507102044948877728673",
+          "rel_mom_streak": 0,
+          "sector": "Electronic Technology",
+          "sma50": "502.9017",
+          "status": "available"
+        },
+        "AMZN": {
+          "asset_role": "security",
+          "atr20_pct": "0.02500782598462262670641769967",
+          "close": "254.92",
+          "days_to_earnings": 58,
+          "mom_60_10": "0.05454619355363167093443889",
+          "rel_mom_qqq": "0.036888121900155371045067773",
+          "rel_mom_streak": 0,
+          "sector": "Retail Trade",
+          "sma50": "252.4094",
+          "status": "available"
+        },
+        "AVGO": {
+          "asset_role": "security",
+          "atr20_pct": "0.03386082557887903051287600087",
+          "close": "369.68",
+          "days_to_earnings": 100,
+          "mom_60_10": "-0.0148549503538744717807793016",
+          "rel_mom_qqq": "-0.0325130220073507716701504186",
+          "rel_mom_streak": 5,
+          "sector": "Electronic Technology",
+          "sma50": "384.838",
+          "status": "available"
+        },
+        "COST": {
+          "asset_role": "security",
+          "atr20_pct": "0.01807064130388527171368994425",
+          "close": "939.96",
+          "days_to_earnings": 100,
+          "mom_60_10": "-0.010824492987745274573759865",
+          "rel_mom_qqq": "-0.028482564641221574463130982",
+          "rel_mom_streak": 2,
+          "sector": "Retail Trade",
+          "sma50": "945.4011",
+          "status": "available"
+        },
+        "GOOGL": {
+          "asset_role": "security",
+          "atr20_pct": "0.02262621634529281833920362963",
+          "close": "335.02",
+          "days_to_earnings": 57,
+          "mom_60_10": "-0.0660190486527555422896372073",
+          "rel_mom_qqq": "-0.0836771203062318421790083243",
+          "rel_mom_streak": 5,
+          "sector": "Technology Services",
+          "sma50": "348.9108",
+          "status": "available"
+        },
+        "HD": {
+          "asset_role": "security",
+          "atr20_pct": "0.0242600462832660975075835757",
+          "close": "319.77",
+          "days_to_earnings": 77,
+          "mom_60_10": "0.085945041508462578029474226",
+          "rel_mom_qqq": "0.068286969854986278140103109",
+          "rel_mom_streak": 0,
+          "sector": "Retail Trade",
+          "sma50": "340.2144",
+          "status": "available"
+        },
+        "JPM": {
+          "asset_role": "security",
+          "atr20_pct": "0.01454554162558106775602197493",
+          "close": "354.95",
+          "days_to_earnings": 42,
+          "mom_60_10": "0.162883759644011908954124916",
+          "rel_mom_qqq": "0.145225687990535609064753799",
+          "rel_mom_streak": 0,
+          "sector": "Finance",
+          "sma50": "348.291",
+          "status": "available"
+        },
+        "LLY": {
+          "asset_role": "security",
+          "atr20_pct": "0.0354896163793103448275862069",
+          "close": "1160",
+          "days_to_earnings": 58,
+          "mom_60_10": "0.083355429460324194375209913",
+          "rel_mom_qqq": "0.065697357806847894485838796",
+          "rel_mom_streak": 0,
+          "sector": "Health Technology",
+          "sma50": "1189.1624",
+          "status": "available"
+        },
+        "MSFT": {
+          "asset_role": "security",
+          "atr20_pct": "0.02008572512075366252844197836",
+          "close": "501.02",
+          "days_to_earnings": 57,
+          "mom_60_10": "0.155902752777977776177790578",
+          "rel_mom_qqq": "0.138244681124501476288419461",
+          "rel_mom_streak": 0,
+          "sector": "Technology Services",
+          "sma50": "435.884",
+          "status": "available"
+        },
+        "MU": {
+          "asset_role": "security",
+          "atr20_pct": "0.05498177172608844703462461433",
+          "close": "933.44",
+          "days_to_earnings": 106,
+          "mom_60_10": "0.088829990393629703359914816",
+          "rel_mom_qqq": "0.071171918740153403470543699",
+          "rel_mom_streak": 0,
+          "sector": "Electronic Technology",
+          "sma50": "945.9397",
+          "status": "available"
+        },
+        "NVDA": {
+          "asset_role": "security",
+          "atr20_pct": "0.03152081033848417954378219279",
+          "close": "217.44",
+          "days_to_earnings": 77,
+          "mom_60_10": "0.071379814724524622135543637",
+          "rel_mom_qqq": "0.05372174307104832224617252",
+          "rel_mom_streak": 0,
+          "sector": "Electronic Technology",
+          "sma50": "208.7976",
+          "status": "available"
+        },
+        "QQQ": {
+          "asset_role": "benchmark",
+          "atr20_pct": "0.01200989910123791758521282008",
+          "close": "707.64",
+          "days_to_earnings": null,
+          "mom_60_10": "0.017658071653476299889371117",
+          "rel_mom_qqq": "0",
+          "rel_mom_streak": 5,
+          "sector": "Miscellaneous",
+          "sma50": "710.9806",
+          "status": "available"
+        },
+        "SPY": {
+          "asset_role": "benchmark",
+          "atr20_pct": "0.006829543962823912415658064008",
+          "close": "761.78",
+          "days_to_earnings": null,
+          "mom_60_10": "0.040539624432241881906311437",
+          "rel_mom_qqq": "0.02288155277876558201694032",
+          "rel_mom_streak": 0,
+          "sector": "Miscellaneous",
+          "sma50": "754.7092",
+          "status": "available"
+        },
+        "TSLA": {
+          "asset_role": "security",
+          "atr20_pct": "0.03446023477210817489960403269",
+          "close": "356.09",
+          "days_to_earnings": 50,
+          "mom_60_10": "-0.1384398976982097186700767263",
+          "rel_mom_qqq": "-0.1560979693516860185594478433",
+          "rel_mom_streak": 5,
+          "sector": "Consumer Durables",
+          "sma50": "358.8438",
+          "status": "available"
+        },
+        "UNH": {
+          "asset_role": "security",
+          "atr20_pct": "0.02219078980570275044158465809",
+          "close": "396.3",
+          "days_to_earnings": 56,
+          "mom_60_10": "-0.0138683755976669086539665056",
+          "rel_mom_qqq": "-0.0315264472511432085433376226",
+          "rel_mom_streak": 1,
+          "sector": "Health Services",
+          "sma50": "412.3952",
+          "status": "available"
+        },
+        "V": {
+          "asset_role": "security",
+          "atr20_pct": "0.01634750583626264523573134408",
+          "close": "372.67",
+          "days_to_earnings": 56,
+          "mom_60_10": "0.125722409370460796736409432",
+          "rel_mom_qqq": "0.108064337716984496847038315",
+          "rel_mom_streak": 0,
+          "sector": "Finance",
+          "sma50": "360.373",
+          "status": "available"
+        },
+        "XOM": {
+          "asset_role": "security",
+          "atr20_pct": "0.02095542388331814038286235187",
+          "close": "164.55",
+          "days_to_earnings": 59,
+          "mom_60_10": "0.104322305229455709711846318",
+          "rel_mom_qqq": "0.086664233575979409822475201",
+          "rel_mom_streak": 0,
+          "sector": "Energy Minerals",
+          "sma50": "151.5274",
+          "status": "available"
+        }
+      },
+      "provenance": {
+        "AAPL": {
+          "accepted_bar_count": 85,
+          "earnings": "https://robinhood.com/stocks/AAPL",
+          "expected_latest_session": "2026-09-01",
+          "interpolated_bar_count": 1,
+          "latest_session_fallback": {
+            "fundamentals": "https://robinhood.com/stocks/AAPL",
+            "market_date": "2026-09-01",
+            "official_close": "https://robinhood.com/stocks/AAPL",
+            "official_close_source": "sip-list-exchange-close",
+            "volume": "53167386"
+          },
+          "next_earnings_date": "2026-10-29",
+          "prices": "https://robinhood.com/stocks/AAPL",
+          "prices_as_of": "2026-09-01",
+          "repaired_interpolated_bar_count": 1,
+          "requested_bar_count": 85,
+          "sector": "https://robinhood.com/stocks/AAPL"
+        },
+        "AMD": {
+          "accepted_bar_count": 85,
+          "earnings": "https://robinhood.com/stocks/AMD",
+          "expected_latest_session": "2026-09-01",
+          "interpolated_bar_count": 1,
+          "latest_session_fallback": {
+            "fundamentals": "https://robinhood.com/stocks/AMD",
+            "market_date": "2026-09-01",
+            "official_close": "https://robinhood.com/stocks/AMD",
+            "official_close_source": "sip-list-exchange-close",
+            "volume": "16212252"
+          },
+          "next_earnings_date": "2026-11-03",
+          "prices": "https://robinhood.com/stocks/AMD",
+          "prices_as_of": "2026-09-01",
+          "repaired_interpolated_bar_count": 1,
+          "requested_bar_count": 85,
+          "sector": "https://robinhood.com/stocks/AMD"
+        },
+        "AMZN": {
+          "accepted_bar_count": 85,
+          "earnings": "https://robinhood.com/stocks/AMZN",
+          "expected_latest_session": "2026-09-01",
+          "interpolated_bar_count": 1,
+          "latest_session_fallback": {
+            "fundamentals": "https://robinhood.com/stocks/AMZN",
+            "market_date": "2026-09-01",
+            "official_close": "https://robinhood.com/stocks/AMZN",
+            "official_close_source": "sip-list-exchange-close",
+            "volume": "31700033"
+          },
+          "next_earnings_date": "2026-10-29",
+          "prices": "https://robinhood.com/stocks/AMZN",
+          "prices_as_of": "2026-09-01",
+          "repaired_interpolated_bar_count": 1,
+          "requested_bar_count": 85,
+          "sector": "https://robinhood.com/stocks/AMZN"
+        },
+        "AVGO": {
+          "accepted_bar_count": 85,
+          "earnings": "https://robinhood.com/stocks/AVGO",
+          "expected_latest_session": "2026-09-01",
+          "interpolated_bar_count": 1,
+          "latest_session_fallback": {
+            "fundamentals": "https://robinhood.com/stocks/AVGO",
+            "market_date": "2026-09-01",
+            "official_close": "https://robinhood.com/stocks/AVGO",
+            "official_close_source": "sip-list-exchange-close",
+            "volume": "19288896"
+          },
+          "next_earnings_date": "2026-12-10",
+          "prices": "https://robinhood.com/stocks/AVGO",
+          "prices_as_of": "2026-09-01",
+          "repaired_interpolated_bar_count": 1,
+          "requested_bar_count": 85,
+          "sector": "https://robinhood.com/stocks/AVGO"
+        },
+        "COST": {
+          "accepted_bar_count": 85,
+          "earnings": "https://robinhood.com/stocks/COST",
+          "expected_latest_session": "2026-09-01",
+          "interpolated_bar_count": 1,
+          "latest_session_fallback": {
+            "fundamentals": "https://robinhood.com/stocks/COST",
+            "market_date": "2026-09-01",
+            "official_close": "https://robinhood.com/stocks/COST",
+            "official_close_source": "sip-list-exchange-close",
+            "volume": "1507250"
+          },
+          "next_earnings_date": "2026-12-10",
+          "prices": "https://robinhood.com/stocks/COST",
+          "prices_as_of": "2026-09-01",
+          "repaired_interpolated_bar_count": 1,
+          "requested_bar_count": 85,
+          "sector": "https://robinhood.com/stocks/COST"
+        },
+        "GOOGL": {
+          "accepted_bar_count": 85,
+          "earnings": "https://robinhood.com/stocks/GOOGL",
+          "expected_latest_session": "2026-09-01",
+          "interpolated_bar_count": 0,
+          "next_earnings_date": "2026-10-28",
+          "prices": "https://robinhood.com/stocks/GOOGL",
+          "prices_as_of": "2026-09-01",
+          "requested_bar_count": 85,
+          "sector": "https://robinhood.com/stocks/GOOGL"
+        },
+        "HD": {
+          "accepted_bar_count": 85,
+          "earnings": "https://robinhood.com/stocks/HD",
+          "expected_latest_session": "2026-09-01",
+          "interpolated_bar_count": 1,
+          "latest_session_fallback": {
+            "fundamentals": "https://robinhood.com/stocks/HD",
+            "market_date": "2026-09-01",
+            "official_close": "https://robinhood.com/stocks/HD",
+            "official_close_source": "sip-list-exchange-close",
+            "volume": "3292359"
+          },
+          "next_earnings_date": "2026-11-17",
+          "prices": "https://robinhood.com/stocks/HD",
+          "prices_as_of": "2026-09-01",
+          "repaired_interpolated_bar_count": 1,
+          "requested_bar_count": 85,
+          "sector": "https://robinhood.com/stocks/HD"
+        },
+        "JPM": {
+          "accepted_bar_count": 85,
+          "earnings": "https://robinhood.com/stocks/JPM",
+          "expected_latest_session": "2026-09-01",
+          "interpolated_bar_count": 1,
+          "latest_session_fallback": {
+            "fundamentals": "https://robinhood.com/stocks/JPM",
+            "market_date": "2026-09-01",
+            "official_close": "https://robinhood.com/stocks/JPM",
+            "official_close_source": "sip-list-exchange-close",
+            "volume": "5079598"
+          },
+          "next_earnings_date": "2026-10-13",
+          "prices": "https://robinhood.com/stocks/JPM",
+          "prices_as_of": "2026-09-01",
+          "repaired_interpolated_bar_count": 1,
+          "requested_bar_count": 85,
+          "sector": "https://robinhood.com/stocks/JPM"
+        },
+        "LLY": {
+          "accepted_bar_count": 85,
+          "earnings": "https://robinhood.com/stocks/LLY",
+          "expected_latest_session": "2026-09-01",
+          "interpolated_bar_count": 1,
+          "latest_session_fallback": {
+            "fundamentals": "https://robinhood.com/stocks/LLY",
+            "market_date": "2026-09-01",
+            "official_close": "https://robinhood.com/stocks/LLY",
+            "official_close_source": "sip-list-exchange-close",
+            "volume": "2522416"
+          },
+          "next_earnings_date": "2026-10-29",
+          "prices": "https://robinhood.com/stocks/LLY",
+          "prices_as_of": "2026-09-01",
+          "repaired_interpolated_bar_count": 1,
+          "requested_bar_count": 85,
+          "sector": "https://robinhood.com/stocks/LLY"
+        },
+        "MSFT": {
+          "accepted_bar_count": 85,
+          "earnings": "https://robinhood.com/stocks/MSFT",
+          "expected_latest_session": "2026-09-01",
+          "interpolated_bar_count": 1,
+          "latest_session_fallback": {
+            "fundamentals": "https://robinhood.com/stocks/MSFT",
+            "market_date": "2026-09-01",
+            "official_close": "https://robinhood.com/stocks/MSFT",
+            "official_close_source": "sip-list-exchange-close",
+            "volume": "21046702"
+          },
+          "next_earnings_date": "2026-10-28",
+          "prices": "https://robinhood.com/stocks/MSFT",
+          "prices_as_of": "2026-09-01",
+          "repaired_interpolated_bar_count": 1,
+          "requested_bar_count": 85,
+          "sector": "https://robinhood.com/stocks/MSFT"
+        },
+        "MU": {
+          "accepted_bar_count": 85,
+          "earnings": "https://robinhood.com/stocks/MU",
+          "expected_latest_session": "2026-09-01",
+          "interpolated_bar_count": 1,
+          "latest_session_fallback": {
+            "fundamentals": "https://robinhood.com/stocks/MU",
+            "market_date": "2026-09-01",
+            "official_close": "https://robinhood.com/stocks/MU",
+            "official_close_source": "sip-list-exchange-close",
+            "volume": "27762237"
+          },
+          "next_earnings_date": "2026-12-16",
+          "prices": "https://robinhood.com/stocks/MU",
+          "prices_as_of": "2026-09-01",
+          "repaired_interpolated_bar_count": 1,
+          "requested_bar_count": 85,
+          "sector": "https://robinhood.com/stocks/MU"
+        },
+        "NVDA": {
+          "accepted_bar_count": 85,
+          "earnings": "https://robinhood.com/stocks/NVDA",
+          "expected_latest_session": "2026-09-01",
+          "interpolated_bar_count": 1,
+          "latest_session_fallback": {
+            "fundamentals": "https://robinhood.com/stocks/NVDA",
+            "market_date": "2026-09-01",
+            "official_close": "https://robinhood.com/stocks/NVDA",
+            "official_close_source": "sip-list-exchange-close",
+            "volume": "109756165"
+          },
+          "next_earnings_date": "2026-11-17",
+          "prices": "https://robinhood.com/stocks/NVDA",
+          "prices_as_of": "2026-09-01",
+          "repaired_interpolated_bar_count": 1,
+          "requested_bar_count": 85,
+          "sector": "https://robinhood.com/stocks/NVDA"
+        },
+        "QQQ": {
+          "accepted_bar_count": 85,
+          "earnings": "https://robinhood.com/stocks/QQQ",
+          "expected_latest_session": "2026-09-01",
+          "interpolated_bar_count": 1,
+          "latest_session_fallback": {
+            "fundamentals": "https://robinhood.com/stocks/QQQ",
+            "market_date": "2026-09-01",
+            "official_close": "https://robinhood.com/stocks/QQQ",
+            "official_close_source": "sip-list-exchange-close",
+            "volume": "35236117"
+          },
+          "next_earnings_date": null,
+          "prices": "https://robinhood.com/stocks/QQQ",
+          "prices_as_of": "2026-09-01",
+          "repaired_interpolated_bar_count": 1,
+          "requested_bar_count": 85,
+          "sector": "https://robinhood.com/stocks/QQQ"
+        },
+        "SPY": {
+          "accepted_bar_count": 85,
+          "earnings": "https://robinhood.com/stocks/SPY",
+          "expected_latest_session": "2026-09-01",
+          "interpolated_bar_count": 1,
+          "latest_session_fallback": {
+            "fundamentals": "https://robinhood.com/stocks/SPY",
+            "market_date": "2026-09-01",
+            "official_close": "https://robinhood.com/stocks/SPY",
+            "official_close_source": "sip-list-exchange-close",
+            "volume": "41125293"
+          },
+          "next_earnings_date": null,
+          "prices": "https://robinhood.com/stocks/SPY",
+          "prices_as_of": "2026-09-01",
+          "repaired_interpolated_bar_count": 1,
+          "requested_bar_count": 85,
+          "sector": "https://robinhood.com/stocks/SPY"
+        },
+        "TSLA": {
+          "accepted_bar_count": 85,
+          "earnings": "https://robinhood.com/stocks/TSLA",
+          "expected_latest_session": "2026-09-01",
+          "interpolated_bar_count": 1,
+          "latest_session_fallback": {
+            "fundamentals": "https://robinhood.com/stocks/TSLA",
+            "market_date": "2026-09-01",
+            "official_close": "https://robinhood.com/stocks/TSLA",
+            "official_close_source": "sip-list-exchange-close",
+            "volume": "36193926"
+          },
+          "next_earnings_date": "2026-10-21",
+          "prices": "https://robinhood.com/stocks/TSLA",
+          "prices_as_of": "2026-09-01",
+          "repaired_interpolated_bar_count": 1,
+          "requested_bar_count": 85,
+          "sector": "https://robinhood.com/stocks/TSLA"
+        },
+        "UNH": {
+          "accepted_bar_count": 85,
+          "earnings": "https://robinhood.com/stocks/UNH",
+          "expected_latest_session": "2026-09-01",
+          "interpolated_bar_count": 1,
+          "latest_session_fallback": {
+            "fundamentals": "https://robinhood.com/stocks/UNH",
+            "market_date": "2026-09-01",
+            "official_close": "https://robinhood.com/stocks/UNH",
+            "official_close_source": "sip-list-exchange-close",
+            "volume": "3717082"
+          },
+          "next_earnings_date": "2026-10-27",
+          "prices": "https://robinhood.com/stocks/UNH",
+          "prices_as_of": "2026-09-01",
+          "repaired_interpolated_bar_count": 1,
+          "requested_bar_count": 85,
+          "sector": "https://robinhood.com/stocks/UNH"
+        },
+        "V": {
+          "accepted_bar_count": 85,
+          "earnings": "https://robinhood.com/stocks/V",
+          "expected_latest_session": "2026-09-01",
+          "interpolated_bar_count": 1,
+          "latest_session_fallback": {
+            "fundamentals": "https://robinhood.com/stocks/V",
+            "market_date": "2026-09-01",
+            "official_close": "https://robinhood.com/stocks/V",
+            "official_close_source": "sip-list-exchange-close",
+            "volume": "5858591"
+          },
+          "next_earnings_date": "2026-10-27",
+          "prices": "https://robinhood.com/stocks/V",
+          "prices_as_of": "2026-09-01",
+          "repaired_interpolated_bar_count": 1,
+          "requested_bar_count": 85,
+          "sector": "https://robinhood.com/stocks/V"
+        },
+        "XOM": {
+          "accepted_bar_count": 85,
+          "earnings": "https://robinhood.com/stocks/XOM",
+          "expected_latest_session": "2026-09-01",
+          "interpolated_bar_count": 1,
+          "latest_session_fallback": {
+            "fundamentals": "https://robinhood.com/stocks/XOM",
+            "market_date": "2026-09-01",
+            "official_close": "https://robinhood.com/stocks/XOM",
+            "official_close_source": "sip-list-exchange-close",
+            "volume": "11389460"
+          },
+          "next_earnings_date": "2026-10-30",
+          "prices": "https://robinhood.com/stocks/XOM",
+          "prices_as_of": "2026-09-01",
+          "repaired_interpolated_bar_count": 1,
+          "requested_bar_count": 85,
+          "sector": "https://robinhood.com/stocks/XOM"
+        }
+      },
+      "retrieved_at": "2026-09-01T21:03:45-04:00"
+    },
+    "eligibility": {
+      "ranked_candidates": [
+        "XOM",
+        "NVDA",
+        "AMZN"
+      ],
+      "regime": {
+        "passed": true,
+        "reason": "SPY close 761.78 exceeded SMA50 754.7092."
+      },
+      "researched_ranks": [
+        1,
+        2,
+        3
+      ]
+    },
+    "holding_evaluations": {
+      "JPM": {
+        "class_a": "HOLD: close 354.95 is above SMA50 348.291, relative-momentum streak is 0, no stored quantitative invalidation is true, and weight is below 0.20.",
+        "class_b": "HOLD: current primary-source evidence does not clearly establish lowered guidance, a stored judgment invalidation, or a materially broken demand thesis.",
+        "sources": [
+          {
+            "as_of": "2026-09-01T21:05:46-04:00",
+            "url": "https://www.sec.gov/Archives/edgar/data/19617/000162828026048078/a2q26erfexhibit991narrative.htm"
+          },
+          {
+            "as_of": "2026-09-01T21:05:46-04:00",
+            "url": "https://www.sec.gov/Archives/edgar/data/19617/000162828026054343/jpm-20260630.htm"
+          }
+        ],
+        "stored_thesis": "JPM's broad recurring growth in loans, deposits, payments, fees, and managed assets, together with raised net-interest-income guidance, should support appreciation."
+      },
+      "MSFT": {
+        "class_a": "HOLD: close 501.02 is above SMA50 435.884, relative-momentum streak is 0, no stored quantitative invalidation is true, and weight is below 0.20.",
+        "class_b": "HOLD: current primary-source evidence does not clearly establish lowered guidance, a stored judgment invalidation, or a materially broken demand thesis.",
+        "sources": [
+          {
+            "as_of": "2026-09-01T21:05:46-04:00",
+            "url": "https://www.microsoft.com/en-us/investor/earnings/fy-2026-q4/press-release-webcast"
+          },
+          {
+            "as_of": "2026-09-01T21:05:46-04:00",
+            "url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"
+          }
+        ],
+        "stored_thesis": "Microsoft's broad recurring cloud and AI demand, expanding contracted backlog, and maintained double-digit FY2027 growth outlook should support appreciation."
+      },
+      "V": {
+        "class_a": "HOLD: close 372.67 is above SMA50 360.373, relative-momentum streak is 0, no stored quantitative invalidation is true, and weight is below 0.20.",
+        "class_b": "HOLD: current primary-source evidence does not clearly establish lowered guidance, a stored judgment invalidation, or a materially broken demand thesis.",
+        "sources": [
+          {
+            "as_of": "2026-09-01T21:05:46-04:00",
+            "url": "https://www.sec.gov/Archives/edgar/data/1403161/000140316126000103/q32026earningsrelease.htm"
+          },
+          {
+            "as_of": "2026-09-01T21:05:46-04:00",
+            "url": "https://www.sec.gov/Archives/edgar/data/1403161/000140316126000104/v-20260630.htm"
+          }
+        ],
+        "stored_thesis": "Visa's broad recurring growth in payments volume, cross-border volume, and processed transactions, together with maintained FY2026 growth guidance, should support appreciation."
+      }
+    },
+    "rejections": [
+      {
+        "failed_question": "2_guidance",
+        "rank": 1,
+        "reason": "Current primary sources did not provide explicit maintained or raised forward financial guidance.",
+        "source_as_of": "2026-09-01T21:05:46-04:00",
+        "source_url": "https://investor.exxonmobil.com/sec-filings/all-sec-filings/content/0002115436-26-000006/livef8k2q26991.htm",
+        "symbol": "XOM"
+      },
+      {
+        "failed_question": "2_guidance",
+        "rank": 2,
+        "reason": "The new third-quarter outlook lacks a comparable prior range proving guidance was maintained or raised.",
+        "source_as_of": "2026-09-01T21:05:46-04:00",
+        "source_url": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx",
+        "symbol": "NVDA"
+      },
+      {
+        "failed_question": "2_guidance",
+        "rank": 3,
+        "reason": "The new third-quarter outlook lacks a comparable prior range proving guidance was maintained or raised.",
+        "source_as_of": "2026-09-01T21:05:46-04:00",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000024/amzn-20260630xex991.htm",
+        "symbol": "AMZN"
+      }
+    ],
+    "research": {
+      "AMZN": {
+        "questions": {
+          "1_revenue_growth": {
+            "answer": true,
+            "evidence": "Second-quarter net sales increased 20% year over year to $200.6 billion."
+          },
+          "2_guidance": {
+            "answer": false,
+            "evidence": "Amazon issued positive third-quarter guidance, but the current sources do not provide a comparable prior range proving guidance was maintained or raised."
+          },
+          "3_repeatable_driver": {
+            "answer": true,
+            "evidence": "Growth was broad across North America, International, and AWS; AWS sales rose 37% and continuing infrastructure investment supports recurring cloud demand."
+          },
+          "4_reporting_quality": {
+            "answer": true,
+            "evidence": "The timely filed 10-Q reports effective disclosure controls and no material internal-control change."
+          }
+        },
+        "rank": 3,
+        "result": "reject",
+        "sources": [
+          {
+            "as_of": "2026-09-01T21:05:46-04:00",
+            "url": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000024/amzn-20260630xex991.htm"
+          },
+          {
+            "as_of": "2026-09-01T21:05:46-04:00",
+            "url": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000026/amzn-20260630.htm"
+          }
+        ]
+      },
+      "NVDA": {
+        "questions": {
+          "1_revenue_growth": {
+            "answer": true,
+            "evidence": "Second-quarter revenue increased 106% year over year to $96.2 billion."
+          },
+          "2_guidance": {
+            "answer": false,
+            "evidence": "NVIDIA issued positive third-quarter revenue guidance of $108 billion plus or minus 2%, but the current sources do not provide a comparable prior third-quarter range proving guidance was maintained or raised."
+          },
+          "3_repeatable_driver": {
+            "answer": true,
+            "evidence": "Data Center revenue rose 117% year over year amid multiple frontier labs scaling in parallel and Vera Rubin entering full production."
+          },
+          "4_reporting_quality": {
+            "answer": true,
+            "evidence": "The timely filed 10-Q reports effective disclosure controls and no material internal-control change."
+          }
+        },
+        "rank": 2,
+        "result": "reject",
+        "sources": [
+          {
+            "as_of": "2026-09-01T21:05:46-04:00",
+            "url": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx"
+          },
+          {
+            "as_of": "2026-09-01T21:05:46-04:00",
+            "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm"
+          }
+        ]
+      },
+      "XOM": {
+        "questions": {
+          "1_revenue_growth": {
+            "answer": true,
+            "evidence": "Second-quarter sales and other operating revenue increased to $114.529 billion from $79.477 billion one year earlier."
+          },
+          "2_guidance": {
+            "answer": false,
+            "evidence": "Current primary sources did not provide explicit maintained or raised forward financial guidance."
+          },
+          "3_repeatable_driver": {
+            "answer": true,
+            "evidence": "Management identified continuing Permian and Guyana growth and cumulative structural cost savings as recurring portfolio drivers."
+          },
+          "4_reporting_quality": {
+            "answer": true,
+            "evidence": "The timely filed 10-Q reports effective disclosure controls and no material internal-control change."
+          }
+        },
+        "rank": 1,
+        "result": "reject",
+        "sources": [
+          {
+            "as_of": "2026-09-01T21:05:46-04:00",
+            "url": "https://investor.exxonmobil.com/sec-filings/all-sec-filings/content/0002115436-26-000006/livef8k2q26991.htm"
+          },
+          {
+            "as_of": "2026-09-01T21:05:46-04:00",
+            "url": "https://www.sec.gov/Archives/edgar/data/2115436/000003408826000093/xom-20260630.htm"
+          }
+        ]
+      }
+    },
+    "thesis_records": {
+      "JPM": {
+        "evidence": [
+          {
+            "as_of": "2026-08-31T21:04:00-04:00",
+            "claim": "Recurring loan, deposit, payment, fee, and managed-asset activity grew broadly.",
+            "url": "https://www.sec.gov/Archives/edgar/data/19617/000162828026048078/a2q26erfexhibit991narrative.htm"
+          },
+          {
+            "as_of": "2026-08-31T21:04:00-04:00",
+            "claim": "Management raised FY2026 net-interest-income guidance.",
+            "url": "https://www.sec.gov/Archives/edgar/data/19617/000162828026048086/a2q26_earningsxpresentat.htm"
+          }
+        ],
+        "invalidations": [
+          "close < sma50",
+          "rel_mom_streak >= 5",
+          "guidance cut or evidence that broad client activity and fee growth were pulled forward"
+        ],
+        "thesis": "JPM's broad recurring growth in loans, deposits, payments, fees, and managed assets, together with raised net-interest-income guidance, should support appreciation."
+      },
+      "MSFT": {
+        "evidence": [
+          {
+            "as_of": "2026-08-31T21:04:00-04:00",
+            "claim": "Revenue grew 18%, Microsoft Cloud grew 27%, and Azure grew 43%.",
+            "url": "https://www.microsoft.com/en-us/investor/earnings/fy-2026-q4/press-release-webcast"
+          },
+          {
+            "as_of": "2026-08-31T21:04:00-04:00",
+            "claim": "Management maintained double-digit FY2027 growth expectations while contracted backlog and broad cloud demand remained strong.",
+            "url": "https://www.microsoft.com/en-us/investor/events/fy-2026/earnings-fy-2026-q4"
+          }
+        ],
+        "invalidations": [
+          "close < sma50",
+          "rel_mom_streak >= 5",
+          "guidance cut or evidence that cloud and AI demand or contracted backlog was pulled forward"
+        ],
+        "thesis": "Microsoft's broad recurring cloud and AI demand, expanding contracted backlog, and maintained double-digit FY2027 growth outlook should support appreciation."
+      },
+      "V": {
+        "evidence": [
+          {
+            "as_of": "2026-08-31T21:04:00-04:00",
+            "claim": "Net revenue grew 14% while payments, cross-border, and processed-transaction volumes all grew.",
+            "url": "https://www.sec.gov/Archives/edgar/data/1403161/000140316126000103/q32026earningsrelease.htm"
+          },
+          {
+            "as_of": "2026-08-31T21:04:00-04:00",
+            "claim": "Management maintained FY2026 adjusted growth expectations.",
+            "url": "https://s1.q4cdn.com/050606653/files/doc_financials/2026/q3/Visa-Inc-Third-Quarter-2026-Financial-Results-Presentation.pdf"
+          }
+        ],
+        "invalidations": [
+          "close < sma50",
+          "rel_mom_streak >= 5",
+          "guidance cut or evidence that payments, cross-border, or transaction growth was pulled forward"
+        ],
+        "thesis": "Visa's broad recurring growth in payments volume, cross-border volume, and processed transactions, together with maintained FY2026 growth guidance, should support appreciation."
+      }
+    },
+    "warnings": [
+      "The historical endpoint returned an interpolated zero-volume 2026-09-01 bar for every configured symbol except GOOGL; the compiler deterministically repaired each affected latest bar with same-date regular-session fundamentals, positive volume, and SIP/listing-exchange official close evidence, as recorded in provenance."
+    ]
+  },
+  "snapshot_id": "93703088-75a8-439e-80fd-01efac79bc4c",
+  "universe": [
+    "AAPL",
+    "MSFT",
+    "NVDA",
+    "AMZN",
+    "AMD",
+    "MU",
+    "GOOGL",
+    "TSLA",
+    "AVGO",
+    "JPM",
+    "V",
+    "XOM",
+    "UNH",
+    "COST",
+    "HD",
+    "LLY",
+    "SPY",
+    "QQQ"
+  ]
+}
