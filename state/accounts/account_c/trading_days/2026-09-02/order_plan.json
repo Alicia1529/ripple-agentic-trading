@@ -1,0 +1,21 @@
+{
+  "account_baseline": {
+    "cash": "1000",
+    "positions": {}
+  },
+  "account_id": "account_c",
+  "cycle_profile": "same_session_close",
+  "decision_rationale": "No trade: QQQ's latest completed-session close was below its SMA50, so the required positive benchmark entry regime failed; there were no holdings to exit.",
+  "decision_run_kind": "scheduled",
+  "decision_snapshot_id": "8e9d27e3-59a5-4d58-812f-efb58d90fb95",
+  "decision_time": "2026-09-02T14:32:46-04:00",
+  "market_snapshot_as_of": "2026-09-02T14:32:46-04:00",
+  "model_config_version": "closing_momentum_v1",
+  "order_plan_id": "dbbcad44-2e50-5be7-ac82-ca4dd2221b6d",
+  "orders": [],
+  "strategy_id": "closing_momentum_v1",
+  "target_portfolio": {
+    "cash": "1"
+  },
+  "trade_date": "2026-09-02"
+}
