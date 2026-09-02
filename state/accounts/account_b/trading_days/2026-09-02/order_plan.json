@@ -1,0 +1,24 @@
+{
+  "account_baseline": {
+    "cash": "921.16852",
+    "positions": {
+      "NVDA": "0.364"
+    }
+  },
+  "account_id": "account_b",
+  "cycle_profile": "next_session_open",
+  "decision_rationale": "Hold the existing NVDA position and place no order. No Class A exit applies: the position has been held for two completed sessions, the next report is distant, the official 217.44 close is above the fixed 199.2444 stop, and its 7.91% marked weight is below the 16% trim threshold. No stored quantitative invalidation or clear judgment-based thesis break is supported. No configured-universe issuer is in the three-session event queue, so no entry applies. Preserve the 8% NVDA target and 92% cash target.",
+  "decision_run_kind": "scheduled",
+  "decision_snapshot_id": "37712758-915b-49fe-8983-a35df23f5489",
+  "decision_time": "2026-09-01T21:04:30-04:00",
+  "market_snapshot_as_of": "2026-09-01T21:04:00-04:00",
+  "model_config_version": "earnings_drift_v2_scheduled_2026_09_01",
+  "order_plan_id": "83e8fa4d-c3c9-56ab-b720-e7f64306c524",
+  "orders": [],
+  "strategy_id": "earnings_drift_v2",
+  "target_portfolio": {
+    "NVDA": "0.08",
+    "cash": "0.92"
+  },
+  "trade_date": "2026-09-02"
+}

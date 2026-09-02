@@ -1,0 +1,174 @@
+{
+  "as_of": "2026-09-01T21:04:00-04:00",
+  "inputs": {
+    "account_mark": {
+      "cash": "921.16852",
+      "daily_pnl": "0.72800",
+      "equity": "1000.31668",
+      "high_water_mark": "1001.53244",
+      "new_positions_today": 0,
+      "positions": {
+        "NVDA": {
+          "average_cost": "216.57",
+          "quantity": "0.364"
+        }
+      },
+      "source": "state/accounts/account_b/trading_days/2026-09-01/execution.json ending_account, marked with NVDA official 2026-09-01 close 217.44"
+    },
+    "event_queue": [],
+    "facts": {
+      "NVDA": {
+        "atr20_pct": "0.03152081033848417954378219279",
+        "atr20_pct_as_of": "2026-09-01T16:00:00-04:00",
+        "atr20_pct_source": "20-session simple average true range 6.853885 divided by official close 217.44, calculated from dated daily OHLC rows 2026-08-05 through 2026-09-01 plus the 2026-08-04 prior close; the 2026-09-01 settled OHLC is 216.75/220.41/215.10/217.44 from https://markets.financialcontent.com/stocks/quote?Symbol=NQ%3ANVDA and prior dated rows are from https://chartexchange.com/symbol/nasdaq-nvda/historical/",
+        "close": "217.44",
+        "close_as_of": "2026-09-01T16:00:00-04:00",
+        "close_source": "https://markets.financialcontent.com/stocks/quote?Symbol=NQ%3ANVDA records the dated 2026-09-01 16:00 EDT close at 217.44; https://stockanalysis.com/stocks/nvda/market-cap/ independently records 217.44 at the 2026-09-01 16:00 EDT close",
+        "eps_actual": "2.22",
+        "eps_consensus": "2.09",
+        "eps_source": "non-GAAP diluted EPS actual from https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx; pre-report FactSet consensus from https://apnews.com/article/dc8d556e709b50915cca9217a60b1991",
+        "eps_surprise_pct": "0.062200956937799043062200957",
+        "median_dollar_vol_20": "24021526386.82",
+        "median_dollar_vol_20_as_of": "2026-09-01",
+        "median_dollar_vol_20_source": "median of close times volume for the 20 completed sessions 2026-08-05 through 2026-09-01; historical rows from https://chartexchange.com/symbol/nasdaq-nvda/historical/ with the accepted 2026-09-01 official close and volume 106746899 from https://markets.financialcontent.com/stocks/quote?Symbol=NQ%3ANVDA",
+        "mktcap": "5250000000000",
+        "mktcap_as_of": "2026-09-01T16:00:00-04:00",
+        "mktcap_source": "https://stockanalysis.com/stocks/nvda/market-cap/ dated 2026-09-01 market-cap observation based on the 217.44 close; https://ycharts.com/companies/NVDA/market_cap independently records 5.248 trillion for 2026-09-01",
+        "next_report_date_est": "2026-11-18",
+        "next_report_date_est_source": "https://www.wallstreethorizon.com/nvidia-earnings-calendar labels 2026-11-18 after market as inferred",
+        "reaction_pct": "0.087379566917867022798817133",
+        "reaction_source": "first completed post-report official daily close 227.98 on 2026-08-27 divided by accepted pre-report close 209.66 on 2026-08-26, minus one; later sessions do not redefine the strategy reaction",
+        "report_date": "2026-08-26",
+        "report_source": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000073/nvda-20260826.htm and NVIDIA issuer results release",
+        "report_timing": "after_regular_close",
+        "rev_actual": "96221000000",
+        "rev_consensus": "92270000000",
+        "rev_surprise_pct": "0.042819984827137747913731440",
+        "revenue_source": "actual from NVIDIA's 2026-08-26 issuer release; pre-report FactSet consensus from https://apnews.com/article/dc8d556e709b50915cca9217a60b1991",
+        "sector": "Information Technology",
+        "sector_source": "https://www.moneycontrol.com/us-markets/technical-analysis/nvidia/NVDA/daily identifies Information Technology; issuer description confirms accelerated computing",
+        "sessions_since_report": 4
+      }
+    },
+    "market": {
+      "SPY": {
+        "close": "761.78",
+        "close_as_of": "2026-09-01T18:30:00-04:00",
+        "close_source": "https://markets.financialcontent.com/stocks/quote/detailedquote?Symbol=321%3A45088 explicitly labels 761.78 the Official Closing Price updated 2026-09-01 18:30 EDT; https://stockscan.io/stocks/SPY/price-history independently records the dated 2026-09-01 close at 761.78",
+        "regime": "close 761.78 > sma200 710.27; base target weight 0.08",
+        "sma200": "710.27",
+        "sma200_as_of": "2026-09-01",
+        "sma200_source": "https://chartexchange.com/symbol/nyse-spy/ dated 2026-09-01 SMA200"
+      }
+    },
+    "positions": {
+      "NVDA": {
+        "entry_date": "2026-08-31",
+        "entry_price": "216.57",
+        "quantity": "0.364",
+        "scheduled_exit_date": "2026-10-12",
+        "sessions_held": 2,
+        "stop_price": "199.2444",
+        "thesis_record": {
+          "evidence_claims": [
+            {
+              "claim": "Q2 Data Center revenue was 89.0 billion, up 18% sequentially and 117% year over year.",
+              "source": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx",
+              "source_as_of": "2026-08-26"
+            },
+            {
+              "claim": "Q3 revenue guidance was 108.0 billion plus or minus 2%, above the 106 billion pre-report expectation.",
+              "source": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx and https://apnews.com/article/dc8d556e709b50915cca9217a60b1991",
+              "source_as_of": "2026-08-26T17:52:00-04:00"
+            },
+            {
+              "claim": "AWS and NVIDIA announced a planned deployment of 2 million additional NVIDIA GPUs.",
+              "source": "https://investor.nvidia.com/news/press-release-details/2026/AWS-and-NVIDIA-to-Deliver-2-Million-Additional-GPUs-and-Next-Generation-Infrastructure-for-Agentic-and-Physical-AI/default.aspx",
+              "source_as_of": "2026-08-26"
+            }
+          ],
+          "initial_stop_rule": "after a Shadow Fill, stop_price = fill_price * (1 - max(0.08, 2 * 0.03323780740059756377844173753))",
+          "intended_exit": "full exit after 30 completed sessions unless an earlier strategy exit applies",
+          "invalidation_conditions": [
+            {
+              "condition": "sessions_held >= 30",
+              "type": "quant"
+            },
+            {
+              "condition": "close <= stop_price",
+              "type": "quant"
+            },
+            {
+              "condition": "next_report_date_est is within three completed sessions",
+              "type": "quant"
+            },
+            {
+              "condition": "reported Data Center revenue declines sequentially",
+              "type": "quant"
+            },
+            {
+              "condition": "guidance is cut or withdrawn, or disclosed Vera Rubin/cloud deployment demand materially reverses",
+              "type": "judgment"
+            }
+          ],
+          "summary": "Accelerating AI infrastructure demand and the full-production Vera Rubin ramp should sustain Data Center growth into the next guided quarter."
+        },
+        "thesis_record_source": "state/accounts/account_b/trading_days/2026-08-31/decision_snapshot.json snapshot.inputs.research.NVDA.thesis_record",
+        "weight": "0.07912310329564833408556178429"
+      }
+    },
+    "rejected_candidates": [],
+    "research": {
+      "NVDA": {
+        "holding_review": {
+          "class_a": "No trigger: sessions_held=2; next report is not within three sessions; official 217.44 close is above fixed 199.2444 stop; weight 0.07912 is below 0.16.",
+          "class_b": "No stored quant invalidation is true.",
+          "class_c": "No clear thesis break. NVIDIA's latest issuer news through the cutoff remains the 2026-08-31 MediaTek expansion across cloud AI factories and the NVLink platform, which supports rather than contradicts the recurring infrastructure-demand thesis.",
+          "source": "https://nvidianews.nvidia.com/ and https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-and-MediaTek-Deepen-Long-Standing-Partnership-to-Build-AI-Edge-to-Cloud-Computing-Platforms/default.aspx",
+          "source_as_of": "2026-09-01T21:04:00-04:00"
+        }
+      }
+    },
+    "retrieval": {
+      "note": "Scheduled retrieval used only dated completed-session observations and issuer disclosures available by the Decision cutoff.",
+      "retrieved_at": "2026-09-02T01:04:00Z"
+    },
+    "universe_screen": {
+      "completed_sessions": [
+        "2026-08-28",
+        "2026-08-31",
+        "2026-09-01"
+      ],
+      "result": "No configured-universe issuer reported inside these three completed sessions. The dated weekly calendar lists no configured symbol on 2026-08-31 or 2026-09-01; AVGO remains scheduled for 2026-09-02 after close and is not yet an event candidate.",
+      "source": "https://www.kiplinger.com/investing/stocks/17494/next-week-earnings-calendar-stocks and https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announce-third-quarter-fiscal-year-2026-financial",
+      "source_as_of": "2026-09-01T21:04:00-04:00"
+    },
+    "warnings": [
+      "Expected_latest_session is 2026-09-01. FinancialContent's dated settled record and StockAnalysis agree on NVDA 217.44; ChartExchange's 217.43 last-trade snapshot was rejected. FinancialContent's Official Closing Price and StockScan agree on SPY 761.78; ChartExchange's 761.90 last-trade snapshot was rejected. No values were averaged.",
+      "NVDA's fixed stop 199.2444 remains reconstructed from the immutable entry ATR and 216.57 Shadow Fill; it was not widened or replaced by the current ATR.",
+      "The next report date is inferred rather than issuer-confirmed and remains more than 25 sessions away under the checked-in calendar.",
+      "No prompt-injection or instruction-like content was encountered in cited sources."
+    ]
+  },
+  "snapshot_id": "37712758-915b-49fe-8983-a35df23f5489",
+  "universe": [
+    "AAPL",
+    "MSFT",
+    "NVDA",
+    "AMZN",
+    "AMD",
+    "MU",
+    "GOOGL",
+    "TSLA",
+    "AVGO",
+    "JPM",
+    "V",
+    "XOM",
+    "UNH",
+    "COST",
+    "HD",
+    "LLY",
+    "SPY",
+    "QQQ"
+  ]
+}
