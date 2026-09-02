@@ -1,0 +1,30 @@
+{
+  "abort_reason": null,
+  "account_id": "account_b",
+  "actions": [],
+  "cycle_profile": "next_session_open",
+  "ending_account": {
+    "cash": "921.16852",
+    "daily_pnl": "0.74256",
+    "equity": "1001.05924",
+    "high_water_mark": "1001.53244",
+    "loss_sales": [],
+    "new_positions_today": 0,
+    "positions": {
+      "NVDA": {
+        "average_cost": "216.57",
+        "quantity": "0.364"
+      }
+    }
+  },
+  "execution_run_kind": "scheduled",
+  "fill_status": "no_actions",
+  "manual_restart_required": false,
+  "mode": "shadow",
+  "order_plan_id": "83e8fa4d-c3c9-56ab-b720-e7f64306c524",
+  "position_alerts": [],
+  "shadow_fills": [],
+  "status": "allowed",
+  "strategy_id": "earnings_drift_v2",
+  "trade_date": "2026-09-02"
+}
