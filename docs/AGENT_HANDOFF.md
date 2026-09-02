@@ -2,13 +2,6 @@
 
 Read these rules and the three entries in this file before work. Before handing off, append one chronological entry with local timestamp, outcome, evidence, next action, and only material risk. Keep each entry within 100 words and five bullets, link to authoritative files instead of duplicating them, and retain exactly the latest three entries total.
 
-## 2026-09-02 06:39 PDT — Account B Shadow hold executed
-
-- Outcome: scheduled `next_session_open` Shadow Execution processed only `account_b`; risk allowed the plan with no actions or fills.
-- Evidence: [`execution.json`](../state/accounts/account_b/trading_days/2026-09-02/execution.json) records the deterministic result and marked account state; [`report.md`](../state/accounts/account_b/trading_days/2026-09-02/report.md) is reviewable.
-- State: retained `0.364` NVDA at `$216.57` average cost, `$921.16852` cash, and `$1001.05924` equity using a fresh 09:37 EDT quote.
-- Verification/next: catalog/profile, JSON, credential, diff, and core tests passed; no broker call, rejection, lock, or manual restart occurred.
-
 ## 2026-09-02 06:40 PDT — Account A scheduled Live Execution completed
 
 - Outcome: plan `bcbe0fe2-84c4-5e1d-9cb7-a2aa3e40732e` contained zero orders; risk was `allowed` with no planned action or Risk Exit, so no broker write occurred.
@@ -22,3 +15,10 @@ Read these rules and the three entries in this file before work. Before handing 
 - Decision: QQQ's completed-session close was below its SMA50, so the required positive benchmark regime failed; every other benchmark condition passed.
 - Evidence: [`decision_snapshot.json`](../state/accounts/account_c/trading_days/2026-09-02/decision_snapshot.json) and [`order_plan.json`](../state/accounts/account_c/trading_days/2026-09-02/order_plan.json) retain profile-attributed facts, prior ending-account baseline, and rationale.
 - Verification/next: 93/93 tests, artifact, raw-bar exclusion, diff, and credential checks passed; separately scheduled close Shadow Execution may evaluate this immutable no-order plan.
+
+## 2026-09-02 12:23 PDT — Account C close Shadow Execution completed
+
+- Outcome: scheduled `same_session_close` Shadow Execution evaluated plan `dbbcad44-2e50-5be7-ac82-ca4dd2221b6d`; deterministic risk allowed zero actions and no broker capability was used.
+- Evidence: [`execution.json`](../state/accounts/account_c/trading_days/2026-09-02/execution.json) records `fill_status=no_actions`, no fills, and unchanged $1000 cash/equity with no positions; [`report.md`](../state/accounts/account_c/trading_days/2026-09-02/report.md) is reviewable.
+- Verification: repository, catalog/cohort, session, binding, credential, and 93/93 core-test checks passed.
+- Next/risk: continue accumulating close-profile cycles; shadow evidence remains a zero-fee/zero-slippage assumption, not a broker fill.
