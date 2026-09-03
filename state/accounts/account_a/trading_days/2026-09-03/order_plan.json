@@ -1,0 +1,28 @@
+{
+  "account_baseline": {
+    "cash": "704.2800",
+    "positions": {
+      "JPM": "0.279000",
+      "MSFT": "0.196000",
+      "V": "0.261000"
+    }
+  },
+  "account_id": "account_a",
+  "cycle_profile": "next_session_open",
+  "decision_rationale": "All three holdings pass mechanical and judgment exit checks. The SPY regime is positive, but XOM, AMZN, and AAPL lack explicit evidence that comparable forward guidance was maintained or raised; retain JPM, V, and MSFT at 10% targets and hold 70% cash with no orders.",
+  "decision_run_kind": "scheduled",
+  "decision_snapshot_id": "4ac9fa08-cbf0-4a36-b1a3-aebabfc6c895",
+  "decision_time": "2026-09-02T21:04:02-04:00",
+  "market_snapshot_as_of": "2026-09-02T21:04:02-04:00",
+  "model_config_version": "growth_momentum_v2_lite_compact_v2",
+  "order_plan_id": "c9060d0e-9eca-55da-9ee6-26c2b796a321",
+  "orders": [],
+  "strategy_id": "growth_momentum_v2_lite_compact_v2",
+  "target_portfolio": {
+    "JPM": "0.10",
+    "MSFT": "0.10",
+    "V": "0.10",
+    "cash": "0.70"
+  },
+  "trade_date": "2026-09-03"
+}
