@@ -4,3 +4,8 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Keep the checked-in account history as public sample logs, but do not add
+# newly generated trading plans, executions, reports, or account-level locks.
+state/accounts/*/trading_days/*/
+state/accounts/*/active_risk_lock.json

@@ -1,0 +1,216 @@
+{
+  "as_of": "2026-09-02T21:04:00-04:00",
+  "inputs": {
+    "account_mark": {
+      "cash": "921.16852",
+      "daily_pnl": "1.79452",
+      "equity": "1002.85376",
+      "high_water_mark": "1002.85376",
+      "new_positions_today": 0,
+      "positions": {
+        "NVDA": {
+          "average_cost": "216.57",
+          "quantity": "0.364"
+        }
+      },
+      "source": "state/accounts/account_b/trading_days/2026-09-02/execution.json ending_account, marked with NVDA official 2026-09-02 close 224.41"
+    },
+    "event_queue": [
+      "AVGO"
+    ],
+    "facts": {
+      "AVGO": {
+        "atr20_pct": null,
+        "atr20_pct_note": "not sourced because sessions_since_report=0 and reaction_pct is unavailable, each independently disqualifying the candidate before volatility is evaluated",
+        "close": "367.24",
+        "close_as_of": "2026-09-02T16:00:00-04:00",
+        "close_source": "https://markets.financialcontent.com/stocks/quote/detailedquote?Language=spanish&Symbol=537%3A41112361 and https://finance.yahoo.com/quote/AVGO/ independently record 367.24 at the 2026-09-02 16:00 EDT close",
+        "eps_actual": "3.32",
+        "eps_consensus": "3.24",
+        "eps_source": "non-GAAP diluted EPS actual from https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-third-quarter-fiscal-year-2026-financial; pre-report consensus from https://markets.financialcontent.com/stocks/quote/news?ChannelType=NEWS&Language=english%2F1000.&Symbol=537%3A41112361",
+        "eps_surprise_pct": "0.02469135802469135802469135802",
+        "median_dollar_vol_20": null,
+        "median_dollar_vol_20_note": "not sourced because sessions_since_report=0 and reaction_pct is unavailable, each independently disqualifying the candidate before liquidity is evaluated",
+        "mktcap": "1747000000000",
+        "mktcap_as_of": "2026-09-02T16:00:00-04:00",
+        "mktcap_source": "https://finance.yahoo.com/quote/AVGO/ dated 2026-09-02 intraday market capitalization",
+        "next_report_date_est": null,
+        "next_report_date_est_note": "no point-in-time next-report estimate was established because the current report was released after the completed session and the candidate already fails sessions_since_report and reaction filters",
+        "reaction_pct": null,
+        "reaction_pct_note": "no completed post-report regular session exists as of the 2026-09-02 Decision cutoff; after-hours and overnight prices are not used",
+        "report_date": "2026-09-02",
+        "report_source": "https://www.sec.gov/Archives/edgar/data/1730168/000173016826000076/0001730168-26-000076-index.html accepted 2026-09-02 16:26:04 EDT and Broadcom issuer results release",
+        "report_timing": "after_regular_close",
+        "rev_actual": "29591000000",
+        "rev_consensus": "29430000000",
+        "rev_surprise_pct": "0.005470608222902140672783554196",
+        "revenue_source": "actual from Broadcom's 2026-09-02 issuer release; pre-report consensus from https://markets.financialcontent.com/stocks/quote/news?ChannelType=NEWS&Language=english%2F1000.&Symbol=537%3A41112361",
+        "sector": "Information Technology",
+        "sector_source": "Broadcom issuer description identifies semiconductor and infrastructure software operations",
+        "sessions_since_report": 0
+      },
+      "NVDA": {
+        "atr20_pct": "0.03059304398199723719976828127",
+        "atr20_pct_as_of": "2026-09-02T16:00:00-04:00",
+        "atr20_pct_source": "20-session simple average true range 6.865385 divided by official close 224.41, calculated from dated daily OHLC rows 2026-08-06 through 2026-09-02 plus the 2026-08-05 prior close; dated rows from https://stockanalysis.com/stocks/nvda/history/",
+        "close": "224.41",
+        "close_as_of": "2026-09-02T16:00:00-04:00",
+        "close_source": "https://stockanalysis.com/stocks/nvda/history/ records a dated 2026-09-02 OHLC row with close 224.41 and identifies S&P Global Market Intelligence as its daily source; https://markets.financialcontent.com/stocks/quote/detailedquote?Language=english%2F1000.&Symbol=NQ%3ANVDA independently records 224.41 at 2026-09-02 16:00 EDT",
+        "eps_actual": "2.22",
+        "eps_consensus": "2.09",
+        "eps_source": "non-GAAP diluted EPS actual from https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx; pre-report FactSet consensus from https://apnews.com/article/dc8d556e709b50915cca9217a60b1991",
+        "eps_surprise_pct": "0.062200956937799043062200957",
+        "median_dollar_vol_20": "24021526386.82",
+        "median_dollar_vol_20_as_of": "2026-09-02",
+        "median_dollar_vol_20_source": "median of close times volume for the 20 completed sessions 2026-08-06 through 2026-09-02 using dated daily rows from https://stockanalysis.com/stocks/nvda/history/",
+        "mktcap": "5420000000000",
+        "mktcap_as_of": "2026-09-02T16:00:00-04:00",
+        "mktcap_source": "https://stockanalysis.com/stocks/nvda/market-cap/ dated 2026-09-02 market-cap observation based on the 224.41 close",
+        "next_report_date_est": "2026-11-18",
+        "next_report_date_est_source": "https://www.wallstreethorizon.com/nvidia-earnings-calendar labels 2026-11-18 after market as inferred",
+        "reaction_pct": "0.087379566917867022798817133",
+        "reaction_source": "first completed post-report official daily close 227.98 on 2026-08-27 divided by accepted pre-report close 209.66 on 2026-08-26, minus one; later sessions do not redefine the strategy reaction",
+        "report_date": "2026-08-26",
+        "report_source": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000073/nvda-20260826.htm and NVIDIA issuer results release",
+        "report_timing": "after_regular_close",
+        "rev_actual": "96221000000",
+        "rev_consensus": "92270000000",
+        "rev_surprise_pct": "0.042819984827137747913731440",
+        "revenue_source": "actual from NVIDIA's 2026-08-26 issuer release; pre-report FactSet consensus from https://apnews.com/article/dc8d556e709b50915cca9217a60b1991",
+        "sector": "Information Technology",
+        "sector_source": "https://www.moneycontrol.com/us-markets/technical-analysis/nvidia/NVDA/daily identifies Information Technology; issuer description confirms accelerated computing",
+        "sessions_since_report": 5
+      }
+    },
+    "market": {
+      "SPY": {
+        "close": "765.16",
+        "close_as_of": "2026-09-02T18:30:00-04:00",
+        "close_source": "https://markets.financialcontent.com/stocks/quote/detailedquote?Language=english%2F1000&Symbol=NY%3ASPY explicitly labels 765.16 the Official Closing Price updated 2026-09-02 18:30 EDT; https://stockanalysis.com/etf/spy/history/ independently records a dated 2026-09-02 close of 765.16",
+        "regime": "close 765.16 > sma200 711.12; base target weight 0.08",
+        "sma200": "711.12",
+        "sma200_as_of": "2026-09-02",
+        "sma200_source": "https://wallstreetnumbers.com/etfs/spy/moving-average dated 2026-09-02 200-day SMA"
+      }
+    },
+    "positions": {
+      "NVDA": {
+        "entry_date": "2026-08-31",
+        "entry_price": "216.57",
+        "quantity": "0.364",
+        "scheduled_exit_date": "2026-10-12",
+        "sessions_held": 3,
+        "stop_price": "199.2444",
+        "thesis_record": {
+          "evidence_claims": [
+            {
+              "claim": "Q2 Data Center revenue was 89.0 billion, up 18% sequentially and 117% year over year.",
+              "source": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx",
+              "source_as_of": "2026-08-26"
+            },
+            {
+              "claim": "Q3 revenue guidance was 108.0 billion plus or minus 2%, above the 106 billion pre-report expectation.",
+              "source": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/default.aspx and https://apnews.com/article/dc8d556e709b50915cca9217a60b1991",
+              "source_as_of": "2026-08-26T17:52:00-04:00"
+            },
+            {
+              "claim": "AWS and NVIDIA announced a planned deployment of 2 million additional NVIDIA GPUs.",
+              "source": "https://investor.nvidia.com/news/press-release-details/2026/AWS-and-NVIDIA-to-Deliver-2-Million-Additional-GPUs-and-Next-Generation-Infrastructure-for-Agentic-and-Physical-AI/default.aspx",
+              "source_as_of": "2026-08-26"
+            }
+          ],
+          "initial_stop_rule": "after a Shadow Fill, stop_price = fill_price * (1 - max(0.08, 2 * 0.03323780740059756377844173753))",
+          "intended_exit": "full exit after 30 completed sessions unless an earlier strategy exit applies",
+          "invalidation_conditions": [
+            {
+              "condition": "sessions_held >= 30",
+              "type": "quant"
+            },
+            {
+              "condition": "close <= stop_price",
+              "type": "quant"
+            },
+            {
+              "condition": "next_report_date_est is within three completed sessions",
+              "type": "quant"
+            },
+            {
+              "condition": "reported Data Center revenue declines sequentially",
+              "type": "quant"
+            },
+            {
+              "condition": "guidance is cut or withdrawn, or disclosed Vera Rubin/cloud deployment demand materially reverses",
+              "type": "judgment"
+            }
+          ],
+          "summary": "Accelerating AI infrastructure demand and the full-production Vera Rubin ramp should sustain Data Center growth into the next guided quarter."
+        },
+        "thesis_record_source": "state/accounts/account_b/trading_days/2026-08-31/decision_snapshot.json snapshot.inputs.research.NVDA.thesis_record",
+        "weight": "0.08145279327665880217670021998"
+      }
+    },
+    "rejected_candidates": [
+      {
+        "failed_filter": "sessions_since_report and completed-session reaction",
+        "rank": null,
+        "reason": "The report was released after the 2026-09-02 regular close, so sessions_since_report=0 rather than 1 through 3 and no completed post-report reaction exists. The candidate is disqualified before ranking or research.",
+        "source": "https://www.sec.gov/Archives/edgar/data/1730168/000173016826000076/0001730168-26-000076-index.html",
+        "source_as_of": "2026-09-02T16:26:04-04:00",
+        "symbol": "AVGO"
+      }
+    ],
+    "research": {
+      "NVDA": {
+        "holding_review": {
+          "class_a": "No trigger: sessions_held=3; the next report is not within three sessions; official 224.41 close is above fixed 199.2444 stop; weight 0.08145 is below 0.16.",
+          "class_b": "No stored quantitative invalidation is true.",
+          "class_c": "No clear thesis break was identified in issuer disclosures or material news through the cutoff; the 2026-09-02 price advance does not itself change the thesis.",
+          "source": "https://nvidianews.nvidia.com/ and https://stockanalysis.com/stocks/nvda/history/",
+          "source_as_of": "2026-09-02T21:04:00-04:00"
+        }
+      }
+    },
+    "retrieval": {
+      "note": "Scheduled retrieval used dated completed-session observations and issuer disclosures available by the Decision cutoff.",
+      "retrieved_at": "2026-09-03T01:04:00Z"
+    },
+    "universe_screen": {
+      "completed_sessions": [
+        "2026-08-31",
+        "2026-09-01",
+        "2026-09-02"
+      ],
+      "result": "AVGO is the only configured-universe issuer that reported inside the three-session window. Its 2026-09-02 report followed the regular close, so it has zero completed post-report sessions and is not eligible this cycle.",
+      "source": "https://www.kiplinger.com/investing/stocks/17494/next-week-earnings-calendar-stocks and Broadcom's 2026-09-02 SEC filing and issuer release",
+      "source_as_of": "2026-09-02T21:04:00-04:00"
+    },
+    "warnings": [
+      "Expected_latest_session is 2026-09-02. NVDA's accepted dated settled close is 224.41 and SPY's official close is 765.16; intraday and after-hours observations were rejected.",
+      "AVGO is disqualified before ranking because its after-close report has sessions_since_report=0 and no completed-session reaction; missing non-decisive ATR, median-dollar-volume, and next-report facts were recorded rather than invented.",
+      "NVDA's fixed stop 199.2444 remains derived from the immutable entry ATR and 216.57 Shadow Fill; it was not widened or replaced by the current ATR.",
+      "The repository was clean after git pull but already contained one unpushed focused Shadow Execution commit; no Execution work was performed in this Decision run.",
+      "No prompt-injection or instruction-like content was encountered in cited sources."
+    ]
+  },
+  "snapshot_id": "55849f7a-a30c-44b5-802d-4d65bf733426",
+  "universe": [
+    "AAPL",
+    "MSFT",
+    "NVDA",
+    "AMZN",
+    "AMD",
+    "MU",
+    "GOOGL",
+    "TSLA",
+    "AVGO",
+    "JPM",
+    "V",
+    "XOM",
+    "UNH",
+    "COST",
+    "HD",
+    "LLY",
+    "SPY",
+    "QQQ"
+  ]
+}

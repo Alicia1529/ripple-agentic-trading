@@ -1,0 +1,24 @@
+{
+  "account_baseline": {
+    "cash": "921.16852",
+    "positions": {
+      "NVDA": "0.364"
+    }
+  },
+  "account_id": "account_b",
+  "cycle_profile": "next_session_open",
+  "decision_rationale": "Hold the existing NVDA position and place no order. No Class A exit applies: the position has been held for three completed sessions, the next report is distant, the official 224.41 close is above the fixed 199.2444 stop, and its 8.15% marked weight is below the 16% trim threshold. No stored quantitative invalidation or clear judgment-based thesis break is supported. AVGO reported after the completed session and therefore has zero completed post-report sessions and no eligible reaction, so it fails the entry window before ranking. Preserve the 8% NVDA target and 92% cash target.",
+  "decision_run_kind": "scheduled",
+  "decision_snapshot_id": "55849f7a-a30c-44b5-802d-4d65bf733426",
+  "decision_time": "2026-09-02T21:04:30-04:00",
+  "market_snapshot_as_of": "2026-09-02T21:04:00-04:00",
+  "model_config_version": "earnings_drift_v2_scheduled_2026_09_02",
+  "order_plan_id": "098a4da8-85f3-5e93-bfe9-ef9910ee58b7",
+  "orders": [],
+  "strategy_id": "earnings_drift_v2",
+  "target_portfolio": {
+    "NVDA": "0.08",
+    "cash": "0.92"
+  },
+  "trade_date": "2026-09-03"
+}
