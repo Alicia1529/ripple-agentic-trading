@@ -2,7 +2,25 @@
 
 Ripple is a small, inspectable experiment in AI-native development and agentic trading. Multiple isolated Account Lanes can select different checked-in investment strategies while sharing deterministic validation and risk rules. The goal is to monitor live and shadow records, understand failures, and build evidence for later human review—not to promise returns.
 
-The repository implements a validated account catalog, a manual dry-run path, and a T+1 quote-based shadow execution path. Hosted schedules and the reviewed live Agentic Robinhood broker-write loop are in place; [`docs/TODO.md`](docs/TODO.md) is the authority on what is still unfinished.
+The repository implements a validated account catalog, a manual dry-run path, and quote-based shadow execution for both `next_session_open` and `same_session_close`. Hosted schedules and the reviewed live Agentic Robinhood broker-write loop are in place; [`docs/TODO.md`](docs/TODO.md) is the authority on what is still unfinished.
+
+## Who decides, validates, and authorizes
+
+```mermaid
+flowchart TD
+    P["Routine prompts<br/>allowed facts + judgment"] --> D["Decision<br/>selected Strategy Spec"]
+    D --> B["Immutable snapshot + plan<br/>frozen lane + strategy"]
+    B --> X["Separate Execution<br/>fresh account + quote"]
+    X --> R["Deterministic code<br/>allow · clip · reject · abort"]
+    R -->|"no action"| E["Credential-free<br/>cycle evidence"]
+    R -->|"allowed"| S["Shadow outcome<br/>marketable → assumed fill"]
+    R -->|"allowed"| L["Live order<br/>after Live Gate"]
+    L --> E
+    S --> E
+    H["Human owner<br/>activation · funding<br/>strategy change · restart"] -. "owns / Live Gate" .-> L
+```
+
+Routine prompts constrain fact gathering and investment judgment: Decision has no order-review, place, cancel, or modification authority. Separate Execution forms no new thesis; deterministic code validates the published plan and applies risk. The owner alone controls activation, funding, strategy changes, and restart. These role boundaries do not claim a code-level broker-capability firewall for a live LLM. Each immutable plan remains tied to one Account Lane and Strategy Spec; see the detailed topology in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Requirements and verification
 
@@ -28,40 +46,22 @@ uv run --no-cache python -m ripple.mvp run-shadow-cycle \
 
 It writes a complete Decision Cycle — `decision_snapshot.json`, `order_plan.json`, `execution.json`, and a readable `report.md` — to `/tmp/ripple-demo/demo_lane/trading_days/2026-08-25/`. The report ends with `No broker write tool was called.` The demo lane lives outside the `config/*.json` glob, so it is invisible to the catalog and can never be selected by a scheduled run. See [`docs/RUNNING.md`](docs/RUNNING.md) to turn it into a lane of your own.
 
-## Actual structure
+### The life of a trade
 
 ```mermaid
 flowchart TD
-    CFG["config/&lt;account_id&gt;.json<br/>filename is the Account Lane identity"]
-    SPEC["strategies/&lt;strategy_id&gt;.md"]
-    CAT["Account Catalog<br/>rejects a missing Strategy Spec, malformed config,<br/>invalid filename identifier, or a second live lane"]
-
-    CFG -->|"selects one strategy"| SPEC
-    CFG --> CAT
-
-    CAT --> LIVE["live: zero or one lane"]
-    CAT --> SHDW["shadow: every shadow lane"]
-    CAT --> DRY["dry_run: manual development, never scheduled"]
-
-    LIVE --> DEC
-    SHDW --> DEC
-    DRY -.->|"manual only"| DEC
-
-    DEC["prior-evening Decision<br/>immutable DecisionSnapshot and strategy-attributed OrderPlan"]
-    DEC --> EXE["next-trading-day Execution, 9:35 AM ET<br/>deterministic risk: allow, clip, reject, abort, Risk Exit"]
-
-    EXE --> L["live: Agentic Robinhood after the Live Gate"]
-    EXE --> S["shadow: no broker call, but the same risk verdict<br/>and the real 9:35 quote still decide<br/>marketable: assumed fill at that quote, else not_filled"]
-
-    L --> ST
-    S --> ST
-    ST["Lane State: execution.json, report.md, ending virtual account<br/>credential-free evidence written back for every mode"]
-
-    classDef gated stroke-dasharray: 5 4;
-    class L,DRY gated;
+    F["Fixture provenance<br/>demo_lane config + cycle JSON"] --> D["Decision inputs and plan<br/>2026-08-24 21:00 ET<br/>BUY 0.5 AAPL LIMIT 101"]
+    D --> B["Frozen boundary<br/>next_session_open<br/>trade date: 2026-08-25"]
+    B --> X["Execution · 2026-08-25 09:35 ET<br/>quote 100.50 as_of 09:34 · risk allowed"]
+    X --> S["Shadow Fill (assumed)<br/>0.5 AAPL at 100.50 · 09:35"]
+    S --> E["Ending evidence<br/>cash 720 → 669.75 · +0.5 AAPL"]
 ```
 
-Daily hosting uses four schedule triggers: one live Decision run, one all-shadow Decision run, one live Execution run, and one all-shadow Execution run. A live run may have no selected account; dry-run configurations are never scheduled.
+This is a `next_session_open` offline fixture: its timestamps are modeled, so the command does not wait overnight. It deterministically processes a supplied Decision rather than generating a new LLM judgment. Its Shadow Fill assumes zero fees and zero slippage, not broker execution. See [`docs/ANATOMY_OF_A_CYCLE.md`](docs/ANATOMY_OF_A_CYCLE.md) for field-by-field details.
+
+## Account lanes and scheduling
+
+Hosted schedules use six triggers: four select the `next_session_open` live or shadow cohorts, and two select only the `same_session_close` shadow cohort. A live run may have no selected account; dry-run configurations are never scheduled.
 
 Each account configuration contains:
 
@@ -85,11 +85,11 @@ The designated owner's standing approval authorizes Scheduled Live Execution to 
 
 Execution requires positions to match the immutable account baseline exactly. Current broker cash below the frozen baseline aborts the plan; current cash above it is recorded but does not abort and cannot enlarge the plan, because deterministic BUY reservation remains capped at the lower frozen cash value.
 
-For shadow execution, a risk-allowed BUY limit is marketable when the next-trading-day quote is at or below the limit; a SELL limit is marketable when the quote is at or above it. A marketable action is assumed filled at that quote with zero fees and zero slippage. The result records fill attempts and ending virtual account state. These are explicit assumptions, not broker fills.
+For shadow execution, a risk-allowed BUY limit is marketable when the profile's Execution quote is at or below the limit; a SELL limit is marketable when that quote is at or above it. A marketable action is assumed filled at that quote with zero fees and zero slippage. The result records fill attempts and ending virtual account state. These are explicit assumptions, not broker fills.
 
-### Why Decision is prior-evening and Execution is at 9:35 AM
+### Why `next_session_open` decides prior-evening and executes at 9:35 AM
 
-The evening Decision uses completed daily bars and leaves time to gather source evidence before freezing the plan. Execution at 9:35 AM observes the actual regular-session open and a fresh quote while limits anchored to the prior close are still relevant. This fits both the slower [Growth Momentum](strategies/growth_momentum_v3.md) signal and the more time-sensitive [Earnings Drift](strategies/earnings_drift_v1.md) event window. Waiting until noon or 3:00 PM makes the frozen price anchor progressively stale and can favor intraday reversals over the strongest continuations; planning at 3:00 PM would instead use an incomplete session and collapse the Decision/Execution boundary. This is structural rationale, not proof that 9:35 produces better returns.
+For `next_session_open`, the evening Decision uses completed daily bars and leaves time to gather source evidence before freezing the plan. Execution at 9:35 AM observes the actual regular-session open and a fresh quote while limits anchored to the prior close are still relevant. This fits both the slower [Growth Momentum](strategies/growth_momentum_v3.md) signal and the more time-sensitive [Earnings Drift](strategies/earnings_drift_v1.md) event window. Waiting until noon or 3:00 PM makes the frozen price anchor progressively stale and can favor intraday reversals over the strongest continuations; planning at 3:00 PM would instead use an incomplete session and collapse the Decision/Execution boundary. `same_session_close` has its own same-day timing profile. This is structural rationale, not proof that 9:35 produces better returns.
 
 ## Safety model
 
@@ -101,7 +101,7 @@ The catalog permits at most one live configuration, but this is not a broker-sid
 
 ## Running Ripple
 
-Ripple separates **what a run must do** from **who runs it**. The four prompts in
+Ripple separates **what a run must do** from **who runs it**. The six prompts in
 [`routines/`](routines/) are the durable contract — one per cohort phase — and the Agent Runner
 that executes them is replaceable: Codex scheduled tasks drive the current deployment, but nothing
 in the Python privileges one product over another.
@@ -131,7 +131,7 @@ Each document owns one kind of truth, because what the system *is*, what it must
 |---|---|
 | [`docs/RUNNING.md`](docs/RUNNING.md) | What any Agent Runner must guarantee, and how to drive Ripple with Codex, Claude Code, or by hand |
 | [`docs/RUNBOOK.md`](docs/RUNBOOK.md) | How to verify a working copy, respond to failures, restart after a tier-two lock, and stop everything |
-| [`routines/`](routines/) | What each of the four scheduled runs must do — the durable prompt contracts themselves |
+| [`routines/`](routines/) | What each of the six scheduled runs must do — the durable prompt contracts themselves |
 | [`docs/TODO.md`](docs/TODO.md) | What is genuinely unfinished, and which gate comes next |
 
 **Change it**
@@ -155,7 +155,7 @@ Each document owns one kind of truth, because what the system *is*, what it must
 | [`tests/`](tests/) | Catalog, isolation, artifact, risk, timing, calendar, and fill coverage |
 | [`docs/`](docs/) | Architecture, invariants, decisions, operations, and unfinished work — see [`docs/README.md`](docs/README.md) |
 
-Canonical state uses lowercase config identifiers and groups each prior-evening Decision and next-trading-day Execution under `state/accounts/<account_id>/trading_days/<trade-date>`.
+Canonical state uses lowercase config identifiers and groups each cycle's frozen-trade-date Decision and Execution under `state/accounts/<account_id>/trading_days/<trade-date>`; `next_session_open` decides prior-evening, while `same_session_close` decides and executes on the same session.
 
 ## What still gates expansion
 

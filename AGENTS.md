@@ -39,6 +39,12 @@ Preserve the current architecture and reuse existing configuration and data mode
 
 Every implementation and review identifies affected invariants. A proposed change that invalidates an invariant is an architecture decision, not a local exception.
 
+## Standing Git push authorization
+
+On 2026-09-03, the owner explicitly approved direct, non-force pushes of completed Ripple work to `origin`, specifically `https://github.com/Alicia1529/ripple-trading.git`, branch `master`, without another conversational confirmation. This includes credential-free cycle artifacts containing holdings, quantities, average costs, cash, equity, plans, and execution results, required handoff records, and separately approved project changes. The owner authorizes transmitting that financial-state evidence to this exact GitHub repository for continuity and audit.
+
+Before pushing, verify the push destination and branch, inspect every outgoing commit, and complete the task's tests and credential checks. Use `git push origin master` through the platform's normal approval path. Stop on a changed destination, unknown or unapproved outgoing changes, credentials, conflicts, or a platform denial. Do not force-push, change remote URLs or repository visibility, or bypass platform controls. This authorization permits publishing completed work only; it does not expand any routine's cohort, trading authority, or permission to alter configuration, strategy, risk, or immutable evidence.
+
 ## Workflow
 
 1. **Bounded design:** inspect without editing, propose the smallest viable diff, and name non-goals.

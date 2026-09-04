@@ -4,6 +4,21 @@
 from evening decision to next-trading-day evidence, using the offline demo so every value below is
 reproducible on your machine.
 
+```mermaid
+flowchart TD
+    F["Fixture provenance<br/>demo_lane config + cycle JSON"] --> D["Decision inputs and plan<br/>2026-08-24 21:00 ET<br/>BUY 0.5 AAPL LIMIT 101"]
+    D --> B["Frozen boundary<br/>next_session_open<br/>trade date: 2026-08-25"]
+    B --> X["Execution · 2026-08-25 09:35 ET<br/>quote 100.50 as_of 09:34 · risk allowed"]
+    X --> S["Shadow Fill (assumed)<br/>0.5 AAPL at 100.50 · 09:35"]
+    S --> E["Ending evidence<br/>cash 720 → 669.75 · +0.5 AAPL"]
+```
+
+This is a `next_session_open` fixture: its timestamps are modeled inputs from
+[`config/examples/demo_lane.json`](../config/examples/demo_lane.json) and
+[`fixtures/mvp/demo_lane_cycle.json`](../fixtures/mvp/demo_lane_cycle.json), not wall-clock waits.
+The command makes no model, API, or broker call. It deterministically processes an already supplied
+fixture Decision; rerunning it does not reproduce an LLM judgment.
+
 ```bash
 uv run --no-cache python -m ripple.mvp run-shadow-cycle \
   --config config/examples/demo_lane.json \
@@ -11,20 +26,22 @@ uv run --no-cache python -m ripple.mvp run-shadow-cycle \
   --output /tmp/ripple-demo/demo_lane
 ```
 
-Everything lands in one directory named for the **trade date** — the next `America/New_York`
-regular session the orders are meant to reach, resolved through the checked-in trading calendar
-rather than by weekday arithmetic, and not the evening the decision was made:
+For this `next_session_open` fixture, everything lands in one directory named for the **trade date**
+— the next `America/New_York` regular session the orders are meant to reach, resolved through the
+checked-in trading calendar rather than by weekday arithmetic, and not the evening the decision was
+made:
 
 ```text
 /tmp/ripple-demo/demo_lane/trading_days/2026-08-25/
-├── decision_snapshot.json   written the prior evening
-├── order_plan.json          written the prior evening
-├── execution.json           written the trading day, 9:35 AM
-└── report.md                written the trading day, 9:35 AM
+├── decision_snapshot.json   fixture Decision inputs
+├── order_plan.json          frozen fixture Decision intent
+├── execution.json           deterministic Execution evidence
+└── report.md                readable Execution summary
 ```
 
-Keeping both halves of a cycle in one directory is what makes the Day T → Day T+1 boundary
-inspectable: you can never accidentally review a decision next to another day's fills.
+Keeping both halves of a cycle in one directory makes this fixture's prior-evening →
+next-session-open boundary inspectable: you can never accidentally review a decision next to
+another day's fills.
 
 ## 1. `decision_snapshot.json` — what the decision was allowed to know
 
@@ -52,7 +69,7 @@ it, so evidence cannot be quietly revised after an outcome is known.
 
 ```json
 {
-  "order_plan_id": "2cd39959-d5a3-5bb1-847e-e8604bdea1f1",
+  "order_plan_id": "930b0bf7-b725-58c5-bc5e-61f4bb21c62c",
   "decision_snapshot_id": "10de633f-be1f-4548-944a-76b94296ed5b",
   "account_id": "demo_lane",
   "strategy_id": "growth_momentum_v1",
@@ -78,14 +95,15 @@ Four fields carry the audit trail:
 portfolio, including a no-trade result. It is deliberately distinct from data-quality warnings
 (which live in the snapshot) and from deterministic reason codes (which appear at execution).
 
-`account_baseline` is the account the decision believed it was acting on. Execution re-checks it
-against reality and aborts on a mismatch, which is what stops a plan built on a stale balance.
+`account_baseline` is the account the Decision believed it was acting on. Execution requires the
+current positions to match it exactly and aborts if current cash is below it. Higher current cash is
+recorded but cannot enlarge a BUY, because reservation remains capped at the frozen cash baseline.
 
 Each order is fully specified before the market opens:
 
 ```json
 {
-  "order_id": "f85c6b8b-e233-5415-8388-3a972ce376d1",
+  "order_id": "b2993899-18f8-5e39-9a5f-faf717e16738",
   "symbol": "AAPL", "side": "BUY", "quantity": "0.5",
   "order_type": "LIMIT", "limit_price": "101.00",
   "reference_price_at_decision": "100.00",
@@ -95,26 +113,32 @@ Each order is fully specified before the market opens:
 }
 ```
 
-`limit_price` is anchored to `reference_price_at_decision` — the prior session's completed close — and
-`price_tolerance_pct` caps how far the two may drift apart before execution rejects the order. That
-pair is what keeps an overnight gap from turning a stale limit into an unintended fill.
+`limit_price` is anchored to `reference_price_at_decision` — the prior session's completed close.
+At Execution, `price_tolerance_pct` rejects an adverse upward BUY move beyond the frozen percentage
+from that reference; it does not reject a lower BUY quote. SELL checks use the absolute move from
+the reference. The planned limit still separately determines whether a Shadow Fill is marketable.
 
-## 3. The overnight boundary
+The fixture's `target_portfolio` is illustrative, and its carried `$800` equity is a synthetic
+Execution-context input. Neither is a reconciled valuation of the resulting cash and position.
 
-Nothing happens. The plan is not revisited, re-scored, or refreshed. Git carries the two files into
-a completely fresh session, and Execution receives no new investment thesis. The separation is the
-point: the thing that decided *what to want* is gone by the time anything can trade.
+## 3. The modeled overnight boundary
+
+In a real `next_session_open` cycle, the plan is not revisited, re-scored, or refreshed. Git carries
+the two files into a completely fresh session, and Execution receives no new investment thesis. This
+offline command processes the represented stages consecutively; it does not wait overnight. The
+separation is the point: the thing that decided *what to want* is gone by the time anything can trade.
 
 ## 4. `execution.json` — what deterministic code allowed, and what it assumed
 
-At 9:35 AM on the trade date, Execution loads the plan, current account state, loss-sale history, and fresh
-quotes, then runs the shared risk module. The file has three layers.
+In this fixture, Execution's `as_of` is `2026-08-25T09:35:00-04:00`; it loads the plan, current
+account state, loss-sale history, and the AAPL quote of `100.50` as of
+`2026-08-25T09:34:00-04:00`, then runs the shared risk module. The file has three layers.
 
 **The verdict**, per action:
 
 ```json
 {
-  "order_id": "f85c6b8b-…", "symbol": "AAPL", "side": "BUY",
+  "order_id": "b2993899-…", "symbol": "AAPL", "side": "BUY",
   "allowed": true, "reason_code": "allowed",
   "original_sizing": { "field": "quantity", "value": "0.5" },
   "actual_sizing":   { "field": "quantity", "value": "0.5" },
@@ -124,14 +148,16 @@ quotes, then runs the shared risk module. The file has three layers.
 
 `original_sizing` and `actual_sizing` are separate on purpose. When a position cap or cash
 reservation shrinks an order, both numbers survive, so a later reader sees that risk *clipped* the
-order rather than that the strategy asked for less. `broker_order` is the exact argument set a live
-adapter would submit — identical in shadow mode, simply never sent.
+order rather than that the strategy asked for less. In this shadow run, `broker_order` records the
+deterministic action used for simulation and is never sent. A live fractional final quantity instead
+becomes a regular-hours market order after its own marketability check, so a shadow `broker_order`
+does not claim identical live fractional-order arguments.
 
-**The fill attempt**, which is where shadow mode differs from live mode and nowhere else:
+**The fill attempt**, in this shadow run:
 
 ```json
 {
-  "order_id": "f85c6b8b-…", "symbol": "AAPL", "side": "BUY", "quantity": "0.5",
+  "order_id": "b2993899-…", "symbol": "AAPL", "side": "BUY", "quantity": "0.5",
   "status": "filled", "price": "100.50",
   "filled_at": "2026-08-25T09:35:00-04:00",
   "reason_code": "assumed_t_plus_one_quote_fill"
@@ -139,9 +165,11 @@ adapter would submit — identical in shadow mode, simply never sent.
 ```
 
 The trade-date quote of `100.50` is at or below the `101.00` limit, so the order is marketable and is
-assumed filled **at the quote**, with zero fees and zero slippage. Had the quote opened above the
-limit, this entry would read `not_filled` with `reason_code: limit_not_marketable`, and the
-position would simply not exist. Shadow mode skips the broker call — it does not skip the check.
+assumed filled **at the quote**, with zero fees and zero slippage. The recorded `filled_at` is the
+fixture Execution `as_of`, `2026-08-25T09:35:00-04:00`; it is not the quote's 09:34 timestamp or a
+claim about when this local command wrote its file. An action that passes risk but is not marketable
+is recorded as `not_filled` with `reason_code: limit_not_marketable`. Shadow mode skips the broker
+call — it does not skip the check.
 
 **The ending account**, which becomes the next cycle's starting point:
 
@@ -158,7 +186,7 @@ position would simply not exist. Shadow mode skips the broker call — it does n
 `720 − 0.5 × 100.50 = 669.75`. The fill derives `cash`, `positions`, `average_cost`,
 `new_positions_today`, and `loss_sales`. It **carries through** `equity`, `daily_pnl`, and
 `high_water_mark` unchanged — those are re-marked from current quotes before the next Decision, not
-guessed at fill time. That is why equity can look stale in a file written seconds after a fill.
+guessed at fill time. That is why equity can look stale in this Execution evidence.
 
 ## 5. `report.md` — the same cycle for a human
 
@@ -183,10 +211,12 @@ this specific run, not a general reassurance.
 Not the investment idea — the guardrails around it. Before that fill was allowed, checked-in Python
 verified that the plan's account matched the executing lane, that the co-located snapshot and plan
 existed and matched the execution input, that every symbol was inside the configured universe, that
-quotes were fresh, that the baseline still matched reality, that the limit stayed within its price
+quotes were fresh, that the baseline rules held, that the limit stayed within its applicable price
 tolerance, that the position stayed under the per-symbol cap, that cash covered the cumulative
 BUYs, that the new-position count and drawdown breakers were clear, and that no wash-sale rule was
-violated. Any one of those failing produces no order and no fill, never a smaller guess.
+violated. Position, cash, and owned-quantity constraints can clip an otherwise allowed action to a
+safe quantity; missing or stale facts and failed safety checks authorize no planned order or Shadow
+Fill.
 
 ## What this cycle does not prove
 
