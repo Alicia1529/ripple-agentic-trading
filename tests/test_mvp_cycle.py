@@ -58,16 +58,23 @@ class MvpDryCycleTests(unittest.TestCase):
         fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())
         fixture["snapshot"]["as_of"] = "2026-08-27T01:15:00-04:00"
         fixture["decision"]["decision_time"] = "2026-08-27T01:16:00-04:00"
+        fixture["execution_context"]["as_of"] = "2026-08-27T09:35:00-04:00"
+        for quote in fixture["execution_context"]["quotes"].values():
+            quote["as_of"] = "2026-08-27T09:34:00-04:00"
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
             input_path = root / "decision.json"
+            context_path = root / "context.json"
             input_path.write_text(json.dumps({
                 key: fixture[key] for key in ("snapshot", "account_baseline", "decision")
             }))
-            from ripple.mvp import publish_decision
+            context_path.write_text(json.dumps(fixture["execution_context"]))
+            from ripple.mvp import execute_dry_run, publish_decision
+
+            config_path = _write_dry_run_config(root / "config")
 
             plan = publish_decision(
-                ROOT / "config" / "account_a.json",
+                config_path,
                 input_path,
                 root / "account_a",
                 manual=True,
@@ -78,6 +85,14 @@ class MvpDryCycleTests(unittest.TestCase):
             self.assertTrue((
                 root / "account_a" / "trading_days" / "2026-08-27" / "order_plan.json"
             ).is_file())
+            result = execute_dry_run(
+                config_path,
+                root / "account_a" / "trading_days" / "2026-08-27" / "order_plan.json",
+                context_path,
+                root / "account_a",
+                now=datetime.fromisoformat("2026-08-27T09:35:00-04:00"),
+            )
+            self.assertEqual(result["execution_run_kind"], "scheduled")
 
     def test_order_plan_id_is_unique_per_trade_date(self):
         fixture = json.loads((ROOT / "fixtures" / "mvp" / "dry_cycle.json").read_text())

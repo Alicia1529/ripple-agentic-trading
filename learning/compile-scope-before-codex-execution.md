@@ -20,3 +20,10 @@ Explore broadly, then authorize one bounded implementation milestone.
 ## Takeaway
 
 A broad discussion or complete proposal helps make a decision, but it does not authorize all described work. Execution begins only after one milestone has been compiled into an explicit, reviewable scope and approved.
+
+## A repair you can inspect
+
+[Honor the frozen trade date](frozen-trade-date-case-study.md) follows a real rejected
+Decision-to-Execution handoff: the owner's challenge, the agent's diagnosis, a repair bounded to
+one production file, and the same regression failing before and passing after. It includes the
+pinned diff, a reproducible offline check and a precise account of the human/agent contributions.

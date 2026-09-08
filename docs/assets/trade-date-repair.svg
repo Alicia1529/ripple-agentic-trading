@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="650" viewBox="0 0 880 650" role="img" aria-labelledby="title description">
+  <title id="title">One plan, two date calculations: a real AI-assisted repair</title>
+  <desc id="description">The same offline regression models August 27, 2026 in New York: a manual Decision at 01:16 freezes trade_date August 27, and scheduled Execution runs at 09:35. Before the fix, Execution recomputes the next trading day as August 28 and rejects the valid August 27 run, so the regression errors. After the fix, Execution uses the frozen August 27 date and the same regression passes. Trading-day, after-Decision and 09:30 to 09:50 checks remain. The owner challenged the rejection and requested a fix; the agent diagnosed the mismatch, extended the test and repaired one production file. All 93 tests pass at fix 68fccb2. This is offline software verification; the missed trading cycle was not replayed.</desc>
+  <defs>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; fill: #182b3a; }
+      .small { font-size: 16px; }
+      .body { font-size: 18px; }
+      .muted { fill: #506272; }
+      .label { font-size: 15px; font-weight: 700; letter-spacing: .6px; }
+      .heading { font-size: 23px; font-weight: 700; }
+      .value { font-size: 29px; font-weight: 700; }
+      .mono { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 17px; }
+    </style>
+    <marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M1 1 L7 4 L1 7" fill="none" stroke="#80919f" stroke-width="1.5"/>
+    </marker>
+  </defs>
+  <rect width="880" height="650" rx="16" fill="#f5f8fa"/>
+  <text x="36" y="45" font-size="30" font-weight="750">One plan. Two date calculations.</text>
+  <text x="36" y="77" class="body muted">Same offline regression · August 27, 2026 · New York time</text>
+
+  <rect x="36" y="101" width="808" height="102" rx="10" fill="#ffffff" stroke="#d6dfe5"/>
+  <path d="M298 122 V181 M570 122 V181" stroke="#d6dfe5"/>
+  <text x="56" y="130" class="label muted">MANUAL DECISION</text>
+  <text x="56" y="165" class="value">01:16</text>
+  <text x="320" y="130" class="label muted">FROZEN TRADE DATE</text>
+  <text x="320" y="165" class="value">August 27</text>
+  <text x="592" y="130" class="label muted">SCHEDULED EXECUTION</text>
+  <text x="592" y="165" class="value">09:35</text>
+  <path d="M440 203 V219 H238 V239 M440 219 H642 V239" fill="none" stroke="#80919f" stroke-width="2"/>
+  <g fill="none" stroke="#80919f" stroke-width="2" marker-end="url(#arrow)">
+    <path d="M238 233 V241"/>
+    <path d="M642 233 V241"/>
+  </g>
+
+  <rect x="36" y="248" width="390" height="204" rx="10" fill="#fff0ee"/>
+  <text x="56" y="278" class="label" style="fill:#9c3436">BEFORE · f1e71b5</text>
+  <text x="56" y="312" class="heading">Recompute the next trading day</text>
+  <text x="56" y="346" class="body">Expects August 28; receives August 27.</text>
+  <text x="56" y="387" class="value" style="fill:#9c3436">Valid run rejected</text>
+  <text x="56" y="425" class="mono">Regression: ERROR · exit 1</text>
+
+  <rect x="454" y="248" width="390" height="204" rx="10" fill="#e8f4ee"/>
+  <text x="474" y="278" class="label" style="fill:#21675a">AFTER · 68fccb2</text>
+  <text x="474" y="312" class="heading">Read the frozen trade_date</text>
+  <text x="474" y="346" class="body">Expects August 27; receives August 27.</text>
+  <text x="474" y="387" class="value" style="fill:#21675a">Date check passes</text>
+  <text x="474" y="425" class="mono">Same regression: PASS · exit 0</text>
+
+  <text x="36" y="484" class="body" font-weight="650">Still required: trading day · Execution after Decision · 09:30–09:50 window</text>
+  <path d="M36 507 H844" stroke="#d6dfe5"/>
+
+  <text x="36" y="536" class="label" style="fill:#785316">OWNER</text>
+  <text x="36" y="563" class="body">Challenged the rejection.</text>
+  <text x="36" y="588" class="body">Requested the fix.</text>
+  <text x="310" y="536" class="label" style="fill:#285f9b">AGENT</text>
+  <text x="310" y="563" class="body">Diagnosed + extended test.</text>
+  <text x="310" y="588" class="body">Repaired 1 production file.</text>
+  <text x="594" y="536" class="label" style="fill:#21675a">EVIDENCE</text>
+  <text x="594" y="563" class="body">Same test: fails → passes.</text>
+  <text x="594" y="588" class="body">Full suite: 93 tests pass.</text>
+
+  <text x="36" y="629" class="small muted">Offline proof of the repair. The missed trading cycle was not replayed.</text>
+</svg>

@@ -1,34 +1,41 @@
 # Writing a Strategy Spec
 
-A Strategy Spec is a checked-in, version-named **Markdown investment policy**. It is not a plugin,
-a class, or a config schema. An Account Lane selects exactly one by identifier, and its Decision
-Routine reads that file completely and applies it to that lane alone.
+A Strategy Spec is a versioned **Markdown investment policy** that tells the Decision agent which
+facts to gather, how to evaluate candidates and when to propose a trade. Each Account Lane selects
+one policy by identifier. Start with [Growth Momentum v1](../strategies/growth_momentum_v1.md)
+for a short example of the format; selection in current deployments is defined by config.
 
-This is deliberate. Ripple's interesting question is which responsibilities belong to a language
-model and which belong to deterministic code, so the policy lives where a model reads it, and the
-code owns everything a model should never be trusted to redo: shape, sizing, timing, and safety.
+The agent applies the investment policy; Python validates the resulting artifacts, calculates risk
+and enforces timing and sizing constraints.
 Adding a strategy therefore requires no Python — but a strategy can never loosen a deterministic
 rule either.
 
-## Add one in three steps
+## Try a policy locally
 
-1. Create `strategies/<strategy_id>.md`. The identifier is lowercase `snake_case` and carries its
-   version: `growth_momentum_v3`, `earnings_drift_v1`.
-2. Point a lane at it with `"strategy": "<strategy_id>"` in that lane's configuration.
-3. Validate:
+1. Create `strategies/<strategy_id>.md` with a lowercase `snake_case` identifier and version,
+   such as `my_policy_v1`.
+2. Copy [the demo config](../config/examples/demo_lane.json) to `config/examples/my_policy/demo_lane.json`
+   and set its `strategy` to your new identifier. Keep it under `config/examples/` so scheduled
+   runs do not select it. Keep the filename `demo_lane.json` to match the supplied fixture's
+   `execution_context.account_id`. A different lane name requires a matching fixture account ID.
+3. Run the supplied fixture with that configuration and a fresh output directory:
 
    ```bash
-   uv run --no-cache python -m ripple.mvp validate-configs
+   uv run --no-cache python -m ripple.mvp run-shadow-cycle \
+     --config config/examples/my_policy/demo_lane.json \
+     --fixture fixtures/mvp/demo_lane_cycle.json \
+     --output /tmp/ripple-strategy-demo/demo_lane
    ```
 
-Catalog validation fails when the file does not exist, so a typo stops the whole catalog instead of
-silently running a lane with no policy. To try it without touching the real catalog, copy
-[`config/examples/demo_lane.json`](../config/examples/demo_lane.json) into `config/` under a new
-snake_case filename — `config/examples/` sits outside the `config/*.json` glob and is never
-scheduled.
+This verifies configuration loading, strategy-file existence and the fixed fixture's publication
+and execution. **The fixture supplies its own decision; this command does not ask an LLM to apply
+your new policy.** Evaluating the policy requires a separate Decision routine run with its required
+facts and the appropriate owner authorization.
 
-Validation proves your spec **exists and is bound**. It cannot prove the policy is any good; only a
-Decision Routine run applies it.
+Adding a configuration to `config/` is a separate reviewed deployment change: it joins the catalog
+and may become eligible for scheduling. At that point, run
+`uv run --no-cache python -m ripple.mvp validate-configs` to validate the complete catalog. A
+missing Strategy Spec fails validation rather than silently running a lane without a policy.
 
 ## What you decide, and what you never override
 
@@ -40,14 +47,14 @@ You own the investment policy:
 - position sizing and the shape of the target portfolio; and
 - what counts as a valid no-trade outcome.
 
-Deterministic code owns the floor, in every mode, regardless of what your spec says: 20% maximum
-per symbol, three new positions per day, 5% daily-loss breaker, 10%/15% drawdown tiers, 15-minute
-quote freshness, 30-day wash-sale lookback, 8% stop loss, 20% take profit, and a per-order price
-tolerance that may never exceed 10%. A spec may be **stricter** than the floor — Growth Momentum v1
-caps its own limits at 1% — and can never be looser. It also cannot grant Decision any order
-authority: publishing a plan is the only thing a Decision Routine may do.
+Deterministic code applies the selected lane's configured risk limits in every mode: position
+caps, new-position counts, loss and drawdown breakers, quote freshness, loss-sale lookback and
+stop-loss/take-profit exits. Read [`config/*.json`](../config/) for current values and
+[the risk module](../ripple/risk.py) for enforcement. Per-order price tolerance cannot exceed the
+code's 10% cap. A policy may impose stricter constraints; it cannot override the checks or grant
+Decision any order-placement authority.
 
-If a spec you want requires changing that floor, that is an architecture decision recorded in
+If a spec requires changing the deterministic safety contract, that is an architecture decision recorded in
 [`DECISIONS.md`](DECISIONS.md), not a line in a Markdown policy.
 
 ## What every spec must produce
@@ -77,8 +84,9 @@ the worked example.
 A compiler reads the selected lane configuration, **requires its input symbol set to match that
 lane's universe exactly**, and emits credential-free facts plus provenance into
 `DecisionSnapshot.inputs`. It owns Decimal formulas, session alignment, interpolation rejection,
-source and freshness checks, and completeness checks; incomplete compilation stops publication
-rather than degrading. Raw authenticated responses are never persisted.
+source and freshness checks, and completeness checks. Invalid compiler input stops the compiler.
+The compact compiler can return `status: "unavailable"` for a symbol; the selected policy specifies
+when this disqualifies a candidate or stops the lane. Missing values must not be invented. Raw authenticated responses are never persisted.
 
 The division holds even here: the model gathers and normalizes sources, the compiler derives
 numbers from them, and the spec decides what those numbers mean. This is a facts seam, not the
@@ -102,9 +110,9 @@ real cycles all grew the same sections, in roughly this order:
 | Failure behavior | Which failures stop the lane and which produce a valid no-trade |
 | Self-check | A checkable list the routine runs before publishing |
 
-The self-check is worth copying. It converts "follow this policy" into "verify these statements are
-true about the plan you are about to publish," which is the difference between a prompt and a
-contract.
+A self-check makes the policy easier to review: it lists the statements the agent must verify
+before publishing. It remains a prompt instruction; it does not add a Python-enforced guarantee
+that the model followed every investment rule.
 
 ## Versioning
 

@@ -1,6 +1,6 @@
 # Runbook
 
-Operational procedures for the account catalog, manual development lane, shadow cohort, and future single live lane.
+Operational procedures for the account catalog, manual development runs, profile-specific shadow cohorts and the reviewed single-live-lane path. Start with [Running Ripple](RUNNING.md) for the offline demo and runner requirements.
 
 ## Repository verification
 
@@ -12,7 +12,7 @@ Run the complete test suite before trusting a working copy:
 uv run --no-cache python -m unittest discover -s tests -t .
 ```
 
-The whole suite must pass. It uses only the standard library, so a failure to import a package means the interpreter is older than 3.12 rather than that a dependency is missing.
+The whole suite must pass. It uses only the standard library; if imports fail, check the Python version and repository working directory before installing packages.
 
 Validate the complete catalog and inspect scheduled membership:
 
@@ -47,7 +47,7 @@ For a designated-owner live/shadow historical backfill, provide complete point-i
 
 ## Hosted schedules
 
-Configure exactly the four cohort triggers in `routines/SCHEDULE.md`: live Decision, shadow Decision, live Execution, and shadow Execution. Never schedule dry-run lanes.
+Use the six cohort triggers in [the schedule manifest](../routines/SCHEDULE.md): four `next_session_open` live/shadow triggers and two `same_session_close` shadow triggers. Never schedule dry-run lanes.
 
 Each run starts by validating the complete catalog. A live run with no selected lane is a successful no-op. A run that reports `no trading session` is also a successful no-op: the NYSE calendar in `ripple/calendar.py` says the targeted session does not exist, nothing was written, and no recovery is required. A calendar-coverage error is different and does need action: extend the checked-in table in a reviewed commit. A shadow run processes every selected lane independently and reports a per-lane summary.
 
@@ -58,7 +58,7 @@ For each shadow lane:
 1. Use the latest prior result's `ending_account` as the next virtual portfolio; for the first cycle, use the configured `shadow.initial_cash` with no positions.
 2. Mark equity and daily P&L from current quotes, update high-water mark only upward, and reset `new_positions_today` at the new trading date before publishing the new account baseline. Do not treat stale ending valuation or a prior day's count as current.
 3. Publish one plan using the lane's selected Strategy Spec.
-4. At T+1 Execution, provide fresh quotes for every held and planned symbol and call `execute-shadow`.
+4. At the plan's profile-specific Execution time, provide fresh quotes for every held and planned symbol and call `execute-shadow`.
 5. Inspect `fill_status`, every `shadow_fills` entry, and `ending_account`. A `not_filled` limit remains unfilled; do not manually force it into the virtual portfolio.
 6. Commit only new credential-free state artifacts. Never rewrite an earlier plan or shadow result.
 
@@ -89,7 +89,7 @@ Changing mode does not cancel pending orders or liquidate positions. Disabling s
 
 For every hosted run, verify:
 
-1. the expected private branch was pulled without conflict;
+1. the intended state branch was pulled without conflict;
 2. catalog validation passed and cohort membership was recorded;
 3. configuration filename, plan, context, and state-root basename use the same account ID;
 4. the plan's strategy ID matches the selected configuration;

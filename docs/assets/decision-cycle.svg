@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="1056" viewBox="0 0 880 1056" role="img" aria-labelledby="title description">
+  <title id="title">One Ripple decision, from intent to evidence</title>
+  <desc id="description">An offline next_session_open fixture illustrates four stages. In hosted runs the LLM proposes a trade under a prompt contract; here the fixture supplies BUY 0.5 AAPL LIMIT 101 at August 24, 2026, 21:00 New York time. Python validates and freezes the snapshot and plan for the same lane and strategy. In hosted runs Git carries them to a fresh Execution session started by the runner. At August 25, 09:35, Python checks the unchanged plan against current account facts and a 100.50 quote timestamped 09:34; risk allows 0.5 shares. The shadow adapter assumes a fill at 100.50 with zero fees and slippage, leaving 669.75 cash from 720 and 0.5 AAPL shares. Execution and report files preserve the evidence. The offline command calls no LLM or broker and does not wait overnight. Humans own live activation, funding, strategy changes and restart. Prompt contracts are not a code-level broker firewall; Git does not guarantee exactly-once execution.</desc>
+  <defs>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; fill: #182b3a; }
+      .heading { font-size: 26px; font-weight: 700; letter-spacing: -.4px; }
+      .body { font-size: 18px; }
+      .small { font-size: 16px; }
+      .muted { fill: #506272; }
+      .mono { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 16px; }
+      .role { font-size: 15px; font-weight: 650; }
+      .number { fill: #ffffff; font-size: 18px; font-weight: 700; text-anchor: middle; }
+      .card { fill: #ffffff; stroke: #d6dfe5; }
+    </style>
+    <marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M1 1 L7 4 L1 7" fill="none" stroke="#80919f" stroke-width="1.5"/>
+    </marker>
+  </defs>
+  <rect width="880" height="1056" rx="16" fill="#f5f8fa"/>
+  <text x="36" y="46" font-size="31" font-weight="750" letter-spacing="-.7">One decision, from intent to evidence</text>
+  <text x="36" y="78" class="body muted">Reproducible offline fixture · next_session_open · all times New York</text>
+
+  <!-- Numbers and arrows carry sequence without relying on color. -->
+  <g fill="none" stroke="#80919f" stroke-width="2" marker-end="url(#arrow)">
+    <path d="M57 156 V290"/>
+    <path d="M57 344 V488"/>
+    <path d="M57 542 V676"/>
+  </g>
+
+  <rect x="96" y="108" width="748" height="164" rx="12" class="card"/>
+  <circle cx="57" cy="136" r="18" fill="#285f9b"/>
+  <text x="57" y="142" class="number">1</text>
+  <text x="120" y="142" class="heading">Propose a trade</text>
+  <rect x="617" y="121" width="205" height="28" rx="14" fill="#eaf2ff"/>
+  <text x="719" y="140" text-anchor="middle" class="role" style="fill:#285f9b">LLM · prompt contract</text>
+  <text x="120" y="176" class="small muted">AUG 24, 2026 · 21:00 — Decision</text>
+  <text x="120" y="211" font-size="25" font-weight="650">BUY 0.5 AAPL · LIMIT $101.00</text>
+  <text x="120" y="239" class="body">Hosted: research + judgment. Here: a supplied fixture Decision.</text>
+  <text x="120" y="260" class="small muted">Decision has no authority to review, place, cancel or modify broker orders.</text>
+
+  <rect x="96" y="296" width="748" height="174" rx="12" class="card"/>
+  <circle cx="57" cy="324" r="18" fill="#21675a"/>
+  <text x="57" y="330" class="number">2</text>
+  <text x="120" y="330" class="heading">Freeze the intent</text>
+  <rect x="617" y="309" width="205" height="28" rx="14" fill="#e8f4ee"/>
+  <text x="719" y="328" text-anchor="middle" class="role" style="fill:#21675a">Python · code checks</text>
+  <text x="120" y="362" class="body">Validate inputs → publish once for this lane and trade date.</text>
+  <text x="120" y="390" class="mono">decision_snapshot.json + order_plan.json</text>
+  <text x="120" y="417" class="small muted">Frozen: lane · strategy · plan ID · trade date AUG 25</text>
+  <path d="M120 431 H820" stroke="#d6dfe5"/>
+  <text x="120" y="455" class="small"><tspan font-weight="700" fill="#634c94">Runner / platform</tspan><tspan> · hosted: Git handoff → fresh Execution session</tspan></text>
+
+  <rect x="96" y="494" width="748" height="164" rx="12" class="card"/>
+  <circle cx="57" cy="522" r="18" fill="#21675a"/>
+  <text x="57" y="528" class="number">3</text>
+  <text x="120" y="528" class="heading">Check before acting</text>
+  <rect x="617" y="507" width="205" height="28" rx="14" fill="#e8f4ee"/>
+  <text x="719" y="526" text-anchor="middle" class="role" style="fill:#21675a">Python · code checks</text>
+  <text x="120" y="560" class="small muted">AUG 25, 2026 · 09:35 — Execution; no new investment thesis</text>
+  <text x="120" y="593" font-size="24" font-weight="650">Quote $100.50 <tspan font-size="17" font-weight="400">(as of 09:34)</tspan><tspan> → risk: allowed</tspan></text>
+  <text x="120" y="622" class="body">Same plan + account checks + fresh quote + deterministic limits.</text>
+  <text x="120" y="647" class="small muted">This order stays at 0.5 shares. Other inputs can clip, reject or abort.</text>
+
+  <rect x="96" y="682" width="748" height="164" rx="12" class="card"/>
+  <circle cx="57" cy="710" r="18" fill="#21675a"/>
+  <text x="57" y="716" class="number">4</text>
+  <text x="120" y="716" class="heading">Record the shadow outcome</text>
+  <rect x="617" y="695" width="205" height="28" rx="14" fill="#e8f4ee"/>
+  <text x="719" y="714" text-anchor="middle" class="role" style="fill:#21675a">Python · shadow adapter</text>
+  <text x="120" y="748" class="body">$100.50 ≤ $101 limit → assumed fill at 09:35</text>
+  <text x="120" y="782" font-size="25" font-weight="650">Cash $720 → $669.75 <tspan fill="#80919f">·</tspan> +0.5 AAPL</text>
+  <text x="120" y="809" class="mono">execution.json + report.md</text>
+  <text x="120" y="834" class="small muted">Zero fees + zero slippage. No broker write tool was called.</text>
+
+  <rect x="36" y="872" width="808" height="78" rx="10" fill="#fff3d9"/>
+  <text x="56" y="900" class="body" font-weight="700" style="fill:#785316">Human · owns authorization</text>
+  <text x="56" y="926" class="body">Live activation, funding, strategy changes and risk-lock restart.</text>
+
+  <text x="36" y="980" class="small muted">Offline demo: no LLM call, no broker connection, no overnight wait.</text>
+  <text x="36" y="1005" class="small muted">Hosted limits: prompt contracts are not a code-level broker firewall.</text>
+  <text x="36" y="1030" class="small muted">Git carries evidence; it does not guarantee exactly-once execution.</text>
+</svg>

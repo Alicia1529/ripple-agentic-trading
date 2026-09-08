@@ -6,6 +6,11 @@ Ripple is an account-catalog MVP for comparing isolated strategy lanes. The cata
 
 ## System at a glance
 
+An Account Lane is one isolated configuration, portfolio and history. The catalog validates these
+configurations and selects the group due to run (a *cohort*). The diagram illustrates normal
+`next_session_open` timing; the [profile section](#execution-modes-cycle-profiles-and-scheduled-cohorts)
+explains the same-day path and authorized pre-open exception.
+
 ```mermaid
 flowchart TD
     CFG["config/&lt;account_id&gt;.json<br/>one Account Lane<br/>filename is its identity"]
@@ -50,7 +55,9 @@ flowchart TD
     class LADP,DRY gated;
 ```
 
-The LLM supplies bounded fact gathering and investment judgment. Python validates configurations and artifacts, compiles any strategy-required deterministic facts, assigns stable IDs, quantizes new planned limits to broker-valid price increments, performs deterministic risk calculations, and simulates Shadow Fills. The owner supplies broker binding, funding, live activation, restart, and strategy-switch decisions.
+The Python package does not call an LLM or implement a broker client. A hosted agent follows
+the routine prompts, gathers sources through its tools and invokes Python. Live broker calls
+belong to that agent's reviewed Execution routine. The LLM supplies bounded fact gathering and investment judgment. Python validates configurations and artifacts, compiles any strategy-required deterministic facts, assigns stable IDs, quantizes new planned limits to broker-valid price increments, performs deterministic risk calculations, and simulates Shadow Fills. The owner supplies broker binding, funding, live activation, restart, and strategy-switch decisions.
 
 ## Account Catalog interface
 
@@ -90,7 +97,7 @@ The catalog returns deterministic, account-ID-sorted cohorts. A missing strategy
 
 The seam is deliberately small: Strategy Specs are prompt-defined Markdown policies, not Python plugins. The generic publisher and deterministic risk module remain authoritative for shape, sizing, and safety. Adding a new strategy does not require changing Python, but selecting a missing strategy fails catalog validation.
 
-A Strategy Spec may require checked-in deterministic preprocessing before ranking or research. Such a compiler reads the selected lane configuration, requires its symbol set to match the configured universe exactly, and emits credential-free facts and provenance for `DecisionSnapshot.inputs`; incomplete compilation stops publication. Qualitative research, candidate rejection, warnings, and thesis metadata remain Strategy Spec responsibilities, while every strategy publishes through the shared `OrderPlan` schema. Raw authenticated responses are never persisted.
+A Strategy Spec may require checked-in deterministic preprocessing before ranking or research. Such a compiler reads the selected lane configuration, requires its symbol set to match the configured universe exactly, and emits credential-free facts and provenance for `DecisionSnapshot.inputs`. Invalid compiler input or a missing required universe entry stops the compiler. The compact compiler can explicitly mark a symbol `unavailable`; the selected policy determines whether that prevents an entry or stops the lane, rather than inventing a value. Qualitative research, candidate rejection, warnings, and thesis metadata remain Strategy Spec responsibilities, while every strategy publishes through the shared `OrderPlan` schema. Raw authenticated responses are never persisted.
 
 Every new `OrderPlan`, Decision record, deterministic result, execution record, and report carries `strategy_id`. New OrderPlans also carry a concise `decision_rationale` explaining the final target portfolio and orders, and freeze whether Decision was `fixture`, `manual`, `scheduled`, or `backfill`; execution evidence independently freezes its own run kind. Historical plans without rationale or Decision run provenance remain readable as legacy evidence. A versioned Strategy Spec should not be edited in place after it has produced decisions; create a new identifier so historical attribution stays meaningful. Git history retains its exact checked-in content.
 
@@ -171,7 +178,7 @@ The plan freezes its Cycle Profile and Trading Day. Every fill attempt occurs af
 | `OrderPlan` | Represent strategy-attributed decision intent | Decision rationale, strict order shape, account baseline, portfolio weights, immutable nested values |
 | Risk module | Return allowed, clipped, rejected, or aborted actions | Account binding, freshness, sizing, cash reservation, loss/drawdown/wash-sale/exit rules |
 | Shadow adapter | Return fill attempts and ending virtual state | Profile-attributed marketability, Execution-quote fills, position/cash state transition, no broker I/O |
-| Live adapter | Use deterministic output with Robinhood | Account binding, duplicate/history checks, exact one-call placement, ambiguity stop, credential-free evidence |
+| Live adapter (agent routine and broker tools) | Use deterministic output with Robinhood | Account binding, duplicate/history checks, exact one-call placement, ambiguity stop, credential-free evidence |
 | Lane State | Carry credential-free evidence across fresh sessions | Per-lane trade-date cycles and an optional active risk lock |
 
 ## Artifacts and state
@@ -185,11 +192,11 @@ The plan freezes its Cycle Profile and Trading Day. Every fill attempt occurs af
 | Report | Human-readable action and Shadow Fill summary |
 | Tier-two lock | Lane-scoped persistent block on new BUYs until owner review |
 
-Canonical state roots are `state/accounts/<account_id>`. Each cycle lives at `trading_days/<trade_date>`, where `trade_date` is the next New York trading day after the Decision. `decision_snapshot.json` and `order_plan.json` are published prior evening; `execution.json` and `report.md` join the same directory after Execution. The optional account-root `active_risk_lock.json` persists across dates. Cycle artifacts never cross roots or overwrite earlier evidence.
+Canonical state roots are `state/accounts/<account_id>`. Each cycle lives at `trading_days/<trade_date>`, where `trade_date` is the frozen Execution-session date. It is normally the next session for `next_session_open`, or the same session for `same_session_close` and an authorized pre-open date override. `decision_snapshot.json` and `order_plan.json` are published before Execution; `execution.json` and `report.md` join the same directory after Execution. The optional account-root `active_risk_lock.json` persists across dates. Cycle artifacts never cross roots or overwrite earlier evidence.
 
 ## Deterministic safety
 
-All modes use the same rules: 20% maximum symbol position, three new positions per day, 5% daily-loss breaker, 10% tier-one drawdown, 15% tier-two drawdown and owner restart, 15-minute quote freshness, 30-day taxpayer-wide wash-sale lookback, 8% stop loss, and 20% take profit.
+All modes use the shared risk module with the selected lane's configured position limits, new-position cap, loss and drawdown thresholds, quote freshness, loss-sale lookback and stop-loss/take-profit thresholds. Current values are authoritative in [`config/*.json`](../config/). A tier-two drawdown lock requires owner review and restart.
 
 Execution also checks the decision baseline, universe, price tolerance, cumulative BUY cash, and SELL holdings. Position changes and cash decreases relative to the baseline abort; cash increases do not, but they never enlarge the frozen BUY budget. Every planned limit must remain within its positive per-order tolerance, which may not exceed 10%. At Execution, a BUY's price tolerance rejects only an adverse upward move beyond that frozen percentage; a lower current price remains eligible for the separate limit-marketability, opening-gap, account, and risk checks. SELL price tolerance remains symmetric. Before a fractional Live action is converted to market, its quote must be marketable against the planned limit (`BUY quote <= limit`, `SELL quote >= limit`); otherwise it is rejected with `limit_not_marketable`. A BUY may additionally freeze `gap_cancel_above`; such an order requires the actual regular-session open and is rejected when that open is strictly above the frozen threshold. A missing required session open aborts the plan. Missing or stale facts, malformed input, cross-account mismatch, or unsafe sizing fails closed. A deterministic full-position Risk Exit is the only action allowed without a matching planned order.
 

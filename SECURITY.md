@@ -34,12 +34,13 @@ test against the deterministic core is the most useful possible report.
 Read this part before pointing anything at a broker account.
 
 **Start in shadow mode.** A shadow lane never connects to a broker and never writes an order. It
-produces the same deterministic risk verdict and re-checks the same T+1 quote; it just does not
-place anything. Run it long enough to see how the system behaves before considering anything else.
+uses the shared deterministic risk checks and its timing profile's fresh Execution quote,
+then records an assumed fill when the planned limit is marketable. Run it long enough to see how the system behaves before considering anything else.
 
-**Live mode is a human decision, and the software will not make it for you.** Nothing in this
-repository can enable live mode, bind or fund an account, increase capital, switch a live strategy,
-or clear a tier-two restart lock. That is by design, and it is not a limitation to work around.
+**Live activation and capital remain human decisions.** Routines have no authority to enable live
+mode, bind or fund an account, increase capital, switch a live strategy or clear a tier-two restart
+lock. These are owner responsibilities. Python validates artifacts and risk, but v1 does not claim
+a code-level barrier prevents a live agent from misusing its broker tools.
 
 **Know what v1 does not guarantee.** There is no exactly-once broker execution, no transactional
 submission journal, no automatic reconciliation of an ambiguous outcome, and no calibrated fee or

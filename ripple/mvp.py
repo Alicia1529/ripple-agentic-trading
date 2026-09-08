@@ -140,6 +140,7 @@ def _validate_execution_timing(
     cycle_profile: str = "next_session_open",
     *,
     enforce_schedule: bool = True,
+    trade_date: str | None = None,
 ) -> None:
     decision_at = _new_york_time(decision_time)
     execution_at = _new_york_time(execution_time)
@@ -159,8 +160,18 @@ def _validate_execution_timing(
         if execution_at <= decision_at:
             raise ValueError("manual execution must occur after the decision")
         return
-    if execution_at.date() != next_trading_day(decision_at.date()):
-        raise ValueError("execution must occur on the next trading day after the decision")
+    expected_date = (
+        date.fromisoformat(trade_date)
+        if trade_date is not None else next_trading_day(decision_at.date())
+    )
+    if not is_trading_day(expected_date):
+        raise ValueError("execution trade date must be a New York trading day")
+    if execution_at.date() != expected_date:
+        raise ValueError(
+            "execution must occur on the order plan trade date, normally the next trading day"
+        )
+    if execution_at <= decision_at:
+        raise ValueError("execution must occur after the decision")
     if not time(9, 30) <= execution_at.time() <= time(9, 50):
         raise ValueError("execution time is outside the allowed America/New_York window")
 
@@ -390,6 +401,7 @@ def _execute_dry_run(
         execution_context["as_of"],
         _plan_cycle_profile(plan),
         enforce_schedule=run_kind != "manual",
+        trade_date=_plan_trade_date(plan),
     )
     if plan.account_id != config.account_id:
         raise ValueError("plan account_id does not match configured account_id")
@@ -442,6 +454,7 @@ def _execute_shadow(
         execution_context["as_of"],
         _plan_cycle_profile(plan),
         enforce_schedule=run_kind != "manual",
+        trade_date=_plan_trade_date(plan),
     )
     if plan.account_id != config.account_id:
         raise ValueError("plan account_id does not match configured account_id")

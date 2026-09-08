@@ -8,6 +8,11 @@ transient; DecisionSnapshot stores only compiled facts, provenance, research,
 and decision evidence. Ripple's deterministic schemas, risk rules, timing
 checks, and Execution Routine remain authoritative.
 
+Owner-approved in-place amendment (2026-09-03): bounded rank-five research and
+explicit guidance evidence classification below apply to future Decisions.
+The strategy identifier is intentionally retained; use Git history to identify
+the policy revision for earlier Decisions. Never rewrite historical artifacts.
+
 ## Decision order
 
 Complete the Decision in this order:
@@ -17,7 +22,8 @@ Complete the Decision in this order:
 3. evaluate every current holding for Class A and Class B exits;
 4. evaluate the market regime and quantitative BUY filters;
 5. rank eligible BUY candidates;
-6. research only the top three candidates in rank order;
+6. research candidates in rank order, prioritizing the top three and allowing
+   bounded continuation through rank five, stopping at the first full pass;
 7. construct the target portfolio and zero or more orders; and
 8. complete the self-check before publication.
 
@@ -182,8 +188,12 @@ A security is eligible only when every condition is true:
   without a sale.
 
 Rank passing candidates by `rel_mom_qqq` descending, then `mom_60_10`
-descending, then symbol ascending. Research only the top three in that order.
-Do not reach rank four.
+descending, then symbol ascending. Research the top three in that order and
+stop immediately at the first candidate clearing all four research questions.
+If all three are rejected (including insufficient evidence), continue to rank
+four, then rank five only if rank four is rejected. If fewer candidates are
+eligible, stop when that list is exhausted. Never skip a rank, rerank to favor
+available evidence, or research below rank five. Select at most one BUY.
 
 ### Primary-source research
 
@@ -199,13 +209,33 @@ and current investor-relations guidance to answer:
 4. Are there no disclosed restatements, auditor changes, material weaknesses,
    late filings, or going-concern warnings that undermine the thesis?
 
+For question 2, record `guidance_status` as `maintained`, `raised`, `lowered`,
+`withdrawn`, `materially_hedged`, `new_outlook_only`, or `unknown`:
+
+- `maintained` or `raised` passes only with affirmative current primary-source
+  evidence. An explicit management reaffirmation or increase is sufficient;
+  do not additionally require a numeric prior range. Guidance may concern
+  financial or operating outcomes, but must be relevant to the demand thesis.
+  If inferring a change from figures, compare the same metric, period, and basis.
+- `lowered`, `withdrawn`, or `materially_hedged` fails. Do not cherry-pick a
+  favorable metric to disregard a material adverse change relevant to the thesis.
+- `new_outlook_only` means newly issued guidance without evidence of maintaining
+  or raising an existing outlook. It is insufficient, not automatically raised.
+- `unknown` covers no guidance or missing, conflicting, or ambiguous evidence.
+  It is insufficient, not evidence that management lowered its outlook.
+
+Only `maintained` and `raised` pass question 2. Record the cited management
+statement or comparable figures and the relevant metric and period. Do not
+replace missing guidance with revenue growth or absence of adverse news.
+
 Question 3 requires affirmative primary-source evidence that the stated driver
 can recur; merely failing to find a problem is not a positive answer. A negative
 or insufficiently sourced answer to any question disqualifies the candidate.
 Record the rank, failed question, concise reason, source URL, and source as-of
-time for every researched rejection. Select at most the highest-ranked candidate
-that clears all four questions. If none clears, select `NO_BUY` and do not reach
-rank four.
+time for every researched rejection, distinguishing adverse evidence from
+insufficient evidence. Select at most the highest-ranked candidate that clears
+all four questions. If none clears within the bounded research list, select
+`NO_BUY`; do not reach rank six.
 
 ### Thesis record
 
@@ -286,7 +316,7 @@ Reject only the affected non-held candidate when:
 - required primary-source research is missing, conflicting, or ambiguous.
 
 One rejected non-held candidate does not stop independently verifiable holding
-work or other candidates. Its failure never authorizes reaching below rank three
+work or other candidates. Its failure never authorizes reaching below rank five
 after ranking or relaxing another candidate's requirements.
 
 ## Self-check
@@ -302,7 +332,10 @@ Before publication verify:
   positive-volume, and OHLC checks and is recorded in warnings;
 - DecisionSnapshot contains no raw daily bars or raw compiler input;
 - every quantitatively eligible candidate was ranked by the defined keys;
-- only the top three candidates were researched and rank four was not reached;
+- research followed a contiguous ranked prefix of at most five candidates,
+  stopped at the first full pass, and reached rank four only after three rejections;
+- guidance status distinguishes an adverse outlook from new-only or unknown
+  evidence; only affirmatively maintained or raised guidance passed;
 - every research answer has affirmative primary-source support where required;
 - the selected BUY, if any, is the highest-ranked candidate clearing all four
   questions and fits `cash_available_to_trade` without a SELL fill;

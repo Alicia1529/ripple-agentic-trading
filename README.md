@@ -1,8 +1,35 @@
 # Ripple Trading
 
-Ripple is a small, inspectable experiment in AI-native development and agentic trading. Multiple isolated Account Lanes can select different checked-in investment strategies while sharing deterministic validation and risk rules. The goal is to monitor live and shadow records, understand failures, and build evidence for later human review—not to promise returns.
+**An AI agent proposes a trade. Python checks whether it can proceed. A separate run records what happened.**
 
-The repository implements a validated account catalog, a manual dry-run path, and quote-based shadow execution for both `next_session_open` and `same_session_close`. Hosted schedules and the reviewed live Agentic Robinhood broker-write loop are in place; [`docs/TODO.md`](docs/TODO.md) is the authority on what is still unfinished.
+Ripple explores how to turn AI investment judgment into decisions you can inspect and test. Each
+strategy runs in its own **Account Lane**: a configuration, portfolio and history kept separate from
+other lanes. All lanes share deterministic risk checks. A **Strategy Spec** is the versioned Markdown
+policy the agent reads to make a decision.
+
+The engineering question is: **how do you give an agent useful judgment while keeping money,
+timing and execution constraints explicit?** The useful output is a record of what the agent knew,
+what it proposed, what the checks allowed and what actually happened—or was assumed in simulation.
+
+Ripple is a working MVP with an offline demo, scheduled shadow runs and a reviewed small live
+broker loop. Profile-specific acceptance and reliability review remain tracked in
+[unfinished work](docs/TODO.md). It does not establish profitability or production-grade execution
+reliability.
+
+[System overview](#who-decides-validates-and-authorizes) · [Real repair case](#ai-native-development-a-real-repair) · [Run the demo](#run-one-cycle-offline) · [Design choices](#design-choices-you-can-inspect)
+
+## What makes this AI-native?
+
+There are two parts, with different evidence:
+
+| Part | How it works | Where to inspect it |
+|---|---|---|
+| AI in the product | An agent gathers sources and applies a Markdown investment policy; Python validates its output and calculates risk | [Routine contracts](routines/), [strategy example](strategies/growth_momentum_v1.md), [risk code](ripple/risk.py) |
+| AI in development | The owner sets the required behavior and scope; an agent investigates and implements a bounded change with test evidence | [Trade-date repair](#ai-native-development-a-real-repair), including the recorded human and agent contributions |
+
+The Python package itself does **not** call an LLM or a broker. A hosted agent runs the routine,
+uses its available research or broker tools, and invokes the Python core. The offline demo supplies
+a fixed decision so anyone can inspect the deterministic part without an AI account.
 
 ## Who decides, validates, and authorizes
 
@@ -20,22 +47,38 @@ flowchart TD
     H["Human owner<br/>activation · funding<br/>strategy change · restart"] -. "owns / Live Gate" .-> L
 ```
 
-Routine prompts constrain fact gathering and investment judgment: Decision has no order-review, place, cancel, or modification authority. Separate Execution forms no new thesis; deterministic code validates the published plan and applies risk. The owner alone controls activation, funding, strategy changes, and restart. These role boundaries do not claim a code-level broker-capability firewall for a live LLM. Each immutable plan remains tied to one Account Lane and Strategy Spec; see the detailed topology in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+Read the diagram from top to bottom: research becomes a frozen plan, then a fresh Execution
+session checks it against current facts. An allowed action can produce a shadow fill or a live
+order; a rejected action still produces evidence. “Immutable” means the publisher refuses to
+overwrite an existing cycle's artifacts; Git itself is not a tamper-proof store.
 
-## Requirements and verification
+Decision has no authority to review, place, cancel or modify orders. Execution forms no new
+investment thesis. The owner controls activation, funding, strategy changes and restart; the
+**Live Gate** is the set of prerequisites for authorized real orders. Prompt-defined tool boundaries
+are part of the operating contract, not a code-level broker-capability firewall. See
+[Architecture](docs/ARCHITECTURE.md) for the full boundary and live execution details.
 
-Ripple needs CPython 3.12 or later and nothing else: the deterministic core, the CLI, and the whole test suite use only the standard library. Operators drive it with [`uv`](https://docs.astral.sh/uv/), which reads `.python-version` and selects that interpreter for you.
+## AI-native development: a real repair
 
-```bash
-uv run --no-cache python -m unittest discover -s tests -t .
-uv run --no-cache python -m ripple.mvp validate-configs
-```
+A scheduled run rejected an authorized same-day plan. The owner questioned that result and
+requested a fix; the agent found that Execution recomputed the next trading day instead of
+reading the date already frozen in the plan.
 
-The first command runs the whole test suite; the second validates every account configuration and its selected Strategy Spec. Without `uv`, run the same commands with any Python 3.12 interpreter from the repository root. A system Python older than 3.12 fails on import, which is a version problem rather than a missing package.
+![The same August 27 fixture fails before the repair because Execution expects August 28. After the repair, Execution reads the frozen August 27 trade date and the same regression passes. Timing safeguards remain; the owner requested the fix and the agent repaired one production file.](docs/assets/trade-date-repair.svg)
+
+**What the test was missing:** it checked that Decision could publish the plan, but stopped before
+Execution consumed it. Extending that existing test exposed the broken handoff; the total stayed
+at 93 tests. The regression directly exercises the dry-run path, and the shadow caller uses the
+same repaired timing validator. This verifies software behavior, not a broker fill.
+
+[Inspect the fix](https://github.com/Alicia1529/ripple-trading/commit/68fccb2f843f4ebee07cd8b4f9afe353f9cc5da0)
+· [Reproduce the failure and repair](learning/frozen-trade-date-case-study.md#4-the-evidence-test-the-next-stage-not-just-publication)
+· [Read the full case and interview explanation](learning/frozen-trade-date-case-study.md)
+· [Scope workflow](learning/compile-scope-before-codex-execution.md)
 
 ## Run one cycle offline
 
-No model, no API key, no broker connection, no network. This replays a checked-in fixture through the real publisher, the real deterministic risk module, and the real shadow adapter:
+From the repository root, with Python 3.12+ and `uv` available, run this checked-in fixture through the publisher, risk module and shadow adapter. The cycle makes no model, market-data or broker calls:
 
 ```bash
 uv run --no-cache python -m ripple.mvp run-shadow-cycle \
@@ -44,104 +87,94 @@ uv run --no-cache python -m ripple.mvp run-shadow-cycle \
   --output /tmp/ripple-demo/demo_lane
 ```
 
-It writes a complete Decision Cycle — `decision_snapshot.json`, `order_plan.json`, `execution.json`, and a readable `report.md` — to `/tmp/ripple-demo/demo_lane/trading_days/2026-08-25/`. The report ends with `No broker write tool was called.` The demo lane lives outside the `config/*.json` glob, so it is invisible to the catalog and can never be selected by a scheduled run. See [`docs/RUNNING.md`](docs/RUNNING.md) to turn it into a lane of your own.
+It writes a complete Decision Cycle — `decision_snapshot.json`, `order_plan.json`, `execution.json`, and a readable `report.md` — to `/tmp/ripple-demo/demo_lane/trading_days/2026-08-25/`. The report ends with `No broker write tool was called.` The example config sits outside `config/*.json`, so scheduled runs do not select it. Use a fresh output directory for each replay: publication refuses to overwrite existing evidence.
 
-### The life of a trade
+### One decision, from intent to evidence
 
-```mermaid
-flowchart TD
-    F["Fixture provenance<br/>demo_lane config + cycle JSON"] --> D["Decision inputs and plan<br/>2026-08-24 21:00 ET<br/>BUY 0.5 AAPL LIMIT 101"]
-    D --> B["Frozen boundary<br/>next_session_open<br/>trade date: 2026-08-25"]
-    B --> X["Execution · 2026-08-25 09:35 ET<br/>quote 100.50 as_of 09:34 · risk allowed"]
-    X --> S["Shadow Fill (assumed)<br/>0.5 AAPL at 100.50 · 09:35"]
-    S --> E["Ending evidence<br/>cash 720 → 669.75 · +0.5 AAPL"]
+Follow one reproducible offline fixture through the hosted system's responsibility boundaries.
+Each step identifies its owner and whether its authority comes from a prompt contract, code checks,
+or human authorization.
+
+![Four-stage Ripple walkthrough: a supplied Decision proposes BUY 0.5 AAPL at a $101 limit; Python freezes the plan, checks fresh execution facts, and assumes a shadow fill at $100.50, leaving $669.75 cash. LLM prompt contracts, runner handoff, Python checks and human authorization are labeled separately.](docs/assets/decision-cycle.svg)
+
+**Read the evidence:** the snapshot records what Decision was allowed to know; the plan records
+what it intended; execution records what risk allowed and Shadow assumed; the report makes the
+result readable. All four files belong to one Account Lane, Strategy Spec and trade date.
+
+This example supplies the Decision rather than calling an LLM. Its timestamps are modeled and its
+fill assumes zero fees and slippage. The hosted runner starts separate Decision and Execution
+sessions; the offline command above processes both stages without waiting overnight. See
+[Anatomy of one Decision Cycle](docs/ANATOMY_OF_A_CYCLE.md) for a text walkthrough and field-level
+evidence, or [Architecture](docs/ARCHITECTURE.md) for the full live/shadow topology.
+
+## Design choices you can inspect
+
+These are useful starting points for a technical discussion: each choice solves a specific problem
+and leaves a visible limitation.
+
+| Problem | Design choice | Evidence and tradeoff |
+|---|---|---|
+| A later run could reinterpret the original decision | Freeze the inputs, plan, strategy and trade date before Execution | [Publisher](ripple/mvp.py) and [handoff regression](learning/frozen-trade-date-case-study.md). Replaying a supplied plan tests execution behavior; it does not reproduce the model's judgment |
+| A model may calculate a financial quantity inconsistently | Use Decimal arithmetic and shared Python risk rules; selected strategies also require compiled numeric facts | [Risk tests](tests/test_risk.py) and [facts compiler](ripple/growth_momentum_lite.py). Source gathering and qualitative judgment still depend on the agent |
+| One strategy's state could contaminate another's result | Bind artifacts and execution to one lane and strategy | [Catalog](ripple/account_config.py) and [cycle tests](tests/test_mvp_cycle.py). Logical isolation does not create separate broker permissions |
+| Simulation can make results look more executable than they are | Record fill assumptions and ending virtual state explicitly | [Shadow adapter](ripple/shadow.py) and [fill tests](tests/test_shadow_execution.py). Quote-based fills assume zero fees and slippage |
+| A simple handoff can hide execution failures | Store cycle artifacts in Git and stop on ambiguous broker outcomes | [Reliability boundaries](docs/ARCHITECTURE.md#authority-and-reliability). Git provides continuity, not exactly-once order submission |
+
+## Modes and timing
+
+| Mode | What you get | Scheduled? |
+|---|---|---|
+| `dry_run` | Validated decision and proposed actions; no fills or broker calls | No |
+| `shadow` | Risk-checked, quote-based assumed fills and a virtual portfolio | Yes, by timing profile |
+| `live` | Risk-allowed orders through the reviewed broker loop, after the Live Gate | Yes; at most one live lane |
+
+A **Cycle Profile** defines when Decision and Execution happen. `next_session_open` normally
+plans in the evening and checks fresh quotes the next trading morning. `same_session_close`
+plans and executes later on the same regular session and is currently used only for shadow work.
+The plan freezes the intended trade date. The [schedule manifest](routines/SCHEDULE.md) owns the
+six triggers and their windows; [config files](config/) own current lane membership and limits.
+
+## Safeguards and evidence limits
+
+Python checks account and plan matching, timing, fresh quotes, sizing, available cash, position
+limits, loss/drawdown thresholds and loss-sale history. Missing or inconsistent required facts
+authorize no planned order. A deterministic full-position stop-loss/take-profit **Risk Exit** is
+the only unplanned-order exception. The [13 invariants](docs/INVARIANTS.md) define the contract.
+
+Live execution has material limits: a risk-allowed fractional order becomes a regular-hours market
+order only after its current quote satisfies the planned limit, but the eventual fill can still slip
+beyond that price. Stable IDs and duplicate checks do not provide exactly-once execution. Ambiguous
+broker outcomes stop for inspection. [Architecture](docs/ARCHITECTURE.md#execution) explains these
+tradeoffs, including the frozen cash budget and standing owner authorization.
+
+Passing tests demonstrates the behavior of the checked-in software against supplied inputs.
+It does not establish source truth, faithful LLM policy execution, future broker fills or investment
+returns. Strategy comparison, capital changes and restart after a severe drawdown remain human
+review decisions; see [release gates](docs/TODO.md).
+
+## Requirements and verification
+
+Ripple needs CPython 3.12 or later: the deterministic core, the CLI, and the whole test suite use only the standard library. Operators drive it with [`uv`](https://docs.astral.sh/uv/), which reads `.python-version` and selects that interpreter for you.
+
+```bash
+uv run --no-cache python -m unittest discover -s tests -t .
+uv run --no-cache python -m ripple.mvp validate-configs
 ```
 
-This is a `next_session_open` offline fixture: its timestamps are modeled, so the command does not wait overnight. It deterministically processes a supplied Decision rather than generating a new LLM judgment. Its Shadow Fill assumes zero fees and zero slippage, not broker execution. See [`docs/ANATOMY_OF_A_CYCLE.md`](docs/ANATOMY_OF_A_CYCLE.md) for field-by-field details.
+The first command runs the whole test suite; the second validates every account configuration and its selected Strategy Spec. Without `uv`, run the same commands with any Python 3.12 interpreter from the repository root. If imports fail, check the interpreter version and that you are running from the repository root before installing packages.
 
-## Account lanes and scheduling
+## Where to go next
 
-Hosted schedules use six triggers: four select the `next_session_open` live or shadow cohorts, and two select only the `same_session_close` shadow cohort. A live run may have no selected account; dry-run configurations are never scheduled.
-
-Each account configuration contains:
-
-- a narrative `description` of its purpose, strategy, universe, and risk constraints;
-- a `strategy` identifier that must resolve to `strategies/<strategy>.md`;
-- `execution.mode` in `live`, `shadow`, or `dry_run`;
-- its allowed symbol universe and deterministic risk values; and
-- `shadow.initial_cash` when it owns a virtual portfolio.
-
-Catalog validation rejects a missing Strategy Spec, malformed config, invalid filename identifier, or more than one live lane.
-
-## Decision and execution
-
-The Decision Routine gathers allowed facts, follows only the selected Strategy Spec, and publishes an immutable `DecisionSnapshot` and `OrderPlan`. The plan freezes both `account_id` and `strategy_id`. Decision has no order-review, place, cancel, or modification authority.
-
-The separate Execution Routine gathers current account facts and quotes and runs deterministic risk code. It can allow, scale down, reject, or abort planned actions; it cannot form a new thesis. A deterministic full-position stop-loss/take-profit Risk Exit is the only unplanned-order exception.
-
-Robinhood accepts fractional shares only as regular-hours market orders. Ripple therefore keeps the immutable OrderPlan's LIMIT price as the Decision intent and sizing basis, but converts a risk-allowed Live order whose final quantity is fractional to `MARKET + regular_hours` before direct broker placement. The current quote must first satisfy the planned limit (`BUY quote <= limit`, `SELL quote >= limit`), otherwise deterministic risk rejects it. Integer-share Live orders remain LIMIT orders, and Shadow behavior is unchanged. Because a market order has no hard execution-price cap, the eventual Live fill can slip beyond the planned limit; this is an accepted small-canary risk, not a guaranteed maximum purchase price or minimum sale price.
-
-The designated owner's standing approval authorizes Scheduled Live Execution to place each exact deterministic `broker_order` once without Robinhood review or per-order confirmation. An explicit `--manual-run` invocation supplies the equivalent authority for that manual cycle. Account binding, immutable-plan matching, fresh facts, deterministic risk, stable-ID duplicate checks, the reviewed allocation, and fail-closed ambiguity handling remain mandatory; placement errors and uncertain outcomes stop without retry.
-
-Execution requires positions to match the immutable account baseline exactly. Current broker cash below the frozen baseline aborts the plan; current cash above it is recorded but does not abort and cannot enlarge the plan, because deterministic BUY reservation remains capped at the lower frozen cash value.
-
-For shadow execution, a risk-allowed BUY limit is marketable when the profile's Execution quote is at or below the limit; a SELL limit is marketable when that quote is at or above it. A marketable action is assumed filled at that quote with zero fees and zero slippage. The result records fill attempts and ending virtual account state. These are explicit assumptions, not broker fills.
-
-### Why `next_session_open` decides prior-evening and executes at 9:35 AM
-
-For `next_session_open`, the evening Decision uses completed daily bars and leaves time to gather source evidence before freezing the plan. Execution at 9:35 AM observes the actual regular-session open and a fresh quote while limits anchored to the prior close are still relevant. This fits both the slower [Growth Momentum](strategies/growth_momentum_v3.md) signal and the more time-sensitive [Earnings Drift](strategies/earnings_drift_v1.md) event window. Waiting until noon or 3:00 PM makes the frozen price anchor progressively stale and can favor intraday reversals over the strongest continuations; planning at 3:00 PM would instead use an incomplete session and collapse the Decision/Execution boundary. `same_session_close` has its own same-day timing profile. This is structural rationale, not proof that 9:35 produces better returns.
-
-## Safety model
-
-Deterministic Python controls schemas, account binding, timing, quote freshness, baseline matching, sizing, cash reservation, position caps, loss and drawdown breakers, wash-sale checks, and Risk Exits. Routine prompts control LLM research and tool use. The human owner controls schedules, Robinhood binding, funding, live activation, capital, and restart.
-
-Core limits are 20% per symbol, three new positions per day, 5% daily loss, 10%/15% drawdown tiers, 15-minute quote age, 30-day taxpayer-wide wash-sale lookback, 8% stop loss, and 20% take profit. Missing or inconsistent required data fails closed.
-
-The catalog permits at most one live configuration, but this is not a broker-side security boundary. Live v1 still lacks exactly-once execution and automatic ambiguous-outcome reconciliation. See [`docs/INVARIANTS.md`](docs/INVARIANTS.md) for the full contract.
-
-## Running Ripple
-
-Ripple separates **what a run must do** from **who runs it**. The six prompts in
-[`routines/`](routines/) are the durable contract — one per cohort phase — and the Agent Runner
-that executes them is replaceable: Codex scheduled tasks drive the current deployment, but nothing
-in the Python privileges one product over another.
-
-[`docs/RUNNING.md`](docs/RUNNING.md) states the seven requirements any runner must satisfy, then
-gives the prompt library and the setup for each runner known to satisfy them.
-[`routines/SCHEDULE.md`](routines/SCHEDULE.md) is the operator-owned schedule manifest.
-
-## Documentation
-
-Each document owns one kind of truth, because what the system *is*, what it must *never* do, what was *decided*, and how to *operate* it all change at different rates. [`docs/README.md`](docs/README.md) is the complete map; this is the short version.
-
-**Understand what it does**
-
-| Document | Answers |
+| If you want to… | Read |
 |---|---|
-| [`docs/ANATOMY_OF_A_CYCLE.md`](docs/ANATOMY_OF_A_CYCLE.md) | What one cycle actually produces, field by field, from a demo you can rerun. The fastest way in |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | How the system works today, and where its boundaries sit |
-| [`docs/INVARIANTS.md`](docs/INVARIANTS.md) | The 13 rules that may never be broken — the checklist every review runs against |
-| [`docs/DECISIONS.md`](docs/DECISIONS.md) | Which durable choices govern this release, and why they were made that way |
-| [`CONTEXT.md`](CONTEXT.md) | What each domain term means, and which tempting synonyms to avoid |
-| [`PROPOSAL.md`](PROPOSAL.md) | Why Ripple exists, what it deliberately is not, and the gates between releases |
+| Understand the output without learning the whole codebase | [Anatomy of one cycle](docs/ANATOMY_OF_A_CYCLE.md), a reproducible fixture walkthrough |
+| Discuss the architecture and its tradeoffs | [Architecture](docs/ARCHITECTURE.md) → [decisions and rationale](docs/DECISIONS.md) |
+| Examine how the owner directed AI development | [Real repair case](learning/frozen-trade-date-case-study.md) → [scope workflow](learning/compile-scope-before-codex-execution.md) |
+| Try a change locally | [Contributing](CONTRIBUTING.md) → [writing a strategy](docs/WRITING_A_STRATEGY.md) |
+| Operate the hosted system | [Runner requirements](docs/RUNNING.md) → [runbook](docs/RUNBOOK.md) → [security](SECURITY.md) |
 
-**Run it**
-
-| Document | Answers |
-|---|---|
-| [`docs/RUNNING.md`](docs/RUNNING.md) | What any Agent Runner must guarantee, and how to drive Ripple with Codex, Claude Code, or by hand |
-| [`docs/RUNBOOK.md`](docs/RUNBOOK.md) | How to verify a working copy, respond to failures, restart after a tier-two lock, and stop everything |
-| [`routines/`](routines/) | What each of the six scheduled runs must do — the durable prompt contracts themselves |
-| [`docs/TODO.md`](docs/TODO.md) | What is genuinely unfinished, and which gate comes next |
-
-**Change it**
-
-| Document | Answers |
-|---|---|
-| [`docs/WRITING_A_STRATEGY.md`](docs/WRITING_A_STRATEGY.md) | How to add an investment policy in Markdown, what it may decide, and what it can never loosen |
-| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Setup, scope discipline, the contributions most wanted, and the non-goals already settled |
-| [`AGENTS.md`](AGENTS.md) | The working contract for humans and agents alike; read it before changing anything |
-| [`SECURITY.md`](SECURITY.md) | What counts as a security issue here, and what to understand before pointing this at a broker |
+The [documentation map](docs/README.md) lists the remaining references, including the
+[glossary](CONTEXT.md) and [product scope](PROPOSAL.md).
 
 ## Repository map
 
@@ -155,12 +188,8 @@ Each document owns one kind of truth, because what the system *is*, what it must
 | [`tests/`](tests/) | Catalog, isolation, artifact, risk, timing, calendar, and fill coverage |
 | [`docs/`](docs/) | Architecture, invariants, decisions, operations, and unfinished work — see [`docs/README.md`](docs/README.md) |
 
-Canonical state uses lowercase config identifiers and groups each cycle's frozen-trade-date Decision and Execution under `state/accounts/<account_id>/trading_days/<trade-date>`; `next_session_open` decides prior-evening, while `same_session_close` decides and executes on the same session.
-
-## What still gates expansion
-
-[`docs/TODO.md`](docs/TODO.md) is the authority on release state, and every live Execution run re-checks its own gate in [`routines/EXECUTION_LIVE.md`](routines/EXECUTION_LIVE.md) before any broker write. Past those, what remains gated is expansion: enough comparable cycles before any claim about relative strategy behavior, a defined review window and after-cost metrics before that comparison means anything, and a reliability review of missed runs, ambiguous outcomes, and prompt drift before a second simultaneous live lane or more capital.
-
-No metric in this repository promotes a strategy or moves capital. A strategy switch, a capital increase, and clearing a tier-two restart lock are human decisions, every time.
+Each cycle's inputs, plan and outcome live together under
+`state/accounts/<account_id>/trading_days/<trade-date>`. The directory is named for the frozen
+Execution date, including the authorized pre-open exception described in the repair case.
 
 Ripple is educational software, not financial advice. Trading involves risk of loss, and live trading and its consequences remain the account owner's responsibility.

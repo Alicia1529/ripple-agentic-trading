@@ -4,14 +4,14 @@
 from evening decision to next-trading-day evidence, using the offline demo so every value below is
 reproducible on your machine.
 
-```mermaid
-flowchart TD
-    F["Fixture provenance<br/>demo_lane config + cycle JSON"] --> D["Decision inputs and plan<br/>2026-08-24 21:00 ET<br/>BUY 0.5 AAPL LIMIT 101"]
-    D --> B["Frozen boundary<br/>next_session_open<br/>trade date: 2026-08-25"]
-    B --> X["Execution · 2026-08-25 09:35 ET<br/>quote 100.50 as_of 09:34 · risk allowed"]
-    X --> S["Shadow Fill (assumed)<br/>0.5 AAPL at 100.50 · 09:35"]
-    S --> E["Ending evidence<br/>cash 720 → 669.75 · +0.5 AAPL"]
-```
+![One Decision Cycle and its responsibility boundaries: a fixture proposes BUY 0.5 AAPL LIMIT $101; Python freezes the plan, validates execution at $100.50 and records an assumed shadow fill. Cash changes from $720 to $669.75. The LLM, Python, runner and human roles are labeled separately.](assets/decision-cycle.svg)
+
+The numbered stages combine the trade's path with **who owns each step**. LLM research and
+judgment are governed by routine prompts; Python validates publication, applies deterministic risk
+and simulates the fill; the hosted runner starts fresh sessions and uses Git for the artifact
+handoff. The human owns live activation, funding, strategy changes and risk-lock restart. Prompt
+contracts do not establish a code-level broker-capability firewall, and Git does not provide
+exactly-once broker execution. The sections below supply the text walkthrough and underlying fields.
 
 This is a `next_session_open` fixture: its timestamps are modeled inputs from
 [`config/examples/demo_lane.json`](../config/examples/demo_lane.json) and

@@ -1,25 +1,21 @@
 # Documentation map
 
-Ripple keeps different kinds of truth in different files on purpose: what the system *is*, what it
-must *never* do, what was *decided* and why, and how to *operate* it change at very different
-rates. Start here to find the one that answers your question.
+Start with the question you want to answer. The README presents the project; these documents
+provide the runnable example, code references and operational detail behind it.
 
-## Start by who you are
+## Choose a reading path
 
-**Just looking around.** [`README.md`](../README.md) for the pitch and the offline demo, then
-[`ANATOMY_OF_A_CYCLE.md`](ANATOMY_OF_A_CYCLE.md) to watch one real cycle move through the system
-artifact by artifact. That pair explains more in ten minutes than the architecture document does.
+| Reader | Suggested path | What you can learn or verify |
+|---|---|---|
+| First-time visitor | [README](../README.md) → [one cycle](ANATOMY_OF_A_CYCLE.md) | What Ripple does and how to reproduce its offline output |
+| Technical interviewer | [Design choices](../README.md#design-choices-you-can-inspect) → [architecture](ARCHITECTURE.md) → [invariants](INVARIANTS.md) | Why responsibilities are separated, what Python enforces and which risks remain |
+| Reviewing AI-assisted development | [Repair case](../learning/frozen-trade-date-case-study.md) → [scope workflow](../learning/compile-scope-before-codex-execution.md) | What the owner requested, what the agent changed and how the regression proves the repair |
+| Contributor | [Contributing](../CONTRIBUTING.md) → [AGENTS.md](../AGENTS.md) → [writing a strategy](WRITING_A_STRATEGY.md) | How to make a bounded, testable change without weakening constraints |
+| Operator | [Running](RUNNING.md) → [runbook](RUNBOOK.md) → [unfinished gates](TODO.md) | Runner requirements, failure handling and release status |
 
-**Want to add a strategy.** [`WRITING_A_STRATEGY.md`](WRITING_A_STRATEGY.md). Strategies are
-Markdown policies, so this is the lowest-friction way to contribute something real.
-
-**Going to run it.** [`RUNNING.md`](RUNNING.md) for the Agent Runner contract and the prompt
-library, then [`RUNBOOK.md`](RUNBOOK.md) for verification, schedules, incidents, and the kill
-switch.
-
-**Changing the code.** [`../AGENTS.md`](../AGENTS.md) first — it is the working contract for humans
-and agents alike — then [`INVARIANTS.md`](INVARIANTS.md) and
-[`ARCHITECTURE.md`](ARCHITECTURE.md). [`../CONTRIBUTING.md`](../CONTRIBUTING.md) has the mechanics.
+The offline walkthrough uses a **fixed fixture**, not a live market run. Its numbers are
+reproducible; they do not measure LLM quality or investment performance. For a term such as
+Account Lane, Strategy Spec or Cycle Profile, use the [glossary](../CONTEXT.md).
 
 ## Every document, and what it is authoritative for
 
@@ -29,7 +25,7 @@ and agents alike — then [`INVARIANTS.md`](INVARIANTS.md) and
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | How the system works today and where its boundaries sit | With the system |
 | [`INVARIANTS.md`](INVARIANTS.md) | The non-negotiable safety and correctness rules | Rarely, and never casually |
 | [`DECISIONS.md`](DECISIONS.md) | Durable choices that govern the current release, and why | On approved decisions |
-| [`ANATOMY_OF_A_CYCLE.md`](ANATOMY_OF_A_CYCLE.md) | One worked cycle, field by field | With the artifact schemas |
+| [`ANATOMY_OF_A_CYCLE.md`](ANATOMY_OF_A_CYCLE.md) | One reproducible fixture cycle, field by field | With the artifact schemas |
 | [`WRITING_A_STRATEGY.md`](WRITING_A_STRATEGY.md) | The Strategy Spec contract | With the strategy seam |
 | [`RUNNING.md`](RUNNING.md) | The Agent Runner contract and the prompt library | With the routines |
 | [`RUNBOOK.md`](RUNBOOK.md) | Operations, verification, incidents, restart | With operational experience |
@@ -42,7 +38,7 @@ and agents alike — then [`INVARIANTS.md`](INVARIANTS.md) and
 | [`../routines/`](../routines/) | What each Decision and Execution run must do | With the routines |
 | [`../strategies/`](../strategies/) | Investment policy, one version-named file each | Never in place — add a new version |
 
-## Two rules that keep this from rotting
+## Keeping references current
 
 **Deployment facts live in exactly one place.** Which lane is live, which strategy it uses, what its
 universe and risk values are — that is `config/*.json` and nothing else. Stable documentation

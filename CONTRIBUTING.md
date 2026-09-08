@@ -1,8 +1,8 @@
 # Contributing
 
-Ripple is a small, deliberately constrained experiment: an account catalog where each LLM-authored
-trading decision passes through the same deterministic, inspectable safety checks. Contributions are
-welcome inside those constraints, and the constraints are the interesting part.
+Ripple separates AI investment judgment from deterministic validation and risk checks. You can
+contribute without a broker account: run the offline fixture, reproduce a bug, improve an
+explanation or propose a versioned strategy policy.
 
 ## Setup
 
@@ -15,9 +15,9 @@ uv run --no-cache python -m unittest discover -s tests -t .
 uv run --no-cache python -m ripple.mvp validate-configs
 ```
 
-Both also run under any bare Python 3.12 from the repository root. If imports fail, the interpreter
-is too old — it is never a missing package. Adding a dependency is an architecture decision, not a
-convenience; see [`docs/DECISIONS.md`](docs/DECISIONS.md).
+Both also run under Python 3.12+ from the repository root. If imports fail, check the interpreter
+version and working directory first; no third-party package installation is expected. Adding a
+dependency is an architecture decision, not a convenience; see [`docs/DECISIONS.md`](docs/DECISIONS.md).
 
 Then run the offline demo in [`README.md`](README.md) to see a complete cycle, and read
 [`docs/ANATOMY_OF_A_CYCLE.md`](docs/ANATOMY_OF_A_CYCLE.md) to understand what it produced.
@@ -26,9 +26,9 @@ Then run the offline demo in [`README.md`](README.md) to see a complete cycle, a
 
 [`AGENTS.md`](AGENTS.md) is the working contract for everyone, human or agent. It asks you to state,
 before you plan: the release stage, the next observable outcome, the exact in-scope behavior and
-files, your accepted risks and non-goals, and the commands that will prove completion. That is not
-ceremony — this repository moves real money in a small live lane, and the scope statement is what
-keeps a two-line fix from becoming a redesign.
+files, your accepted risks and non-goals, and the commands that will prove completion. This makes
+a change reviewable before implementation, including which live-system constraints it must preserve. The [trade-date repair](learning/frozen-trade-date-case-study.md) shows a concrete
+example of a bounded fix and its regression evidence.
 
 Two further rules follow from it:
 
@@ -61,7 +61,7 @@ These are settled decisions, not gaps waiting for a PR. Proposing one means prop
 recorded decision, which is fine — but argue the decision, do not open the implementation.
 
 A Python strategy plugin engine. Automatic strategy scoring or promotion. A dashboard. Multiple
-simultaneous live lanes. Intraday trading. Additional brokers. Transactional persistence or
+simultaneous live lanes. Same-day entry and exit. Additional brokers. Transactional persistence or
 exactly-once broker execution. Automatic reconciliation. Calibrated fee and slippage models.
 
 ## Non-negotiables

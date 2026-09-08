@@ -1,9 +1,9 @@
 # Running Ripple
 
 Ripple separates **what a run must do** from **who runs it**. The prompts in
-[`routines/`](../routines/) are the durable contract; the Agent Runner that executes them is an
-implementation detail you can replace. This document covers the offline demo, the contract every
-runner must satisfy, and the runners known to satisfy it.
+[`routines/`](../routines/) are the durable contract; the Agent Runner that executes them is a
+replaceable host for the agent. This document covers the offline demo and the requirements for
+moving from a supplied fixture to separate hosted Decision and Execution runs.
 
 Operational procedures — incident response, the kill switch, tier-two restart — stay in
 [`RUNBOOK.md`](RUNBOOK.md).
@@ -34,25 +34,31 @@ It writes one complete Decision Cycle to `/tmp/ripple-demo/demo_lane/trading_day
 `assumed_t_plus_one_quote_fill` — an assumption, never a broker confirmation.
 
 `config/examples/demo_lane.json` sits outside the `config/*.json` glob, so the demo lane is
-invisible to the catalog and can never be selected by a scheduled cohort. Copy it into `config/`
-under a new snake_case filename to create a lane of your own; that filename becomes the account
-identifier.
+excluded from scheduled selection while it remains there. For another offline experiment, keep
+the configuration under `config/examples/` and pass its path explicitly. Adding a configuration to
+`config/` is a reviewed deployment change: it joins the catalog and, depending on its mode and
+profile, may join a scheduled cohort. See [Writing a Strategy Spec](WRITING_A_STRATEGY.md).
+
+Use a fresh output directory for another replay. Existing cycle artifacts are never overwritten
+by the publisher.
 
 ## The Agent Runner contract
 
-An Agent Runner is anything that can start a session in this repository and follow one routine
-prompt. Ripple does not care which product it is, and no runner is privileged in the code. A
-runner must:
+An **Agent Runner** starts a fresh agent session with a routine, repository access and the tools
+that phase requires. The Python core has no runner-specific integration. Merely launching an agent
+does not prove that its permissions, state continuity or scheduling satisfy the contract. A runner must:
 
 1. **start fresh** — one session per run, with no memory of another phase or lane;
 2. **read one routine completely** — [`AGENTS.md`](../AGENTS.md) plus exactly one of
    [`routines/DECISION_LIVE.md`](../routines/DECISION_LIVE.md),
    [`DECISION_SHADOW.md`](../routines/DECISION_SHADOW.md),
-   [`EXECUTION_LIVE.md`](../routines/EXECUTION_LIVE.md), or
-   [`EXECUTION_SHADOW.md`](../routines/EXECUTION_SHADOW.md);
+   [`EXECUTION_LIVE.md`](../routines/EXECUTION_LIVE.md),
+   [`EXECUTION_SHADOW.md`](../routines/EXECUTION_SHADOW.md),
+   [`DECISION_SHADOW_CLOSE.md`](../routines/DECISION_SHADOW_CLOSE.md), or
+   [`EXECUTION_SHADOW_CLOSE.md`](../routines/EXECUTION_SHADOW_CLOSE.md);
 3. **own exactly one cohort phase** — never perform the other phase or another cohort in the same
    run;
-4. **fire at the right time** — the four triggers in
+4. **fire at the right time** — the six triggers in
    [`routines/SCHEDULE.md`](../routines/SCHEDULE.md), in `America/New_York`; each routine
    re-checks its own window, so a runner that cannot express an IANA timezone may trigger inside a
    wider UTC window;
@@ -65,13 +71,16 @@ runner must:
 7. **never backfill on its own** — a missed cycle stays missed until a designated owner runs an
    explicitly labeled historical Decision.
 
-Nothing in this contract is enforced by Python. Deterministic code enforces schemas, account
-binding, timing, risk, and fill semantics; the runner contract is what keeps a correct run
-*correctly scoped*.
+Python enforces schemas, account binding, timing, risk and fill semantics. Fresh sessions, tool
+permissions, trigger configuration and prompt adherence are runner responsibilities. Passing the
+Python checks alone does not prove those operational boundaries were respected.
 
 ## Runner: any agent, driven by hand
 
-Use a separate session for Decision and Execution so the two phases remain isolated. Replace the bracketed values before sending a prompt.
+Use a separate session for Decision and Execution so the two phases remain isolated. The examples
+below use `next_session_open`; the close-profile instructions are in
+[Close Decision](../routines/DECISION_SHADOW_CLOSE.md) and
+[Close Execution](../routines/EXECUTION_SHADOW_CLOSE.md). Replace the bracketed values before sending a prompt.
 
 ### Normal run
 
@@ -115,50 +124,29 @@ I am the designated owner and explicitly authorize [live|shadow] Execution of th
 
 Backfill is unavailable for `dry_run`, never overwrites an existing cycle, and is never started automatically by a scheduled task.
 
-## Runner: Codex scheduled tasks
+## Hosted runs
 
-OpenAI currently exposes Codex automations as **Scheduled tasks** in the ChatGPT desktop app. A scheduled task created from Codex can work in a local Git project, while a web-only task cannot directly access a folder on this computer. See the official [Scheduled tasks documentation](https://developers.openai.com/codex/app/automations).
+The current deployment uses Codex scheduled tasks. The checked-in [schedule manifest](../routines/SCHEDULE.md)
+owns the six trigger definitions and their routine paths. A Markdown routine describes the work;
+it does not register or enable a schedule. Product setup is covered in the
+[Codex automation documentation](https://developers.openai.com/codex/app/automations).
 
-The files in [`routines/`](../routines/) are the durable prompts that a scheduled task reads; they are not executable schedules and are not registered automatically. [`routines/SCHEDULE.md`](../routines/SCHEDULE.md) is the operator-owned four-task live/shadow schedule manifest. The table below records the shadow-task setup; live tasks use the matching live routines and remain operator-controlled in the Scheduled interface.
+For each hosted phase, verify the repository-level requirements:
 
-Before creating the tasks:
+1. The run starts a fresh session and reads the complete routine for its mode and profile.
+2. It uses the intended state branch, can pull and push without conflict, and sees the artifacts
+   published by the preceding phase. A separate checkout must synchronize that same history before
+   continuing; an isolated copy with missing state cannot execute the plan.
+3. Its trigger follows the manifest's New York time and its routine checks the trading calendar.
+4. Its permissions match its role. Shadow work has no broker connection; live Execution requires
+   the reviewed connection and the Live Gate.
+5. After an authorized scheduled cycle, the plan, execution and report are reviewable in the same
+   trade-date directory. Check mode, profile, strategy, run provenance and any fill assumptions.
 
-- open this repository as a local project in the ChatGPT desktop app and select Codex;
-- use the intended private state branch, confirm the worktree is clean, and confirm unattended `git pull`/`git push` can use the repository remote;
-- keep the computer on, the desktop app running, and the repository available at each trigger time; and
-- grant only repository write and network access needed for Git and market facts. Shadow tasks need no Robinhood connection or broker-write permission.
+A missed trigger, credential finding, conflict or ambiguous result requires the stop behavior in
+[the runbook](RUNBOOK.md). The presence of saved prompts or test results is not hosted acceptance;
+[TODO](TODO.md) records the remaining acceptance reviews.
 
-For the shadow cohort, create these two **standalone** scheduled tasks. Choose this local project, not an isolated worktree, so Decision and Execution use the same checked-out branch and credential-free state history. Leave model and reasoning settings at their defaults unless an observed run requires a reviewed change.
-
-| Task name | Time zone and recurrence | Saved prompt |
-|---|---|---|
-| `Ripple Shadow Decision` | `America/New_York`; Sun–Thu at 9:00 PM. Advanced rule: `RRULE:FREQ=WEEKLY;BYDAY=SU,MO,TU,WE,TH;BYHOUR=21;BYMINUTE=0` | `Work in the selected Ripple repository. Read routines/DECISION_SHADOW.md completely and follow it exactly. This task owns only the Shadow Decision cohort. Do not perform Execution or live work. If a precondition fails, stop and report it without broadening authority.` |
-| `Ripple Shadow Execution` | `America/New_York`; Mon–Fri at 9:35 AM. Advanced rule: `RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=35` | `Work in the selected Ripple repository. Read routines/EXECUTION_SHADOW.md completely and follow it exactly. This task owns only the Shadow Execution cohort. Do not perform Decision or live work. If a precondition fails, stop and report it without broadening authority.` |
-
-The desktop workflow is:
-
-1. Open a Codex chat for this local repository and ask it to create the standalone scheduled task with the name, saved prompt, recurrence, and time zone above. You can also create and later manage it from **Scheduled** in the desktop sidebar.
-2. Before enabling recurrence, run each saved prompt once in a normal Codex chat. Record the validated catalog output and verify that every selected lane is authorized for the task's cohort.
-3. Enable Shadow Decision first. After its first successful scheduled run, inspect `state/accounts/<account_id>/trading_days/<trade-date>/order_plan.json` for each selected lane and its `Decision: shadow <date>` commit.
-4. Enable Shadow Execution. After the next-trading-day run, inspect `execution.json` and `report.md` in that same trade-date directory, including the ending virtual account, and its `Execution: shadow <date>` commit. Confirm no broker call occurred.
-5. Review the first few runs in **Scheduled**. Pause a task after a failed precondition, Git conflict, unexpected artifact, credential finding, or timing error; scheduled tasks never automatically backfill a missed cycle. A designated-owner historical Decision and any following Execution are separate, explicitly labeled manual operations.
-
-Live task triggers and the broker connection remain operator-controlled. Current catalog membership comes only from `config/*.json`, and [`docs/TODO.md`](TODO.md) records release-gate completion; a routine cannot create or enable a trigger, change execution mode, or expand the owner-approved allocation. Editing a routine changes what the next scheduled run reads, so prompt and trigger changes must stay aligned with [`routines/SCHEDULE.md`](../routines/SCHEDULE.md).
-
-## Runner: Claude Code, or any other agent
-
-Any agent that can be pointed at this repository with a prompt satisfies the contract as long as
-it meets the seven requirements above. Start it in the repository root with one of the prompts
-from *any agent, driven by hand*, and schedule it with whatever the host provides — `cron`,
-`launchd`, a CI schedule, or the tool's own scheduler. For example, a headless invocation plus a
-system scheduler:
-
-```bash
-# Sun-Thu 21:00 America/New_York, Shadow Decision
-0 21 * * 0-4  cd /path/to/ripple && claude -p "Run Ripple's normal shadow Decision now. Read AGENTS.md and routines/DECISION_SHADOW.md completely and follow them exactly."
-```
-
-Check the requirements that are easy to get wrong with a new runner: an isolated worktree breaks
-Decision-to-Execution continuity, a shared session breaks phase isolation, and a runner holding a
-broker connection during a shadow run violates the mode contract regardless of what the prompt
-says.
+Another agent host can be evaluated against the same contract. Verify its session isolation,
+permissions, scheduling and Git continuity with the required no-write evidence before relying on
+it. Changing the runner does not grant new trading authority.

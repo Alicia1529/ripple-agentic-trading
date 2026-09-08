@@ -1,19 +1,19 @@
 # Ripple Trading — Proposal
 
-**Current stage:** Ripple has a validated account catalog, dry-run and shadow paths, hosted `next_session_open` acceptance, a reviewed Robinhood broker-write loop, and a configured `same_session_close` shadow cohort awaiting its first hosted cycle. The remaining work includes close-profile hosted acceptance, comparable cycles, after-cost metrics, and reliability review before a second live lane or more capital.
+**Current stage:** Ripple has a validated account catalog, dry-run and shadow paths, hosted `next_session_open` acceptance, a reviewed Robinhood broker-write loop, and a configured `same_session_close` shadow cohort whose acceptance review remains tracked in `docs/TODO.md`. The remaining work includes close-profile hosted acceptance, comparable cycles, after-cost metrics, and reliability review before a second live lane or more capital.
 
 `docs/ARCHITECTURE.md` is the current technical design, `docs/DECISIONS.md` records durable choices, and `docs/TODO.md` tracks unfinished work.
 
 ## What Ripple is for
 
-Ripple is a small system for learning how multiple investment strategies behave when each LLM-authored decision passes through the same deterministic, inspectable safety checks. It has two connected goals:
+Ripple makes AI-authored trading decisions reviewable: save the inputs, freeze a proposed plan, check it against fresh facts, and record the result. Each strategy runs with its own configuration and portfolio history while sharing the same deterministic risk checks. It has two connected goals:
 
 1. learn which responsibilities belong to an LLM, deterministic code, the hosting platform, and the human owner; and
 2. collect comparable live and shadow evidence so the owner can review records, replay behavior later, and decide whether a strategy deserves further evaluation.
 
 Ripple does not claim that an AI can beat the market. A shadow result is an explicit fill assumption, and live trading remains financially consequential and human-owned.
 
-## Target structure now represented in the repository
+## How strategies stay separate
 
 ```mermaid
 flowchart TD
@@ -70,6 +70,6 @@ Changing a shadow lane to live is not an automatic promotion. The owner must rec
 
 The current release is long-only and supports `next_session_open` plus a configured `same_session_close` shadow cohort awaiting hosted acceptance. It does not include a live same-session lane, same-day entry and exit, a dashboard, automated strategy ranking or promotion, multiple simultaneous live accounts, transactional submission state, exactly-once broker execution, automatic reconciliation, sophisticated slippage/fee models, a Python strategy plugin engine, or historical backtesting.
 
-Shadow lanes are the simulation path instead of a backtester. A shadow lane runs forward on the same schedule, the same Strategy Spec, and the same deterministic risk authority as a live lane, and differs only in the documented Shadow Fill assumption. Backtesting is a current non-goal because a Decision is a single non-replayable model call and no historical bar source exists; comparable evidence accumulates cycle by cycle instead.
+Ripple evaluates strategies through forward shadow runs: the agent makes a decision using facts available at the time, and the later result records an assumed fill. Live and shadow paths share risk checks, but their account sources and execution effects differ; timing follows each lane's profile. The repository has no historical market-data replay system or backtester. Replaying a recorded plan can test deterministic behavior, but cannot recreate the original model judgment. Comparable strategy evidence must still accumulate cycle by cycle.
 
 Live trading and its consequences remain the account owner's responsibility. Read `docs/ARCHITECTURE.md` for the system walkthrough and `docs/INVARIANTS.md` for the safety contract.
